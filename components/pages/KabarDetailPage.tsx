@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, ChevronLeft, ChevronRight, X, Share2, Check, MessageCircle } from 'lucide-react';
+import { ArrowLeft, X, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState, useEffect, useRef } from 'react';
 import { Post } from '@/types';
@@ -9,9 +9,10 @@ interface KabarDetailPageProps {
     onNavigate: (page: string) => void;
     postId: number;
     currentUser: any;
+    fromPublic?: boolean;
 }
 
-export default function KabarDetailPage({ onNavigate, postId, currentUser }: KabarDetailPageProps) {
+export default function KabarDetailPage({ onNavigate, postId, currentUser, fromPublic = false }: KabarDetailPageProps) {
     const [post, setPost] = useState<Post | null>(null);
     const [loading, setLoading] = useState(true);
     const [lightboxImage, setLightboxImage] = useState<string | null>(null);
@@ -51,10 +52,9 @@ export default function KabarDetailPage({ onNavigate, postId, currentUser }: Kab
                         author_id: p.author_id,
                         title: p.title,
                         content: p.content,
-                        timestamp: new Date(p.created_at).toLocaleDateString(),
+                        timestamp: new Date(p.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
                         avatar: (p.author_name || 'A').charAt(0).toUpperCase(),
                         activity_date: p.activity_date,
-                        comment_count: Number(p.comment_count) || 0,
                         images: Array.isArray(p.images) ? p.images : []
                     });
                 }
@@ -75,11 +75,24 @@ export default function KabarDetailPage({ onNavigate, postId, currentUser }: Kab
 
     return (
         <div className="bg-white min-h-screen pb-20">
+            {/* Public Banner */}
+            {fromPublic && (
+                <div className="bg-emerald-600 text-white py-2 px-4 flex items-center justify-between text-sm">
+                    <span className="font-semibold">📢 MDA Masjid Nurul Huda</span>
+                    <button
+                        onClick={() => onNavigate('login')}
+                        className="bg-white text-emerald-700 px-3 py-1 rounded-full font-bold text-xs hover:bg-emerald-50 transition-colors"
+                    >
+                        Masuk / Login
+                    </button>
+                </div>
+            )}
+
             {/* Header */}
             <div className="sticky top-0 bg-white z-10 p-4 border-b border-slate-100 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <button 
-                        onClick={() => onNavigate('kabar')}
+                        onClick={() => onNavigate(fromPublic ? 'landing' : 'kabar')}
                         className="p-2 -ml-2 text-slate-600 hover:bg-slate-50 rounded-full"
                     >
                         <ArrowLeft size={20} />
@@ -98,7 +111,7 @@ export default function KabarDetailPage({ onNavigate, postId, currentUser }: Kab
                     onClick={handleShare}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
                 >
-                    <MessageCircle size={14} />
+                    <Share2 size={14} />
                     Bagikan ke WA
                 </button>
             </div>

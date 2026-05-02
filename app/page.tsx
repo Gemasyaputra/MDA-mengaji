@@ -210,7 +210,7 @@ export default function Home() {
         if (currentPage?.startsWith('kabar-detail')) {
             const params = new URLSearchParams(currentPage.split('?')[1]);
             const id = parseInt(params.get('id') || '0');
-            return <KabarDetailPage onNavigate={navigateTo} postId={id} currentUser={currentUser} />;
+            return <KabarDetailPage onNavigate={navigateTo} postId={id} currentUser={currentUser} fromPublic={!currentRole} />;
         }
         if (currentPage?.startsWith('santri-history')) {
           const queryString = currentPage.split('?')[1] || '';
@@ -229,7 +229,7 @@ export default function Home() {
     }
   };
 
-  const showChrome = currentPage !== 'landing' && currentPage !== 'login' && currentPage !== 'register' && !currentPage.startsWith('parent-view');
+  const showChrome = currentPage !== 'landing' && currentPage !== 'login' && currentPage !== 'register' && !currentPage.startsWith('parent-view') && !(currentPage.startsWith('kabar-detail') && !currentRole);
 
   const getHeaderTitle = () => {
     if (currentPage === 'dashboard') return 'Dashboard';
@@ -281,7 +281,7 @@ export default function Home() {
         )}
 
         <main className={`flex-1 overflow-y-auto ${(showChrome && currentRole) ? 'pb-20 md:pb-6' : ''} w-full`}>
-          {['login', 'register', 'landing'].includes(currentPage) || currentPage.startsWith('parent-view') ? (
+          {['login', 'register', 'landing'].includes(currentPage) || currentPage.startsWith('parent-view') || (currentPage.startsWith('kabar-detail') && !currentRole) ? (
             renderPage()
           ) : (
             <div className="max-w-7xl mx-auto w-full">

@@ -181,14 +181,3 @@ export const activityImages = pgTable("activity_images", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const activityComments = pgTable("activity_comments", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  postId: bigint("post_id", { mode: "number" })
-    .notNull()
-    .references(() => activityPosts.id, { onDelete: "cascade" }),
-  userId: bigint("user_id", { mode: "number" })
-    .references(() => users.id, { onDelete: "set null" }),
-  parentName: varchar("parent_name", { length: 100 }),
-  content: text("content").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});

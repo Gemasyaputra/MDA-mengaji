@@ -11,10 +11,9 @@ export async function GET(req: NextRequest) {
   // Determine image limit: if fetching single post (id present), get all images. Else get 1.
   const imageLimit = '';
 
-  // Join with users to get author name and count comments, and agg images
+  // Join with users to get author name and agg images
   let sql = `
     SELECT ap.*, u.name as author_name, 
-    (SELECT COUNT(*) FROM activity_comments ac WHERE ac.post_id = ap.id) as comment_count,
     (
       SELECT COALESCE(json_agg(x.image_url), '[]'::json) 
       FROM (

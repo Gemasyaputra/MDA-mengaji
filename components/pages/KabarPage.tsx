@@ -1,7 +1,7 @@
-import { Plus, MessageCircle, Send, Image as ImageIcon, X, ChevronLeft, ChevronRight, Trash2, Edit2, MoreVertical, Share2 } from 'lucide-react';
+import { Plus, Image as ImageIcon, X, Trash2, Edit2, MoreVertical, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState, useEffect, useRef } from 'react';
-import { Post, Comment } from '@/types';
+import { Post } from '@/types';
 
 interface KabarPageProps {
   onNavigate: (page: string) => void;
@@ -22,11 +22,6 @@ export default function KabarPage({ onNavigate, currentUser }: KabarPageProps) {
   const [editingPostId, setEditingPostId] = useState<number | null>(null);
   const [activeMenuPostId, setActiveMenuPostId] = useState<number | null>(null);
   
-  // Comment State
-  const [expandedPostId, setExpandedPostId] = useState<number | null>(null);
-  const [comments, setComments] = useState<Record<number, Comment[]>>({});
-  const [newComment, setNewComment] = useState('');
-  const [loadingComments, setLoadingComments] = useState(false);
 
   // Fetch Posts
   const fetchPosts = async (pageNum: number = 1) => {
@@ -69,57 +64,6 @@ export default function KabarPage({ onNavigate, currentUser }: KabarPageProps) {
   useEffect(() => {
     fetchPosts();
   }, []);
-
-  // Fetch Comments for a specific post
-  const fetchComments = async (postId: number) => {
-      setLoadingComments(true);
-      try {
-          const res = await fetch(`/api/activity-comments?post_id=${postId}`);
-          const json = await res.json();
-          if (json.success && Array.isArray(json.data)) {
-              setComments(prev => ({ ...prev, [postId]: json.data }));
-          }
-      } catch (err) {
-          console.error(err);
-      } finally {
-          setLoadingComments(false);
-      }
-  };
-
-  const handleExpandComments = (postId: number) => {
-      if (expandedPostId === postId) {
-          setExpandedPostId(null);
-      } else {
-          setExpandedPostId(postId);
-          fetchComments(postId);
-      }
-  };
-
-  const handlePostComment = async (postId: number) => {
-      if (!newComment.trim()) return;
-
-      try {
-          const payload = {
-              post_id: postId,
-              user_id: currentUser?.id, // Assuming currentUser is passed or handled
-              parent_name: currentUser?.name || 'Guest', // Fallback
-              content: newComment
-          };
-
-          const res = await fetch('/api/activity-comments', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-          });
-
-          if (res.ok) {
-              setNewComment('');
-              fetchComments(postId); // Refresh comments
-          }
-      } catch (err) {
-          console.error(err);
-      }
-  };
 
   const [showPostModal, setShowPostModal] = useState(false);
   const [postTitle, setPostTitle] = useState('');
@@ -423,69 +367,6 @@ export default function KabarPage({ onNavigate, currentUser }: KabarPageProps) {
                   )}
                 </div>
 
-                {/* Comment Toggle */}
-                <div 
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        handleExpandComments(post.id);
-                    }}
-                    className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 hover:text-emerald-600 cursor-pointer select-none"
-                >
-                  <div className="flex items-center gap-2">
-                      <MessageCircle size={14} />
-                      <span>
-                          {expandedPostId === post.id ? 'Tutup Komentar' : 'Lihat Komentar'}
-                      </span>
-                  </div>
-                  {post.comment_count !== undefined && post.comment_count > 0 && (
-                      <span className="bg-emerald-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                          {post.comment_count}
-                      </span>
-                  )}
-                </div>
-
-                {/* Comment Section */}
-                {expandedPostId === post.id && (
-                    <div 
-                        className="bg-slate-50 px-4 pb-4 border-t border-slate-100"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* List Comments */}
-                        <div className="space-y-3 py-3">
-                            {comments[post.id]?.length > 0 ? (
-                                comments[post.id].map(comment => (
-                                    <div key={comment.id} className="bg-white p-3 rounded-lg shadow-sm">
-                                        <p className="text-xs font-bold text-slate-700 mb-1">
-                                            {comment.user_name || comment.parent_name || 'User'}
-                                        </p>
-                                        <p className="text-xs text-slate-600">{comment.content}</p>
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-xs text-slate-400 text-center py-2">Belum ada komentar.</p>
-                            )}
-                        </div>
-
-                        {/* Add Comment Input */}
-                        <div className="flex gap-2">
-                            <input 
-                                type="text" 
-                                value={newComment}
-                                onChange={(e) => setNewComment(e.target.value)}
-                                placeholder="Tulis komentar..."
-                                className="flex-1 text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-emerald-500"
-                                onKeyDown={(e) => e.key === 'Enter' && handlePostComment(post.id)}
-                            />
-                            <button 
-                                onClick={() => handlePostComment(post.id)}
-                                disabled={!newComment.trim()}
-                                className="bg-emerald-600 text-white p-2 rounded-lg disabled:opacity-50"
-                            >
-                                <Send size={14} />
-                            </button>
-                        </div>
-                    </div>
-                )}
               </div>
             ))}
           </div>

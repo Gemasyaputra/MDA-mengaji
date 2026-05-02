@@ -36,17 +36,7 @@ export interface Post {
   content: string;
   timestamp: string;
   avatar: string;
-  created_at?: string; // Raw date string
+  created_at?: string;
   activity_date?: string;
-  comment_count?: number;
   images?: string[];
-}
-
-export interface Comment {
-  id: number;
-  post_id: number;
-  user_name?: string;
-  parent_name?: string;
-  content: string;
-  created_at: string;
 }

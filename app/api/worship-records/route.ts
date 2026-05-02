@@ -101,7 +101,6 @@ export async function GET(req: NextRequest) {
       params.push(studentId);
     }
 
-    // Support fetching today's records for multiple students in a group
     if (groupStudentIds) {
       const ids = groupStudentIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
       if (ids.length > 0) {
@@ -111,7 +110,6 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Filter by specific date (for today's indicator)
     if (date) {
       sql += ` AND wr.date::date = $${params.length + 1}::date`;
       params.push(date);
@@ -129,4 +127,43 @@ export async function GET(req: NextRequest) {
     } catch (error: any) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { id, quality, is_completed, daily_prayer_id, prayer_reading_id } = body;
+
+    if (!id || !quality) {
+      return NextResponse.json({ success: false, error: 'Missing id or quality' }, { status: 400 });
+    }
+
+    const result = await execute(
+      `UPDATE worship_records
+       SET quality = $1,
+           is_completed = $2,
+           daily_prayer_id = $3,
+           prayer_reading_id = $4
+       WHERE id = $5`,
+      [quality, is_completed ?? false, daily_prayer_id ?? null, prayer_reading_id ?? null, id]
+    );
+
+    return NextResponse.json(result);
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'Missing id' }, { status: 400 });
+    }
+    const result = await execute('DELETE FROM worship_records WHERE id = $1', [id]);
+    return NextResponse.json(result);
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
 }

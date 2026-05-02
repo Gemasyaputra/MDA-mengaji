@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Smartphone, BookOpen, History, Clock, CheckCircle2, 
-  ShieldCheck, Users, Database, MessageCircle, Play, 
+  ShieldCheck, Users, Database, Play, MessageCircle,
   ArrowRight, ChevronDown, Star, GraduationCap, 
-  Building, LayoutDashboard, FileText, Send, 
-  Check, X, AlertTriangle, Activity
+  LayoutDashboard, FileText, Send, 
+  Check, X, AlertTriangle, Activity, Newspaper, CalendarDays, ChevronRight, RefreshCw
 } from 'lucide-react';
 
 // --- CUSTOM HOOK FOR SCROLL ANIMATION ---
@@ -127,14 +127,181 @@ const MockAppUI = () => (
 
 const faqs = [
   {
-    q: "Apakah pengajar yang gaptek (gagap teknologi) bisa menggunakannya?",
-    a: "Sangat bisa! Antarmuka aplikasi dirancang sesederhana mungkin seperti menggunakan WhatsApp. Kami juga menyediakan panduan video lengkap dan tim support yang siap membantu."
+    q: "Bagaimana cara saya memantau progres ngaji anak saya?",
+    a: "Anda tidak perlu repot membuat akun. Cukup minta Tautan/Link Akses Portal Orang Tua kepada Ustadz/Ustadzah atau Admin MDA, dan Anda bisa langsung melihat riwayat hafalan anak Anda."
   },
   {
-    q: "Apakah data nilai dan absensi santri kami aman?",
-    a: "Sangat aman. Kami menggunakan server cloud dengan enkripsi standar industri. Selain itu, sistem pencadangan (backup) otomatis dilakukan setiap minggu untuk mencegah kehilangan data seperti buku prestasi fisik yang sering terselip."
+    q: "Kurikulum apa yang digunakan di MDA Masjid Nurul Huda?",
+    a: "Kami menggunakan metode pembelajaran interaktif untuk pengenalan dasar, yang dilanjutkan dengan program tahsin dan setoran tahfidz Al-Qur'an secara berkala."
+  },
+  {
+    q: "Siapa yang menginput data nilai dan kehadiran santri?",
+    a: "Setiap Ustadz dan Ustadzah pengajar memiliki akses khusus ke dalam sistem untuk mencatat kehadiran dan nilai setoran secara langsung saat kegiatan belajar mengajar berlangsung."
   }
 ];
+
+// --- PUBLIC KABAR FEED COMPONENT ---
+interface PublicPost {
+  id: number;
+  author: string;
+  title: string;
+  content: string;
+  timestamp: string;
+  avatar: string;
+  images: string[];
+}
+
+const PublicKabarFeed = ({ onNavigate }: { onNavigate?: (page: string) => void }) => {
+  const [posts, setPosts] = useState<PublicPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const fetchPublicPosts = async () => {
+      try {
+        setLoading(true);
+        setError(false);
+        const res = await fetch(`/api/activities?page=1&limit=6&t=${Date.now()}`);
+        if (!res.ok) throw new Error('Failed to fetch');
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          const mapped: PublicPost[] = json.data.map((p: any) => ({
+            id: p.id,
+            author: p.author_name || 'Admin MDA',
+            title: p.title,
+            content: p.content,
+            timestamp: new Date(p.created_at).toLocaleDateString('id-ID', {
+              day: 'numeric', month: 'long', year: 'numeric'
+            }),
+            avatar: (p.author_name || 'A').charAt(0).toUpperCase(),
+            images: Array.isArray(p.images) ? p.images : [],
+          }));
+          setPosts(mapped);
+        } else {
+          setError(true);
+        }
+      } catch {
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPublicPosts();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm animate-pulse">
+            <div className="h-48 bg-slate-200" />
+            <div className="p-5 space-y-3">
+              <div className="h-3 w-1/3 bg-slate-200 rounded" />
+              <div className="h-5 w-3/4 bg-slate-200 rounded" />
+              <div className="space-y-2">
+                <div className="h-3 w-full bg-slate-200 rounded" />
+                <div className="h-3 w-full bg-slate-200 rounded" />
+                <div className="h-3 w-2/3 bg-slate-200 rounded" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-16">
+        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <RefreshCw className="text-slate-400" size={28} />
+        </div>
+        <p className="text-slate-500 font-medium">Gagal memuat kabar. Coba refresh halaman.</p>
+      </div>
+    );
+  }
+
+  if (posts.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Newspaper className="text-emerald-400" size={28} />
+        </div>
+        <p className="text-slate-500 font-medium">Belum ada kabar yang dipublikasikan.</p>
+        <p className="text-slate-400 text-sm mt-1">Silakan cek kembali nanti.</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {posts.map((post, idx) => (
+          <AnimateOnScroll key={post.id} animation="fade-up" delay={100 + idx * 80}>
+            <div
+              onClick={() => onNavigate && onNavigate(`kabar-detail?id=${post.id}`)}
+              className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col h-full"
+            >
+              {/* Image or Placeholder */}
+              {post.images.length > 0 ? (
+                <div className="relative h-48 overflow-hidden">
+                  <img
+                    src={post.images[0]}
+                    alt={post.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  {post.images.length > 1 && (
+                    <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded-md backdrop-blur-sm font-semibold">
+                      +{post.images.length - 1} Foto
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="h-32 bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center">
+                  <Newspaper className="text-emerald-300" size={40} />
+                </div>
+              )}
+
+              <div className="p-5 flex flex-col flex-1">
+                {/* Author & Date */}
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                    {post.avatar}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-slate-700 truncate">{post.author}</p>
+                    <div className="flex items-center gap-1 text-slate-400">
+                      <CalendarDays size={10} />
+                      <span className="text-[10px]">{post.timestamp}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Title */}
+                <h3 className="font-bold text-slate-800 text-base mb-2 leading-snug line-clamp-2 flex-1">
+                  {post.title}
+                </h3>
+
+                {/* Content Preview */}
+                <p className="text-sm text-slate-500 leading-relaxed line-clamp-3 mb-4">
+                  {post.content}
+                </p>
+
+                {/* Footer */}
+                <div className="pt-3 border-t border-slate-100 flex justify-end">
+                  <span className="text-xs font-bold text-emerald-600 flex items-center gap-1 group-hover:gap-2 transition-all">
+                    Baca <ChevronRight size={13} />
+                  </span>
+                </div>
+              </div>
+            </div>
+          </AnimateOnScroll>
+        ))}
+      </div>
+
+    </>
+  );
+};
 
 // --- MAIN APP COMPONENT ---
 export default function LandingPage({ onNavigate }: { onNavigate?: (page: string) => void }) {
@@ -158,6 +325,9 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
               <a href="#solusi" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Solusi</a>
               <a href="#fitur" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Fitur</a>
               <a href="#peran" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Akses</a>
+              <a href="#kabar" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors flex items-center gap-1.5">
+                <Newspaper size={15} /> Kabar
+              </a>
             </div>
             <div>
               <button 
@@ -237,8 +407,9 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <AnimateOnScroll delay={100}>
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Latar Belakang Digitalisasi MDA</h2>
-              <div className="w-20 h-1 bg-emerald-400 mx-auto rounded-full"></div>
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Transformasi Digital Pendidikan Al-Qur'an</h2>
+              <p className="text-slate-500 mt-4 text-lg">MDA Masjid Nurul Huda kini mengadopsi sistem akademik modern untuk memastikan setiap progres belajar santri terpantau dengan akurat, transparan, dan mudah diakses oleh orang tua.</p>
+              <div className="w-20 h-1 bg-emerald-400 mx-auto rounded-full mt-6"></div>
             </AnimateOnScroll>
           </div>
 
@@ -288,10 +459,10 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <AnimateOnScroll delay={100}>
-              <span className="text-emerald-400 font-bold tracking-wider uppercase text-sm mb-2 block">Solusi Manajemen Cerdas</span>
-              <h2 className="text-3xl md:text-5xl font-bold mb-6">Selamat Tinggal Tumpukan Kertas, Halo Kemudahan</h2>
+              <span className="text-emerald-400 font-bold tracking-wider uppercase text-sm mb-2 block">Sistem Akademik Modern</span>
+              <h2 className="text-3xl md:text-5xl font-bold mb-6">Dari Buku Fisik ke Sistem Digital yang Andal</h2>
               <p className="text-slate-300 text-lg">
-                Aplikasi Magrib Mengaji mengotomatiskan seluruh alur pencatatan agar pengajar fokus mendidik, dan pengurus mudah memantau.
+                MDA Masjid Nurul Huda mengotomatiskan seluruh alur pencatatan agar pengajar fokus mendidik, dan pengurus mudah memantau perkembangan setiap santri.
               </p>
             </AnimateOnScroll>
           </div>
@@ -351,7 +522,7 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
                       <div className="w-3 h-3 rounded-full bg-green-400"></div>
                     </div>
                     <div className="mx-auto bg-white px-4 py-1 rounded-md text-xs text-slate-500 font-mono shadow-sm border border-slate-100">
-                      portal.magribmengaji.com/wali/gema
+                      portal.mdanurulhuda.sch/wali/gema
                     </div>
                   </div>
                   <div className="p-6">
@@ -406,7 +577,7 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
                   <p className="text-sm text-slate-800 mb-2">
                     Assalamualaikum, Bunda. Berikut link laporan mengaji ananda Gema hari ini ya:
                   </p>
-                  <a href="#" className="text-xs text-blue-600 underline truncate block">magribmengaji.com/l/gema123</a>
+                  <a href="#" className="text-xs text-blue-600 underline truncate block">mdanurulhuda.sch/l/gema123</a>
                   <span className="text-[10px] text-slate-500 block text-right mt-1">11:00 ✓✓</span>
                 </div>
               </AnimateOnScroll>
@@ -461,30 +632,35 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
 
       {/* Removed AI KTP UPLOAD SECTION */}
 
-      {/* 5. DIFFERENTIATOR SECTION */}
+      {/* 5. KEUNGGULAN BELAJAR */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <AnimateOnScroll delay={100}>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-16">Kenapa Beralih ke Ekosistem Kami?</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Keunggulan Belajar di MDA Nurul Huda</h2>
+            <p className="text-lg text-slate-500 max-w-2xl mx-auto mb-16">Kami menggabungkan pendidikan agama Islam yang komprehensif dengan kemudahan teknologi informasi.</p>
           </AnimateOnScroll>
           
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <AnimateOnScroll animation="scale" delay={200}>
-              <div className="bg-emerald-600 text-white p-10 rounded-3xl shadow-xl h-full flex flex-col items-center text-center">
-                <ShieldCheck size={48} className="mb-6 text-emerald-200" />
-                <h3 className="text-2xl font-bold mb-4">History Belajar Permanen</h3>
-                <p className="text-emerald-100 text-lg leading-relaxed">
-                  Jejak hafalan, perbaikan tajwid, dan kehadiran tersimpan selamanya di database cloud yang aman. Data berharga anak Anda tidak akan pernah hilang termakan waktu.
+              <div className="bg-emerald-600 text-white p-10 rounded-3xl shadow-xl h-full flex flex-col items-start text-left">
+                <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mb-6">
+                  <BookOpen size={30} className="text-white" />
+                </div>
+                <h3 className="text-2xl font-bold mb-4">Kurikulum Tahsin &amp; Tahfidz Terstruktur</h3>
+                <p className="text-emerald-100 text-base leading-relaxed">
+                  Membimbing santri dari dasar pengenalan huruf (Iqro) hingga tahsin Al-Qur&apos;an, dilengkapi dengan target hafalan surah pendek dan doa harian yang disesuaikan dengan jenjang usia anak.
                 </p>
               </div>
             </AnimateOnScroll>
             
             <AnimateOnScroll animation="scale" delay={300}>
-              <div className="bg-slate-800 text-white p-10 rounded-3xl shadow-xl h-full flex flex-col items-center text-center">
-                <Users size={48} className="mb-6 text-slate-400" />
-                <h3 className="text-2xl font-bold mb-4">Terintegrasi 4 Pilar</h3>
-                <p className="text-slate-300 text-lg leading-relaxed">
-                  Satu aplikasi sentral yang menghubungkan harmonis antara Pengurus Masjid/MDA, Kepala Lembaga, Pengajar di kelas, dan Orang Tua di rumah.
+              <div className="bg-slate-800 text-white p-10 rounded-3xl shadow-xl h-full flex flex-col items-start text-left">
+                <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center mb-6">
+                  <ShieldCheck size={30} className="text-slate-300" />
+                </div>
+                <h3 className="text-2xl font-bold mb-4">Pantauan Akademik 100% Digital</h3>
+                <p className="text-slate-300 text-base leading-relaxed">
+                  Transparansi adalah komitmen kami. Orang tua dapat langsung melihat laporan kehadiran, capaian hafalan, dan kelulusan jilid santri dari rumah secara real-time melalui Portal Orang Tua.
                 </p>
               </div>
             </AnimateOnScroll>
@@ -526,9 +702,9 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
                 <div className="h-2 bg-emerald-500 w-full"></div>
                 <div className="p-8 flex-1 flex flex-col">
                   <GraduationCap className="text-emerald-500 mb-4" size={36} />
-                  <h3 className="text-xl font-bold text-slate-800 mb-3">Pengajar (Pencatat Nilai)</h3>
+                  <h3 className="text-xl font-bold text-slate-800 mb-3">Pengajar / Ustadz (Pencatat Nilai &amp; Presensi)</h3>
                   <p className="text-slate-600 mb-6 flex-1">
-                    Bertugas melakukan presensi kehadiran harian, memberikan penilaian hafalan/bacaan, dan menulis jurnal atau evaluasi untuk setiap santri.
+                    Bertugas melakukan presensi kehadiran harian, memberikan penilaian hafalan/bacaan, dan menulis jurnal atau catatan evaluasi untuk setiap santri langsung dari smartphone.
                   </p>
                   <button onClick={() => setSelectedRoleModal('teacher')} className="text-emerald-600 font-bold flex items-center gap-1 group-hover:gap-2 transition-all">
                     Lihat Detail Akses <ArrowRight size={16} />
@@ -543,9 +719,9 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
                 <div className="h-2 bg-amber-500 w-full"></div>
                 <div className="p-8 flex-1 flex flex-col">
                   <Smartphone className="text-amber-500 mb-4" size={36} />
-                  <h3 className="text-xl font-bold text-slate-800 mb-3">Orang Tua (Pemantau)</h3>
+                  <h3 className="text-xl font-bold text-slate-800 mb-3">Orang Tua Santri</h3>
                   <p className="text-slate-600 mb-6 flex-1">
-                    Pantau progres anak tanpa perlu login, cukup melalui tautan/link khusus. Melihat riwayat absensi, hafalan, dan pesan dari Ustadz secara real-time.
+                    Pantau progres mengaji anak tanpa perlu membuat akun atau login. Cukup gunakan tautan (link) khusus yang diberikan oleh pihak MDA untuk mengakses laporan anak secara real-time.
                   </p>
                   <button onClick={() => setSelectedRoleModal('parent')} className="text-amber-600 font-bold flex items-center gap-1 group-hover:gap-2 transition-all">
                     Lihat Detail Akses <ArrowRight size={16} />
@@ -604,6 +780,28 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
               </div>
             </AnimateOnScroll>
           </div>
+        </div>
+      </section>
+
+      {/* 8.5 PUBLIC KABAR SECTION */}
+      <section id="kabar" className="py-24 bg-white border-t border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-14">
+            <AnimateOnScroll delay={100}>
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-sm font-bold mb-4">
+                <Newspaper size={15} /> Informasi Publik
+              </span>
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+                Kabar Terbaru MDA
+              </h2>
+              <p className="text-lg text-slate-500">
+                Informasi, pengumuman, dan kegiatan terkini dari MDA Masjid Nurul Huda yang dapat dilihat oleh siapa saja.
+              </p>
+              <div className="w-20 h-1 bg-emerald-400 mx-auto rounded-full mt-6" />
+            </AnimateOnScroll>
+          </div>
+
+          <PublicKabarFeed onNavigate={onNavigate} />
         </div>
       </section>
 
