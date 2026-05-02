@@ -2,6 +2,7 @@
 
 import { ArrowLeft, User, MapPin, BookOpen, Activity, Calendar, MessageCircle, Image as ImageIcon, X, Share2, Check } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
+import { useSession } from 'next-auth/react';
 
 interface ParentViewPageProps {
   onBack: () => void;
@@ -11,6 +12,7 @@ interface ParentViewPageProps {
 
 export default function ParentViewPage({ onBack, onNavigate, studentId }: ParentViewPageProps) {
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const { data: session } = useSession();
   
   // State for Detailed View
   const [attendanceStats, setAttendanceStats] = useState({ 
@@ -23,9 +25,17 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
      percentage: 0,
      progresSaatIni: 0,
      targetLengkap: 0,
-     labelProgress: 'Surat',
-     subTitle: 'Juz 30',
-     isIqro: false
+     labelProgress: 'Halaman',
+     subTitle: 'Iqro',
+     isIqro: true,
+     // Al-Quran specific
+     alquranData: null as {
+       activeSurah: string;
+       activeAyahReached: number;
+       activeSurahTotalAyah: number;
+       activePercentage: number;
+       completedSurahs: number;
+     } | null
   });
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [kabarMasjid, setKabarMasjid] = useState<any[]>([]);
@@ -150,27 +160,90 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
             const jsonLearn = await resLearn.json();
             const learningRecords = (jsonLearn.success && Array.isArray(jsonLearn.data)) ? jsonLearn.data : [];
 
-            // Calculate Learning Progress Gauge Data
+            // ── Calculate Learning Progress ──────────────────────────────
+            const studentData = jsonStudent.data;
+            const isIqro = studentData.reading_level !== 'ALQURAN';
             const lastRecord = learningRecords.length > 0 ? learningRecords[0] : null;
-            const isIqro = lastRecord?.type === 'IQRO';
-            
-            let targetLengkap = 37; 
-            let progresSaatIni = learningRecords.length;
-            let labelProgress = isIqro ? "Halaman" : "Surat";
-            let subTitle = isIqro ? (lastRecord.level_or_surah || "Iqro") : "Juz 30";
+
+            let lpPercentage = 0;
+            let progresSaatIni = 0;
+            let targetLengkap = 32;
+            let labelProgress = 'Halaman';
+            let subTitle = 'Iqro';
+            let alquranData = null as typeof learningProgress.alquranData;
 
             if (isIqro) {
-                targetLengkap = 32; 
+                subTitle = lastRecord?.level_or_surah || 'Iqro';
                 const halamanTerakhir = learningRecords
                     .filter((h: any) => h.type === 'IQRO')
                     .map((h: any) => parseInt(h.end_point || '0'))
                     .filter((val: number) => !isNaN(val));
-
                 progresSaatIni = halamanTerakhir.length > 0 ? Math.max(...halamanTerakhir) : 0;
+                lpPercentage = Math.min(Math.round((progresSaatIni / 32) * 100), 100);
+            } else {
+                // ── Al-Quran: fetch surah master data for total verses ──
+                const quranRecords = learningRecords.filter((h: any) => h.type === 'QURAN');
+
+                // Normalize surah name: lowercase, remove hyphens/apostrophes/spaces,
+                // then strip trailing 'h' so "Al-Fatihah" == "Al-Fatiha", etc.
+                const normSurah = (s: string) =>
+                    s.toLowerCase()
+                     .replace(/[-'\u2019\s]/g, '')   // remove hyphens, quotes, spaces
+                     .replace(/h$/, '');              // strip trailing 'h' (fatiha/fatihah etc.)
+
+                // Fetch surah master for total_verses lookup
+                // surahMap keyed by normalized name
+                let surahMap: Record<string, { total: number; displayName: string }> = {};
+                try {
+                    const resSurahs = await fetch('/api/master-data?type=surahs');
+                    const jsonSurahs = await resSurahs.json();
+                    if (jsonSurahs.success && Array.isArray(jsonSurahs.data)) {
+                        jsonSurahs.data.forEach((s: any) => {
+                            surahMap[normSurah(s.name_latin)] = {
+                                total: Number(s.total_verses),
+                                displayName: s.name_latin,
+                            };
+                        });
+                    }
+                } catch (e) { console.error('Failed to fetch surahs', e); }
+
+                // Active surah = most recent QURAN record
+                const activeSurah = lastRecord?.level_or_surah || 'Al-Quran';
+                const activeSurahEntry = surahMap[normSurah(activeSurah)];
+                const activeSurahTotalAyah = activeSurahEntry?.total || 0;
+
+                // Max ayah reached for the active surah (fuzzy name match)
+                const activeAyahReached = quranRecords
+                    .filter((r: any) => normSurah(r.level_or_surah || '') === normSurah(activeSurah))
+                    .map((r: any) => parseInt(r.end_point || '0'))
+                    .filter((v: number) => !isNaN(v))
+                    .reduce((max: number, v: number) => Math.max(max, v), 0);
+
+                const activePercentage = activeSurahTotalAyah > 0
+                    ? Math.min(Math.round((activeAyahReached / activeSurahTotalAyah) * 100), 100)
+                    : 0;
+
+                // Count completed surahs: group by normalized name, max end_point >= total
+                const surahGroups: Record<string, number> = {};
+                quranRecords.forEach((r: any) => {
+                    const key = normSurah(r.level_or_surah || '');
+                    const ep = parseInt(r.end_point || '0');
+                    if (key) surahGroups[key] = Math.max(surahGroups[key] || 0, ep);
+                });
+                const completedSurahs = Object.entries(surahGroups).filter(([key, maxEp]) => {
+                    const entry = surahMap[key];
+                    return entry && maxEp >= entry.total;
+                }).length;
+
+                alquranData = { activeSurah, activeAyahReached, activeSurahTotalAyah, activePercentage, completedSurahs };
+                progresSaatIni = completedSurahs;
+                targetLengkap = 114;
+                labelProgress = 'Surah';
+                subTitle = activeSurah;
+                lpPercentage = Math.min(Math.round((completedSurahs / 114) * 100), 100);
             }
 
-            const lpPercentage = targetLengkap > 0 ? Math.min(Math.round((progresSaatIni / targetLengkap) * 100), 100) : 0;
-            setLearningProgress({ percentage: lpPercentage, progresSaatIni, targetLengkap, labelProgress, subTitle, isIqro });
+            setLearningProgress({ percentage: lpPercentage, progresSaatIni, targetLengkap, labelProgress, subTitle, isIqro, alquranData });
 
             // 4. Fetch Worship Records (more limit)
             const resWorship = await fetch(`/api/worship-records?student_id=${studentId}&limit=10`);
@@ -245,6 +318,16 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <div className="bg-emerald-600 text-white shadow-lg mb-6 relative p-6 pt-10">
+        {/* Back button — only visible when logged in */}
+        {session?.user && (
+          <button
+            onClick={onBack}
+            className="absolute top-4 left-4 z-50 flex items-center gap-1.5 bg-white/20 hover:bg-white/30 active:bg-white/40 backdrop-blur-sm text-white text-xs font-semibold px-3 py-2 rounded-full transition-colors cursor-pointer"
+          >
+            <ArrowLeft size={14} />
+            Kembali
+          </button>
+        )}
         <div className="max-w-5xl mx-auto text-center">
           <p className="text-xs font-light opacity-70 mb-1 uppercase tracking-widest">Portal Orang Tua</p>
           <h1 className="text-2xl font-bold mb-3">{selectedStudent.name}</h1>
@@ -286,48 +369,124 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
 
             <hr className="my-5 border-slate-100" />
 
-            <div className="flex flex-col items-center">
+            {/* ── PROGRESS SECTION ── */}
+            {learningProgress.isIqro ? (
+              /* ── IQRO: single circular gauge ── */
+              <div className="flex flex-col items-center">
                 <div className="w-full flex justify-between items-center mb-4">
-                    <p className="text-sm font-bold text-slate-700">Progres {learningProgress.isIqro ? 'Iqro' : 'Hafalan'}</p>
-                    <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">{learningProgress.subTitle}</span>
+                  <p className="text-sm font-bold text-slate-700">Progres Iqro</p>
+                  <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
+                    {learningProgress.subTitle}
+                  </span>
                 </div>
-                
-                {/* Circular Progress Bar */}
                 <div className="relative w-32 h-32 flex items-center justify-center mb-3">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle className="text-slate-100" strokeWidth="8" stroke="currentColor" fill="transparent" r={40} cx="50" cy="50" />
+                    <circle
+                      className="text-emerald-500 drop-shadow-sm transition-all duration-1000 ease-out"
+                      strokeWidth="8"
+                      strokeDasharray={2 * Math.PI * 40}
+                      strokeDashoffset={(2 * Math.PI * 40) - (learningProgress.percentage / 100) * (2 * Math.PI * 40)}
+                      strokeLinecap="round"
+                      stroke="currentColor"
+                      fill="transparent"
+                      r={40} cx="50" cy="50"
+                    />
+                  </svg>
+                  <div className="absolute flex flex-col items-center justify-center">
+                    <span className="text-2xl font-bold text-emerald-600">{learningProgress.percentage}%</span>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500 font-medium">
+                  <span className="text-slate-800 font-bold text-sm">{learningProgress.progresSaatIni}</span>
+                  {' '}dari{' '}
+                  <span className="text-slate-800 font-bold">32</span> Halaman
+                </p>
+              </div>
+            ) : learningProgress.alquranData ? (
+              /* ── AL-QURAN: two-part card ── */
+              <div className="flex flex-col">
+                {/* BAGIAN ATAS — Progres Surah Aktif */}
+                <div className="flex flex-col items-center">
+                  <p className="text-xs font-semibold text-slate-500 mb-1 uppercase tracking-widest">Sedang Dihafal</p>
+                  <p className="text-base font-bold text-slate-800 mb-4 truncate max-w-full px-2 text-center">
+                    {learningProgress.alquranData.activeSurah}
+                  </p>
+
+                  {/* Circular Progress */}
+                  <div className="relative w-36 h-36 flex items-center justify-center mb-3">
                     <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                        {/* Background Circle */}
-                        <circle
-                            className="text-slate-100"
-                            strokeWidth="8"
-                            stroke="currentColor"
-                            fill="transparent"
-                            r={40}
-                            cx="50"
-                            cy="50"
-                        />
-                        {/* Progress Circle (Warna Hijau Terang) */}
-                        <circle
-                            className="text-emerald-500 drop-shadow-sm transition-all duration-1000 ease-out"
-                            strokeWidth="8"
-                            strokeDasharray={2 * Math.PI * 40}
-                            strokeDashoffset={(2 * Math.PI * 40) - (learningProgress.percentage / 100) * (2 * Math.PI * 40)}
-                            strokeLinecap="round"
-                            stroke="currentColor"
-                            fill="transparent"
-                            r={40}
-                            cx="50"
-                            cy="50"
-                        />
+                      {/* Track */}
+                      <circle className="text-slate-100" strokeWidth="9" stroke="currentColor" fill="transparent" r={40} cx="50" cy="50" />
+                      {/* Progress */}
+                      <circle
+                        className="text-blue-500 transition-all duration-1000 ease-out drop-shadow-sm"
+                        strokeWidth="9"
+                        strokeDasharray={2 * Math.PI * 40}
+                        strokeDashoffset={
+                          (2 * Math.PI * 40) -
+                          (learningProgress.alquranData.activePercentage / 100) * (2 * Math.PI * 40)
+                        }
+                        strokeLinecap="round"
+                        stroke="currentColor"
+                        fill="transparent"
+                        r={40} cx="50" cy="50"
+                      />
                     </svg>
                     <div className="absolute flex flex-col items-center justify-center">
-                        <span className="text-2xl font-bold text-emerald-600">{learningProgress.percentage}%</span>
+                      <span className="text-3xl font-black text-blue-600">
+                        {learningProgress.alquranData.activePercentage}%
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-medium -mt-0.5">ayat</span>
                     </div>
+                  </div>
+
+                  {/* Ayah detail */}
+                  {learningProgress.alquranData.activeSurahTotalAyah > 0 ? (
+                    <p className="text-xs text-slate-500 font-medium">
+                      <span className="text-slate-800 font-bold text-sm">
+                        {learningProgress.alquranData.activeAyahReached}
+                      </span>
+                      {' '}dari{' '}
+                      <span className="text-slate-800 font-bold">
+                        {learningProgress.alquranData.activeSurahTotalAyah}
+                      </span>
+                      {' '}Ayat
+                    </p>
+                  ) : (
+                    <p className="text-xs text-slate-400 italic">Data ayat belum tersedia</p>
+                  )}
                 </div>
-                
-                <p className="text-xs text-slate-500 font-medium">
-                    <span className="text-slate-800 font-bold text-sm">{learningProgress.progresSaatIni}</span> dari <span className="text-slate-800 font-bold">{learningProgress.targetLengkap}</span> {learningProgress.labelProgress}
-                </p>
-            </div>
+
+                {/* BAGIAN BAWAH — Progres Total */}
+                <div className="border-t border-slate-100 mt-5 pt-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-xs font-semibold text-slate-600">Total Surah Selesai</p>
+                    <span className="text-xs font-bold text-emerald-600">
+                      {learningProgress.alquranData.completedSurahs}
+                      <span className="text-slate-400 font-normal"> / 114</span>
+                    </span>
+                  </div>
+                  {/* Linear progress */}
+                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-gradient-to-r from-emerald-400 to-emerald-600 h-2 rounded-full transition-all duration-1000"
+                      style={{
+                        width: `${Math.max(Math.round((learningProgress.alquranData.completedSurahs / 114) * 100), learningProgress.alquranData.completedSurahs > 0 ? 3 : 0)}%`
+                      }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 text-center mt-2">
+                    Surah</p>
+                </div>
+              </div>
+            ) : (
+              /* Fallback: no records yet for Al-Quran */
+              <div className="flex flex-col items-center py-4 text-slate-400">
+                <p className="text-sm font-medium">Belum ada data setoran</p>
+                <p className="text-xs mt-1 opacity-70">Progres akan muncul setelah setoran pertama dicatat.</p>
+              </div>
+            )}
           </div>
         </div>
 

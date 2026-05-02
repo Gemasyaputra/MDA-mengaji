@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Activity, BookOpen, Clock, Home, MapPin, Users } from 'lucide-react';
+import ActivityFeed from '@/components/dashboard/ActivityFeed';
 
 interface DashboardPageProps {
   role: string | null;
@@ -374,50 +375,13 @@ export default function DashboardPage({ role, onNavigate, currentUser }: Dashboa
         </div>
       </div>
 
-      {/* Aktivitas Terakhir */}
-      <div className="mb-8">
-        <h3 className="font-bold text-slate-800 mb-4 text-xs uppercase tracking-widest flex items-center gap-2">
-          <div className="w-1.5 h-4 bg-blue-500 rounded-full"></div>
-          Aktivitas Terakhir
-        </h3>
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div className="flex flex-col divide-y divide-slate-50">
-             <div className="flex items-start gap-4 p-4 hover:bg-slate-50 transition-colors">
-                <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                   <Activity size={18} />
-                </div>
-                <div>
-                   <p className="text-sm text-slate-700 leading-snug">
-                     <span className="font-bold text-slate-900">Ustadz Ahmad</span> baru saja mengisi presensi kehadiran <span className="font-bold text-slate-900">Kelompok A</span>.
-                   </p>
-                   <p className="text-[11px] font-medium text-slate-400 mt-1">10 menit yang lalu</p>
-                </div>
-             </div>
-             <div className="flex items-start gap-4 p-4 hover:bg-slate-50 transition-colors">
-                <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                   <BookOpen size={18} />
-                </div>
-                <div>
-                   <p className="text-sm text-slate-700 leading-snug">
-                     Santri <span className="font-bold text-slate-900">Budi Santoso</span> baru saja menyetorkan hafalan <span className="font-bold text-slate-900">Surah An-Naba</span>.
-                   </p>
-                   <p className="text-[11px] font-medium text-slate-400 mt-1">35 menit yang lalu</p>
-                </div>
-             </div>
-             <div className="flex items-start gap-4 p-4 hover:bg-slate-50 transition-colors">
-                <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                   <Users size={18} />
-                </div>
-                <div>
-                   <p className="text-sm text-slate-700 leading-snug">
-                     Admin mendaftarkan santri baru bernama <span className="font-bold text-slate-900">Fatimah Azzahra</span>.
-                   </p>
-                   <p className="text-[11px] font-medium text-slate-400 mt-1">2 jam yang lalu</p>
-                </div>
-             </div>
-          </div>
-        </div>
-      </div>
+      {/* Aktivitas Terakhir — RBAC scoped */}
+      <ActivityFeed
+        role={role}
+        teacherId={currentUser?.id}
+        teacherName={currentUser?.name}
+        onNavigate={onNavigate}
+      />
     </div>
   );
 }

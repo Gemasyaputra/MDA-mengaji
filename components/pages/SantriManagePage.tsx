@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, ChevronDown, ChevronRight, Users, BookOpen } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import SearchableSelect from '@/components/SearchableSelect';
@@ -35,6 +35,16 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
   const [editingId, setEditingId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState(emptyForm);
+  
+  // Accordion state — set of expanded group IDs (null = "tanpa kelompok")
+  const [expandedGroups, setExpandedGroups] = useState<Set<number | 'none'>>(new Set());
+  const toggleGroup = (id: number | 'none') => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
   
   // Delete Modal State
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: 0, name: '' });
@@ -190,12 +200,35 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
     deleteMutation.mutate(deleteModal.id);
   };
 
+  // ── Grouping & search logic ──
+  const q = searchQuery.toLowerCase();
   const filteredSantris = santris.filter(
     (s) =>
-      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (s.current_level && s.current_level.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (s.parent_name && s.parent_name.toLowerCase().includes(searchQuery.toLowerCase()))
+      s.name.toLowerCase().includes(q) ||
+      (s.current_level && s.current_level.toLowerCase().includes(q)) ||
+      (s.parent_name && s.parent_name.toLowerCase().includes(q)) ||
+      (s.group_name && s.group_name.toLowerCase().includes(q))
   );
+  const isSearching = searchQuery.trim().length > 0;
+
+  // Build groups: first use studyGroups order, then append "none" bucket
+  type GroupBucket = { id: number | 'none'; name: string; santris: Santri[] };
+  const groupMap = new Map<number | 'none', GroupBucket>();
+
+  // Pre-populate with known groups (preserves order)
+  studyGroups.forEach(g => groupMap.set(g.id, { id: g.id, name: g.name, santris: [] }));
+  groupMap.set('none', { id: 'none', name: 'Tanpa Kelompok', santris: [] });
+
+  filteredSantris.forEach(s => {
+    const key = s.group_id ?? 'none';
+    if (!groupMap.has(key)) {
+      groupMap.set(key, { id: key, name: s.group_name || `Kelompok #${key}`, santris: [] });
+    }
+    groupMap.get(key)!.santris.push(s);
+  });
+
+  // Only keep groups that have at least one santri
+  const groupBuckets = Array.from(groupMap.values()).filter(g => g.santris.length > 0);
 
   return (
     <div className="p-4">
@@ -212,7 +245,7 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
       <div className="mb-4">
         <input
           type="text"
-          placeholder="Cari santri..."
+          placeholder="Cari santri, kelompok, wali..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full px-4 py-2 bg-slate-100 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-emerald-500"
@@ -220,60 +253,158 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-slate-500 text-sm">Memuat...</div>
-      ) : (
-        <div className="space-y-2">
-          {filteredSantris.map((santri) => (
-            <div
-              key={santri.id}
-              className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 hover:shadow-md transition-shadow"
-            >
-              <div className="flex justify-between items-start">
-                <div
-                  className="flex-1 cursor-pointer"
-                  onClick={() => onNavigate(`santri-detail?id=${santri.id}`)}
-                >
-                  <h4 className="font-bold text-slate-800 text-sm mb-1">{santri.name}</h4>
-                  {santri.current_level && (
-                    <p className="text-xs text-slate-500 mb-1">{santri.current_level}</p>
-                  )}
-
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => openEditModal(santri)}
-                    className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors"
-                  >
-                    <Edit2 size={14} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(santri.id, santri.name)}
-                    className="p-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </div>
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 animate-pulse">
+              <div className="h-4 bg-slate-100 rounded w-1/3 mb-2" />
+              <div className="h-3 bg-slate-100 rounded w-1/5" />
             </div>
           ))}
         </div>
-      )}
-
-      {!loading && filteredSantris.length === 0 && (
+      ) : groupBuckets.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-slate-500 text-sm">
-            {searchQuery ? 'Tidak ada santri ditemukan' : 'Belum ada data santri'}
+            {isSearching ? 'Tidak ada santri ditemukan' : 'Belum ada data santri'}
           </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {groupBuckets.map((group) => {
+            const isExpanded = isSearching || expandedGroups.has(group.id);
+            const maleCount = group.santris.filter(s => s.gender === 'L').length;
+            const femaleCount = group.santris.filter(s => s.gender === 'P').length;
+
+            return (
+              <div
+                key={String(group.id)}
+                className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all"
+              >
+                {/* ── Group Header (click to expand) ── */}
+                <button
+                  onClick={() => toggleGroup(group.id)}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-slate-50 transition-colors text-left group"
+                >
+                  {/* Expand icon */}
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors shrink-0 ${isExpanded ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                    {isExpanded
+                      ? <ChevronDown size={14} strokeWidth={2.5} />
+                      : <ChevronRight size={14} strokeWidth={2.5} />}
+                  </div>
+
+                  {/* Group icon */}
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${group.id === 'none' ? 'bg-slate-100 text-slate-400' : 'bg-emerald-50 text-emerald-600'}`}>
+                    <Users size={16} strokeWidth={2} />
+                  </div>
+
+                  {/* Group name + stats */}
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-bold text-sm ${group.id === 'none' ? 'text-slate-500 italic' : 'text-slate-800'}`}>
+                      {group.name}
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[11px] text-slate-500">
+                        {group.santris.length} santri
+                      </span>
+                      {(maleCount > 0 || femaleCount > 0) && (
+                        <>
+                          <span className="text-slate-300">·</span>
+                          {maleCount > 0 && (
+                            <span className="text-[10px] font-semibold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-full">
+                              {maleCount}L
+                            </span>
+                          )}
+                          {femaleCount > 0 && (
+                            <span className="text-[10px] font-semibold text-pink-500 bg-pink-50 px-1.5 py-0.5 rounded-full">
+                              {femaleCount}P
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Student count badge */}
+                  <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 shrink-0">
+                    {group.santris.length}
+                  </span>
+                </button>
+
+                {/* ── Students list (collapsible) ── */}
+                {isExpanded && (
+                  <div className="border-t border-slate-100 divide-y divide-slate-50">
+                    {group.santris.map((santri, idx) => (
+                      <div
+                        key={santri.id}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50/80 transition-colors"
+                      >
+                        {/* Nomor urut */}
+                        <span className="text-[11px] font-bold text-slate-400 w-5 text-center shrink-0">
+                          {idx + 1}
+                        </span>
+
+                        {/* Avatar initial */}
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                          santri.gender === 'P'
+                            ? 'bg-pink-100 text-pink-600'
+                            : 'bg-blue-100 text-blue-600'
+                        }`}>
+                          {santri.name.charAt(0).toUpperCase()}
+                        </div>
+
+                        {/* Name + level */}
+                        <div
+                          className="flex-1 min-w-0 cursor-pointer"
+                          onClick={() => onNavigate(`santri-detail?id=${santri.id}`)}
+                        >
+                          <p className="font-semibold text-slate-800 text-sm leading-tight truncate">
+                            {santri.name}
+                          </p>
+                          {santri.current_level && (
+                            <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                              <BookOpen size={10} strokeWidth={2} />
+                              {santri.current_level}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-1.5 shrink-0">
+                          <button
+                            onClick={() => openEditModal(santri)}
+                            className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"
+                          >
+                            <Edit2 size={13} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(santri.id, santri.name)}
+                            className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
+      {/* Footer summary */}
       {!loading && santris.length > 0 && (
-        <div className="mt-4 bg-slate-100 rounded-xl p-4 text-center">
-          <p className="text-sm text-slate-600">
-            Total: <span className="font-bold text-emerald-600">{santris.length}</span> Santri
-          </p>
+        <div className="mt-4 bg-slate-50 rounded-xl p-3 border border-slate-100">
+          <div className="flex items-center justify-between text-xs text-slate-500">
+            <span>
+              Total: <span className="font-bold text-emerald-600">{filteredSantris.length}</span>
+              {isSearching && <span className="text-slate-400"> dari {santris.length}</span>} santri
+            </span>
+            <span>{groupBuckets.length} kelompok</span>
+          </div>
         </div>
       )}
+
 
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto">

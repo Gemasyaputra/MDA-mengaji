@@ -69,6 +69,10 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
   const [recentLoading, setRecentLoading] = useState(false);
   // Previous session record for auto-fill
   const [previousRecord, setPreviousRecord] = useState<RecentRecord | null>(null);
+  // Surah master data from DB
+  const [surahsData, setSurahsData] = useState<{ id: number; name: string; total_verses: number }[]>([]);
+  // Max verse for currently selected surah
+  const [maxVerse, setMaxVerse] = useState<number | null>(null);
 
 
 
@@ -102,6 +106,26 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
     };
     fetchGroups();
   }, [currentUser]);
+
+  // Fetch surah master data once (for Al-Quran verse limits)
+  useEffect(() => {
+    const fetchSurahs = async () => {
+      try {
+        const res = await fetch('/api/master-data?type=surahs');
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          setSurahsData(json.data.map((s: any) => ({
+            id: s.id,
+            name: s.name_latin,
+            total_verses: Number(s.total_verses),
+          })));
+        }
+      } catch (err) {
+        console.error('Failed to fetch surahs', err);
+      }
+    };
+    fetchSurahs();
+  }, []);
 
   // Fetch Students + Today's Records when Group Selected
   useEffect(() => {
@@ -225,6 +249,21 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
     setStep(3);
   };
 
+  // When surah changes, update maxVerse
+  const handleSurahChange = (val: string | number) => {
+    const name = String(val);
+    const surah = surahsData.find(
+      s => s.name.toLowerCase() === name.toLowerCase()
+    );
+    setMaxVerse(surah ? surah.total_verses : null);
+    // Reset end_point if it would exceed new max
+    setFormData(prev => ({
+      ...prev,
+      level_or_surah: name,
+      end_point: '',
+    }));
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -244,6 +283,20 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
         quality: formData.quality,
         notes: formData.notes
       };
+
+      // Validate: end_point must not exceed surah's total_verses
+      if (formData.type === 'QURAN' && maxVerse !== null) {
+        const ep = parseInt(formData.end_point);
+        if (!isNaN(ep) && ep > maxVerse) {
+          toast.error(`Ayat akhir melebihi jumlah ayat surah ini (maks: ${maxVerse})`);
+          return;
+        }
+        const sp = parseInt(formData.start_point);
+        if (!isNaN(sp) && !isNaN(ep) && ep < sp) {
+          toast.error('Ayat akhir tidak boleh lebih kecil dari ayat mulai');
+          return;
+        }
+      }
 
       const res = await fetch('/api/learning-records', {
         method: 'POST',
@@ -269,31 +322,34 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
     }
   };
 
-  const surahs = [
-    'Al-Fatihah','Al-Baqarah','Ali Imran','An-Nisa','Al-Maidah',
-    'Al-Anam','Al-Araf','Al-Anfal','At-Taubah','Yunus',
-    'Hud','Yusuf','Ar-Rad','Ibrahim','Al-Hijr',
-    'An-Nahl','Al-Isra','Al-Kahf','Maryam','Ta-Ha',
-    'Al-Anbiya','Al-Hajj','Al-Muminun','An-Nur','Al-Furqan',
-    'Asy-Syuara','An-Naml','Al-Qasas','Al-Ankabut','Ar-Rum',
-    'Luqman','As-Sajdah','Al-Ahzab','Saba','Fatir',
-    'Ya-Sin','As-Saffat','Sad','Az-Zumar','Ghafir',
-    'Fussilat','Asy-Syura','Az-Zukhruf','Ad-Dukhan','Al-Jasiyah',
-    'Al-Ahqaf','Muhammad','Al-Fath','Al-Hujurat','Qaf',
-    'Az-Zariyat','At-Tur','An-Najm','Al-Qamar','Ar-Rahman',
-    'Al-Waqiah','Al-Hadid','Al-Mujadilah','Al-Hasyr','Al-Mumtahanah',
-    'As-Saf','Al-Jumuah','Al-Munafiqun','At-Tagabun','At-Talaq',
-    'At-Tahrim','Al-Mulk','Al-Qalam','Al-Haqqah','Al-Maarij',
-    'Nuh','Al-Jin','Al-Muzzammil','Al-Muddassir','Al-Qiyamah',
-    'Al-Insan','Al-Mursalat','An-Naba','An-Naziat','Abasa',
-    'At-Takwir','Al-Infitar','Al-Mutaffifin','Al-Insyiqaq','Al-Buruj',
-    'At-Tariq','Al-Ala','Al-Gasyiyah','Al-Fajr','Al-Balad',
-    'Asy-Syams','Al-Lail','Ad-Duha','Asy-Syarh','At-Tin',
-    'Al-Alaq','Al-Qadr','Al-Bayyinah','Az-Zalzalah','Al-Adiyat',
-    'Al-Qariah','At-Takasur','Al-Asr','Al-Humazah','Al-Fil',
-    'Quraisy','Al-Maun','Al-Kausar','Al-Kafirun','An-Nasr',
-    'Al-Lahab','Al-Ikhlas','Al-Falaq','An-Nas',
-  ];
+  // surahs built from DB data (fallback to static list if DB empty)
+  const surahOptions = surahsData.length > 0
+    ? surahsData.map((s, idx) => ({ value: s.name, label: `${idx + 1}. ${s.name}` }))
+    : [
+        'Al-Fatihah','Al-Baqarah','Ali Imran','An-Nisa','Al-Maidah',
+        'Al-Anam','Al-Araf','Al-Anfal','At-Taubah','Yunus',
+        'Hud','Yusuf','Ar-Rad','Ibrahim','Al-Hijr',
+        'An-Nahl','Al-Isra','Al-Kahf','Maryam','Ta-Ha',
+        'Al-Anbiya','Al-Hajj','Al-Muminun','An-Nur','Al-Furqan',
+        'Asy-Syuara','An-Naml','Al-Qasas','Al-Ankabut','Ar-Rum',
+        'Luqman','As-Sajdah','Al-Ahzab','Saba','Fatir',
+        'Ya-Sin','As-Saffat','Sad','Az-Zumar','Ghafir',
+        'Fussilat','Asy-Syura','Az-Zukhruf','Ad-Dukhan','Al-Jasiyah',
+        'Al-Ahqaf','Muhammad','Al-Fath','Al-Hujurat','Qaf',
+        'Az-Zariyat','At-Tur','An-Najm','Al-Qamar','Ar-Rahman',
+        'Al-Waqiah','Al-Hadid','Al-Mujadilah','Al-Hasyr','Al-Mumtahanah',
+        'As-Saf','Al-Jumuah','Al-Munafiqun','At-Tagabun','At-Talaq',
+        'At-Tahrim','Al-Mulk','Al-Qalam','Al-Haqqah','Al-Maarij',
+        'Nuh','Al-Jin','Al-Muzzammil','Al-Muddassir','Al-Qiyamah',
+        'Al-Insan','Al-Mursalat','An-Naba','An-Naziat','Abasa',
+        'At-Takwir','Al-Infitar','Al-Mutaffifin','Al-Insyiqaq','Al-Buruj',
+        'At-Tariq','Al-Ala','Al-Gasyiyah','Al-Fajr','Al-Balad',
+        'Asy-Syams','Al-Lail','Ad-Duha','Asy-Syarh','At-Tin',
+        'Al-Alaq','Al-Qadr','Al-Bayyinah','Az-Zalzalah','Al-Adiyat',
+        'Al-Qariah','At-Takasur','Al-Asr','Al-Humazah','Al-Fil',
+        'Quraisy','Al-Maun','Al-Kausar','Al-Kafirun','An-Nasr',
+        'Al-Lahab','Al-Ikhlas','Al-Falaq','An-Nas',
+      ].map((s, idx) => ({ value: s, label: `${idx + 1}. ${s}` }));
 
   const getStudentTodayRecord = (studentId: number) =>
     todayRecords.find(r => Number(r.student_id) === Number(studentId));
@@ -533,12 +589,19 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
                     {previousRecord && <span className="ml-2 text-[10px] font-normal text-blue-400 normal-case">↩ dari sesi lalu</span>}
                   </label>
                   <SearchableSelect
-                    options={surahs.map((s, idx) => ({ value: s, label: `${idx + 1}. ${s}` }))}
+                    options={surahOptions}
                     value={formData.level_or_surah}
-                    onChange={(val) => setFormData(prev => ({ ...prev, level_or_surah: String(val) }))}
+                    onChange={handleSurahChange}
                     placeholder="Pilih surah..."
                     searchPlaceholder="Cari nama atau nomor..."
                   />
+                  {/* Surah verse limit hint */}
+                  {maxVerse !== null && (
+                    <p className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-md px-2 py-1 mt-2 flex items-center gap-1">
+                      <span>📖</span>
+                      Surah ini memiliki <span className="font-bold">{maxVerse} ayat</span>
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-4">
                   <div className="flex-1">
@@ -547,8 +610,10 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
                       {previousRecord && previousRecord.end_point && <span className="ml-2 text-[10px] font-normal text-blue-400 normal-case">↩ lanjut dari ayat {previousRecord.end_point}</span>}
                     </label>
                     <input
-                      type="text" name="start_point"
+                      type="number" name="start_point"
                       placeholder="Ayat awal"
+                      min={1}
+                      max={maxVerse ?? undefined}
                       value={formData.start_point}
                       onChange={handleChange}
                       className={`w-full p-3 rounded-lg border text-sm focus:outline-none focus:border-emerald-500 ${
@@ -559,9 +624,38 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
                     />
                   </div>
                   <div className="flex-1">
-                    <label className="block text-xs font-bold text-slate-500 mb-2">SAMPAI</label>
-                    <input type="text" name="end_point" placeholder="Ayat akhir" value={formData.end_point} onChange={handleChange}
-                      className="w-full p-3 bg-slate-50 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-emerald-500" />
+                    <label className="block text-xs font-bold text-slate-500 mb-2">
+                      SAMPAI
+                      {maxVerse !== null && (
+                        <span className="ml-2 text-[10px] font-normal text-slate-400 normal-case">
+                          maks. ayat {maxVerse}
+                        </span>
+                      )}
+                    </label>
+                    <input
+                      type="number"
+                      name="end_point"
+                      placeholder="Ayat akhir"
+                      min={1}
+                      max={maxVerse ?? undefined}
+                      value={formData.end_point}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        if (maxVerse !== null && !isNaN(val) && val > maxVerse) {
+                          // Clamp to max silently
+                          setFormData(prev => ({ ...prev, end_point: String(maxVerse) }));
+                          toast.error(`Maksimal ayat surah ini adalah ${maxVerse}`);
+                        } else {
+                          handleChange(e);
+                        }
+                      }}
+                      className={`w-full p-3 rounded-lg border text-sm focus:outline-none transition-colors ${
+                        maxVerse !== null &&
+                        parseInt(formData.end_point) > maxVerse
+                          ? 'border-red-400 bg-red-50 focus:border-red-500'
+                          : 'border-slate-200 bg-slate-50 focus:border-emerald-500'
+                      }`}
+                    />
                   </div>
                 </div>
               </>

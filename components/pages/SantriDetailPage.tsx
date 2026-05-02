@@ -202,13 +202,20 @@ export default function SantriDetailPage({ onNavigate, santriId }: SantriDetailP
           <User size={32} />
         </div>
         <h2 className="text-xl font-bold text-slate-800 mb-2">{santri.name}</h2>
-        {santri.current_level && (
-          <div className="inline-block bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-semibold mb-4 mr-2">
-            {santri.current_level}
+        {/* Single unified level badge — reading_level is the source of truth */}
+        <div className="flex items-center justify-center gap-2 flex-wrap mb-3">
+          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold ${
+            santri.reading_level === 'ALQURAN'
+              ? 'bg-blue-100 text-blue-700'
+              : 'bg-emerald-100 text-emerald-700'
+          }`}>
+            {santri.reading_level === 'ALQURAN' ? '📖 Al-Quran' : '📚 Iqro'}
           </div>
-        )}
-        <div className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold mb-4">
-          {santri.reading_level === 'ALQURAN' ? 'Al-Quran' : 'Iqro'}
+          {santri.current_level && santri.current_level.toLowerCase() !== 'al-quran' && santri.current_level.toLowerCase() !== "al-qur'an" && (
+            <div className="inline-block bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-semibold">
+              {santri.current_level}
+            </div>
+          )}
         </div>
         
         {santri.created_at && (

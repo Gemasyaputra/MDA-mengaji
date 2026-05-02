@@ -15,6 +15,9 @@ export async function GET(req: NextRequest) {
     } else if (type === 'prayer-readings') {
       sql = 'SELECT * FROM master_prayer_readings ORDER BY step_order ASC, title ASC';
       result = await query(sql);
+    } else if (type === 'surahs') {
+      sql = 'SELECT id, name_latin, total_verses FROM master_surahs ORDER BY id ASC';
+      result = await query(sql);
     } else {
         return NextResponse.json({ success: false, error: 'Invalid type parameter' }, { status: 400 });
     }

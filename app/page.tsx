@@ -20,6 +20,7 @@ import ManageTeachersPage from '@/components/pages/ManageTeachersPage';
 import MasterHafalanPage from '@/components/pages/MasterHafalanPage';
 import SantriHistoryPage from '@/components/pages/SantriHistoryPage';
 import LandingPage from '@/components/pages/LandingPage';
+import ActivityLogPage from '@/components/pages/ActivityLogPage';
 /* import Toast from '@/components/Toast'; // REMOVED */
 import { toast } from 'sonner';
 import { User, UserRole } from '@/types';
@@ -40,15 +41,26 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const searchParams = new URLSearchParams(window.location.search);
-      if (searchParams.has('error')) {
-        return 'login';
-      }
+      if (searchParams.has('error')) return 'login';
+      // Restore last page from sessionStorage (persists across F5 refresh)
+      const saved = sessionStorage.getItem('mda_current_page');
+      if (saved && !['landing', 'login'].includes(saved)) return saved;
     }
     return 'landing';
   });
   const [currentRole, setCurrentRole] = useState<UserRole>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [historyStack, setHistoryStack] = useState<string[]>([]);
+  const [historyStack, setHistoryStack] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('mda_history_stack');
+      try {
+        return saved ? JSON.parse(saved) : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   
   const { data: session } = useSession();
@@ -56,17 +68,21 @@ export default function Home() {
   useEffect(() => {
     // Jika user sudah memiliki sesi (baru login SSO atau sudah login sebelumnya),
     // otomatis arahkan langsung ke dashboard sesuai rolenya jika ia berada di landing atau login
-    if (session?.user && (currentPage === 'login' || currentPage === 'landing')) {
+    if (session?.user && !currentUser) {
       const u = session.user as any;
       if (u.role) {
-         handleLogin(u.role as UserRole, {
-           id: parseInt(u.id),
-           name: u.name || 'User',
-           role: u.role as UserRole
-         });
+        const role = u.role as UserRole;
+        const user: User = { id: parseInt(u.id), name: u.name || 'User', role };
+        setCurrentRole(role);
+        setCurrentUser(user);
+        // Only redirect to dashboard if still on unauthenticated pages
+        if (currentPage === 'login' || currentPage === 'landing') {
+          setCurrentPage('dashboard');
+        }
+        // else: currentPage was restored from sessionStorage — keep it
       }
     }
-  }, [session, currentPage]);
+  }, [session, currentUser]);
 
   const handleLogin = (role: UserRole, user?: User) => {
     setCurrentRole(role);
@@ -85,20 +101,32 @@ export default function Home() {
     setCurrentRole(null);
     setCurrentUser(null);
     setHistoryStack([]);
+    // Clear persisted page so refresh after logout lands on landing
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('mda_current_page');
+      sessionStorage.removeItem('mda_history_stack');
+    }
     signOut({ redirect: false }).then(() => {
         setCurrentPage('landing');
     });
   };
 
   const navigateTo = (pageId: string) => {
-    // Hanya tampilkan konfirmasi logout jika user sudah login (currentRole ada) dan ingin kembali ke login
     if (pageId === 'login' && currentRole !== null) {
       setShowLogoutConfirm(true);
       return;
     }
 
-    if (currentPage && !['landing', 'login', 'register', 'parent-view'].includes(currentPage)) {
-      setHistoryStack([...historyStack, currentPage]);
+    if (currentPage && !['landing', 'login', 'register', 'parent-view'].includes(currentPage.split('?')[0])) {
+      const newStack = [...historyStack, currentPage];
+      setHistoryStack(newStack);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('mda_history_stack', JSON.stringify(newStack));
+      }
+    }
+    // Persist page so F5 refresh returns to same page
+    if (typeof window !== 'undefined' && !['landing', 'login'].includes(pageId)) {
+      sessionStorage.setItem('mda_current_page', pageId);
     }
     setCurrentPage(pageId);
   };
@@ -106,9 +134,20 @@ export default function Home() {
   const goBack = () => {
     if (historyStack.length > 0) {
       const newStack = [...historyStack];
-      const prevPage = newStack.pop();
+      const prevPage = newStack.pop()!;
       setHistoryStack(newStack);
-      setCurrentPage(prevPage || 'dashboard');
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('mda_history_stack', JSON.stringify(newStack));
+        sessionStorage.setItem('mda_current_page', prevPage);
+      }
+      setCurrentPage(prevPage);
+    } else {
+      // Fallback saat historyStack kosong (misal setelah refresh)
+      const fallback = 'santri-list';
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('mda_current_page', fallback);
+      }
+      setCurrentPage(fallback);
     }
   };
 
@@ -153,6 +192,8 @@ export default function Home() {
         return <StudyGroupManagePage onNavigate={navigateTo} onSave={showToast} currentUser={currentUser} />;
       case 'master-hafalan':
         return <MasterHafalanPage onNavigate={navigateTo} currentUser={currentUser} />;
+      case 'activity-log':
+        return <ActivityLogPage role={currentRole} currentUser={currentUser} onNavigate={navigateTo} />;
       default:
         if (currentPage?.startsWith('presensi-detail')) {
             const queryString = currentPage.split('?')[1] || '';
@@ -200,6 +241,7 @@ export default function Home() {
     if (currentPage?.startsWith('santri-detail')) return 'Profil Santri';
     if (currentPage?.startsWith('santri-history')) return 'Riwayat Santri';
     if (currentPage === 'input-iqro') return 'Setoran Bacaan';
+    if (currentPage === 'activity-log') return 'Log Aktivitas';
     if (currentPage.startsWith('input-')) return 'Input Data';
     return 'Dashboard';
   };
@@ -239,7 +281,7 @@ export default function Home() {
         )}
 
         <main className={`flex-1 overflow-y-auto ${(showChrome && currentRole) ? 'pb-20 md:pb-6' : ''} w-full`}>
-          {['login', 'register', 'landing'].includes(currentPage) ? (
+          {['login', 'register', 'landing'].includes(currentPage) || currentPage.startsWith('parent-view') ? (
             renderPage()
           ) : (
             <div className="max-w-7xl mx-auto w-full">
