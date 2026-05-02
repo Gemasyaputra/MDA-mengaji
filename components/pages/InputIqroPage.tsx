@@ -9,7 +9,6 @@ interface User {
   id: number;
   name: string;
   role: 'teacher' | 'admin' | 'parent' | 'superadmin' | null;
-  mosque_id?: number;
 }
 
 interface InputIqroPageProps {
@@ -28,6 +27,7 @@ interface Student {
   id: number;
   name: string;
   current_level: string | null;
+  reading_level: string | null;
 }
 
 // Today's setoran record for a student
@@ -67,6 +67,8 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
   // Recent records for selected student (shown in form as history panel)
   const [recentRecords, setRecentRecords] = useState<RecentRecord[]>([]);
   const [recentLoading, setRecentLoading] = useState(false);
+  // Previous session record for auto-fill
+  const [previousRecord, setPreviousRecord] = useState<RecentRecord | null>(null);
 
 
 
@@ -83,11 +85,11 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
   // Fetch Groups
   useEffect(() => {
     const fetchGroups = async () => {
-      if (!currentUser?.mosque_id) return;
+      
       try {
-        let url = `/api/study-groups?mosque_id=${currentUser.mosque_id}`;
-        if (currentUser.role === 'teacher' && currentUser.id) {
-            url += `&teacher_id=${currentUser.id}`;
+        let url = `/api/study-groups`;
+        if (currentUser?.role === 'teacher' && currentUser?.id) {
+            url += `?teacher_id=${currentUser.id}`;
         }
         const res = await fetch(url);
         const data = await res.json();
@@ -163,27 +165,62 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
     }
   };
 
+  // Fetch the latest record BEFORE selectedDate to auto-fill the form
+  const fetchPreviousRecord = async (studentId: number, beforeDate: string) => {
+    try {
+      const res = await fetch(
+        `/api/learning-records?student_id=${studentId}&before_date=${beforeDate}&limit=1&t=${Date.now()}`
+      );
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+        setPreviousRecord(data.data[0]);
+        return data.data[0] as RecentRecord;
+      } else {
+        setPreviousRecord(null);
+        return null;
+      }
+    } catch (err) {
+      console.error('fetchPreviousRecord error', err);
+      setPreviousRecord(null);
+      return null;
+    }
+  };
+
   const handleGroupSelect = (group: StudyGroup) => {
     setSelectedGroup(group);
     setStep(2);
   };
 
-  const handleStudentSelect = (student: Student) => {
+  const handleStudentSelect = async (student: Student) => {
     setSelectedStudent(student);
-    const level = student.current_level?.toLowerCase() || '';
-    const isQuran = level.includes('juz') || level.includes('quran') || level.includes("qur'an") || level.includes('qur');
-    const type = isQuran ? 'QURAN' : 'IQRO';
-    
+    // Gunakan reading_level sebagai sumber utama, fallback ke parsing current_level
+    const isAlquran = student.reading_level === 'ALQURAN';
+    const type = isAlquran ? 'QURAN' : 'IQRO';
+
+    // Default values
+    const defaultLevel = type === 'IQRO' ? 'Jilid 1' : 'Al-Fatihah';
     setFormData(prev => ({
       ...prev,
-      date: selectedDate, // Sync form date with selected date
+      date: selectedDate,
       type,
-      level_or_surah: type === 'IQRO' ? 'Jilid 1' : 'Al-Fatihah',
+      level_or_surah: defaultLevel,
       start_point: '',
       end_point: '',
       quality: 'A',
       notes: ''
     }));
+
+    // Fetch rekaman sebelumnya untuk auto-fill
+    const prevRec = await fetchPreviousRecord(student.id, selectedDate);
+    if (prevRec) {
+      setFormData(prev => ({
+        ...prev,
+        level_or_surah: prevRec.level_or_surah || defaultLevel,
+        // Halaman mulai = halaman sampai dari sesi sebelumnya
+        start_point: prevRec.end_point || '',
+      }));
+    }
+
     fetchRecentRecords(student.id);
     setStep(3);
   };
@@ -382,8 +419,13 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
                       </p>
                     ) : (
                       <p className="text-xs text-slate-400 mt-0.5">
-                        Level: <span className="font-semibold text-slate-500">{student.current_level || 'IQRO'}</span>
-                        {' · '}
+                        <span className={`font-bold px-1.5 py-0.5 rounded text-[10px] mr-1 ${
+                          student.reading_level === 'ALQURAN'
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'bg-emerald-100 text-emerald-700'
+                        }`}>
+                          {student.reading_level === 'ALQURAN' ? 'AL-QURAN' : 'IQRO'}
+                        </span>
                         <span className="text-amber-500 font-medium">Belum diisi</span>
                       </p>
                     )}
@@ -425,11 +467,32 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
           {/* Input Form */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 space-y-4">
 
+            {/* Auto-fill indicator */}
+            {previousRecord && (
+              <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-lg p-3">
+                <span className="text-blue-500 text-sm mt-0.5">↩</span>
+                <div>
+                  <p className="text-xs font-bold text-blue-700">Dilanjutkan dari sesi sebelumnya</p>
+                  <p className="text-[11px] text-blue-500 mt-0.5">
+                    {previousRecord.level_or_surah}
+                    {previousRecord.start_point && previousRecord.end_point
+                      ? ` · Hal ${previousRecord.start_point}–${previousRecord.end_point}`
+                      : ''}
+                    {' · '}
+                    {new Date(previousRecord.date + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Dynamic Fields */}
             {formData.type === 'IQRO' ? (
               <>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2">JILID</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-2">
+                    JILID
+                    {previousRecord && <span className="ml-2 text-[10px] font-normal text-blue-400 normal-case">↩ dari sesi lalu</span>}
+                  </label>
                   <SearchableSelect
                     options={[1,2,3,4,5,6].map(i => ({ value: `Jilid ${i}`, label: `Jilid ${i}` }))}
                     value={formData.level_or_surah}
@@ -439,9 +502,21 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
                 </div>
                 <div className="flex gap-4">
                   <div className="flex-1">
-                    <label className="block text-xs font-bold text-slate-500 mb-2">HALAMAN MULAI</label>
-                    <input type="text" name="start_point" placeholder="Contoh: 10" value={formData.start_point} onChange={handleChange}
-                      className="w-full p-3 bg-slate-50 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-emerald-500" />
+                    <label className="block text-xs font-bold text-slate-500 mb-2">
+                      HALAMAN MULAI
+                      {previousRecord && previousRecord.end_point && <span className="ml-2 text-[10px] font-normal text-blue-400 normal-case">↩ lanjut dari hal. {previousRecord.end_point}</span>}
+                    </label>
+                    <input
+                      type="text" name="start_point"
+                      placeholder="Contoh: 10"
+                      value={formData.start_point}
+                      onChange={handleChange}
+                      className={`w-full p-3 rounded-lg border text-sm focus:outline-none focus:border-emerald-500 ${
+                        previousRecord && formData.start_point === previousRecord.end_point
+                          ? 'bg-blue-50 border-blue-200'
+                          : 'bg-slate-50 border-slate-200'
+                      }`}
+                    />
                   </div>
                   <div className="flex-1">
                     <label className="block text-xs font-bold text-slate-500 mb-2">SAMPAI</label>
@@ -453,7 +528,10 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
             ) : (
               <>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2">SURAH</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-2">
+                    SURAH
+                    {previousRecord && <span className="ml-2 text-[10px] font-normal text-blue-400 normal-case">↩ dari sesi lalu</span>}
+                  </label>
                   <SearchableSelect
                     options={surahs.map((s, idx) => ({ value: s, label: `${idx + 1}. ${s}` }))}
                     value={formData.level_or_surah}
@@ -464,9 +542,21 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
                 </div>
                 <div className="flex gap-4">
                   <div className="flex-1">
-                    <label className="block text-xs font-bold text-slate-500 mb-2">AYAT MULAI</label>
-                    <input type="text" name="start_point" placeholder="Ayat awal" value={formData.start_point} onChange={handleChange}
-                      className="w-full p-3 bg-slate-50 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-emerald-500" />
+                    <label className="block text-xs font-bold text-slate-500 mb-2">
+                      AYAT MULAI
+                      {previousRecord && previousRecord.end_point && <span className="ml-2 text-[10px] font-normal text-blue-400 normal-case">↩ lanjut dari ayat {previousRecord.end_point}</span>}
+                    </label>
+                    <input
+                      type="text" name="start_point"
+                      placeholder="Ayat awal"
+                      value={formData.start_point}
+                      onChange={handleChange}
+                      className={`w-full p-3 rounded-lg border text-sm focus:outline-none focus:border-emerald-500 ${
+                        previousRecord && formData.start_point === previousRecord.end_point
+                          ? 'bg-blue-50 border-blue-200'
+                          : 'bg-slate-50 border-slate-200'
+                      }`}
+                    />
                   </div>
                   <div className="flex-1">
                     <label className="block text-xs font-bold text-slate-500 mb-2">SAMPAI</label>

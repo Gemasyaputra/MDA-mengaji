@@ -9,7 +9,6 @@ interface User {
   id: number;
   name: string;
   role: 'teacher' | 'admin' | 'parent' | 'superadmin' | null;
-  mosque_id?: number;
 }
 
 interface PresensiPageProps {
@@ -21,14 +20,13 @@ interface PresensiPageProps {
 interface Student {
   id: number;
   name: string;
-  status: 'HADIR' | 'ALPA' | 'SAKIT' | 'IZIN';
+  status: 'HADIR' | 'ALFA' | 'SAKIT' | 'IZIN';
   notes?: string;
   attendance_id?: number; // If editing existing
 }
 
 interface StudyGroup {
   id: number;
-  mosque_id: number;
   teacher_id: number | null;
   name: string;
 }
@@ -63,6 +61,12 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
   // Search State
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Add Student State
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [newStudentName, setNewStudentName] = useState('');
+  const [newStudentGender, setNewStudentGender] = useState<'L' | 'P' | ''>('');
+  const [isAddingStudent, setIsAddingStudent] = useState(false);
+
   // History Filter State
   const [filterGroup, setFilterGroup] = useState<string>('');
   const [filterMonth, setFilterMonth] = useState<string>(() => {
@@ -74,12 +78,12 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
   // 1. Fetch Study Groups on Mount
   useEffect(() => {
     const fetchGroups = async () => {
-      if (!currentUser?.mosque_id) return;
+      
       try {
         // Fetch groups for the mosque and optionally filter by teacher
-        let url = `/api/study-groups?mosque_id=${currentUser.mosque_id}`;
-        if (currentUser.role === 'teacher' && currentUser.id) {
-            url += `&teacher_id=${currentUser.id}`;
+        let url = `/api/study-groups`;
+        if (currentUser?.role === 'teacher' && currentUser?.id) {
+            url += `?teacher_id=${currentUser.id}`;
         }
         const res = await fetch(url);
         const data = await res.json();
@@ -105,7 +109,6 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
             setHistoryLoading(true);
             try {
                 let url = '/api/attendance?history=true';
-                if (currentUser?.mosque_id) url += `&mosque_id=${currentUser.mosque_id}`;
                 if (currentUser?.role === 'teacher' && currentUser?.id) url += `&teacher_id=${currentUser.id}`;
                 const res = await fetch(url);
                 const data = await res.json();
@@ -168,10 +171,53 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
   }, [selectedGroupId, attendanceDate]);
 
 
-  const updateStatus = (id: number, status: 'HADIR' | 'ALPA' | 'SAKIT' | 'IZIN') => {
+  const updateStatus = (id: number, status: 'HADIR' | 'ALFA' | 'SAKIT' | 'IZIN') => {
     setStudents(students.map(student =>
       student.id === id ? { ...student, status } : student
     ));
+  };
+
+  const handleAddStudent = async () => {
+    if (!newStudentName.trim() || !newStudentGender) {
+        toast.error('Nama dan jenis kelamin wajib diisi!');
+        return;
+    }
+    if (!selectedGroupId) {
+        toast.error('Pilih kelas terlebih dahulu!');
+        return;
+    }
+    
+    setIsAddingStudent(true);
+    try {
+        const payload = {
+            name: newStudentName,
+            gender: newStudentGender,
+            group_id: selectedGroupId
+        };
+        const res = await fetch('/api/students', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        
+        if (json.success) {
+            toast.success('Santri berhasil ditambahkan ke kelas!');
+            setShowAddStudentModal(false);
+            setNewStudentName('');
+            setNewStudentGender('');
+            // Trigger refresh by artificially updating attendanceDate
+            setAttendanceDate(prev => prev);
+            // Alternatively, manually append to students:
+            setStudents(prev => [...prev, { id: json.data.id, name: json.data.name, status: 'HADIR' }]);
+        } else {
+            toast.error(json.error || 'Gagal menambahkan santri');
+        }
+    } catch (e) {
+        toast.error('Terjadi kesalahan');
+    } finally {
+        setIsAddingStudent(false);
+    }
   };
 
   const handleSave = async () => {
@@ -249,9 +295,17 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto w-full">
+      {/* Header title for Desktop */}
+      <div className="hidden md:flex justify-between items-end mb-6 border-b border-slate-100 pb-4">
+         <div>
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Manajemen Presensi</h1>
+            <p className="text-slate-500 text-sm mt-1">Catat kehadiran santri dan pantau riwayat absensi kelompok Anda.</p>
+         </div>
+      </div>
+
       {/* Mode Toggle */}
-      <div className="flex bg-slate-200 p-1 rounded-xl mb-4 gap-1">
+      <div className="flex bg-slate-200 p-1 rounded-xl mb-4 md:mb-6 gap-1 md:w-fit md:min-w-[400px]">
         <button
           onClick={() => setMode('input')}
           className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
@@ -278,9 +332,9 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
       {mode === 'input' && (
         <>
           {/* Controls */}
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 mb-4 space-y-3">
+          <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-100 mb-4 md:mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Tanggal</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase block mb-1.5">Tanggal</label>
                   <input 
                     type="date" 
                     value={attendanceDate}
@@ -289,22 +343,21 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
                   />
               </div>
               <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Pilih Kelompok</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase block mb-1.5">Pilih Kelas</label>
                   <SearchableSelect
                     options={filteredGroups.map(g => ({ value: g.id, label: g.name }))}
                     value={selectedGroupId}
                     onChange={(val) => setSelectedGroupId(String(val))}
-                    placeholder="Pilih Kelompok..."
-                    searchPlaceholder="Cari kelompok..."
+                    placeholder="Pilih Kelas..."
+                    searchPlaceholder="Cari kelas..."
                   />
               </div>
           </div>
 
           {selectedGroupId && (
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mb-4">
-                {/* Search Input */}
-                <div className="p-3 border-b border-slate-100">
-                  <div className="relative">
+                <div className="p-3 border-b border-slate-100 flex flex-col md:flex-row gap-2">
+                  <div className="relative flex-1">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                       type="text"
@@ -322,11 +375,17 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
                       </button>
                     )}
                   </div>
+                  <button 
+                      onClick={() => setShowAddStudentModal(true)}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap"
+                  >
+                      + Tambah Santri
+                  </button>
                 </div>
 
-                <div className="grid grid-cols-12 gap-2 p-3 bg-slate-50 text-xs font-bold text-slate-500 border-b">
-                <div className="col-span-4">NAMA</div>
-                <div className="col-span-8 text-center">STATUS</div>
+                <div className="grid grid-cols-12 gap-2 p-3 md:p-4 bg-slate-50 text-xs font-bold text-slate-500 border-b">
+                <div className="col-span-4 md:col-span-6">NAMA SANTRI</div>
+                <div className="col-span-8 md:col-span-6 text-center md:text-right md:pr-4">STATUS KEHADIRAN</div>
                 </div>
 
                 {isLoading ? (
@@ -338,12 +397,12 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
                 ) : (
                     <div className="divide-y divide-slate-100">
                     {filteredStudents.map(student => (
-                        <div key={student.id} className="p-3 flex items-center justify-between">
-                        <span className="text-sm font-semibold text-slate-800 w-1/3 truncate">{student.name}</span>
-                        <div className="flex gap-1 flex-1 justify-end">
+                        <div key={student.id} className="p-3 md:p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                        <span className="text-sm font-semibold text-slate-800 w-1/3 md:w-1/2 truncate">{student.name}</span>
+                        <div className="flex gap-1 md:gap-2 flex-1 justify-end">
                             <button
                             onClick={() => updateStatus(student.id, 'HADIR')}
-                            className={`px-3 py-2 rounded-lg text-[10px] font-bold transition-all ${
+                            className={`px-3 py-2 rounded-lg text-[10px] md:text-xs md:px-4 font-bold transition-all ${
                                 student.status === 'HADIR'
                                 ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-500'
                                 : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
@@ -353,7 +412,7 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
                             </button>
                             <button
                             onClick={() => updateStatus(student.id, 'SAKIT')}
-                            className={`px-2 py-2 rounded-lg text-[10px] font-bold transition-all ${
+                            className={`px-2 py-2 rounded-lg text-[10px] md:text-xs md:px-4 font-bold transition-all ${
                                 student.status === 'SAKIT'
                                 ? 'bg-yellow-100 text-yellow-700 ring-1 ring-yellow-500'
                                 : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
@@ -363,7 +422,7 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
                             </button>
                             <button
                             onClick={() => updateStatus(student.id, 'IZIN')}
-                            className={`px-2 py-2 rounded-lg text-[10px] font-bold transition-all ${
+                            className={`px-2 py-2 rounded-lg text-[10px] md:text-xs md:px-4 font-bold transition-all ${
                                 student.status === 'IZIN'
                                 ? 'bg-blue-100 text-blue-700 ring-1 ring-blue-500'
                                 : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
@@ -372,14 +431,14 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
                             IZIN
                             </button>
                              <button
-                            onClick={() => updateStatus(student.id, 'ALPA')}
-                            className={`px-3 py-2 rounded-lg text-[10px] font-bold transition-all ${
-                                student.status === 'ALPA'
+                            onClick={() => updateStatus(student.id, 'ALFA')}
+                            className={`px-3 py-2 rounded-lg text-[10px] md:text-xs md:px-4 font-bold transition-all ${
+                                student.status === 'ALFA'
                                 ? 'bg-red-100 text-red-700 ring-1 ring-red-500'
                                 : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
                             }`}
                             >
-                            ALPA
+                            ALFA
                             </button>
                         </div>
                         </div>
@@ -410,28 +469,28 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
 
       {/* History Mode */}
       {mode === 'history' && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {/* Filter Bar */}
-          <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-3 space-y-2">
+          <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Bulan</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase mb-1.5 block">Bulan</label>
               <input
                 type="month"
                 value={filterMonth}
                 onChange={(e) => setFilterMonth(e.target.value)}
-                className="w-full mt-1 p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-400"
+                className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-400"
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Kelompok</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase mb-1.5 block">Kelas</label>
               <SearchableSelect
                 options={[
-                  { value: '', label: 'Semua Kelompok' },
+                  { value: '', label: 'Semua Kelas' },
                   ...studyGroups.map(g => ({ value: g.id, label: g.name }))
                 ]}
                 value={filterGroup}
                 onChange={(val) => setFilterGroup(String(val))}
-                placeholder="Semua Kelompok"
+                placeholder="Semua Kelas"
               />
             </div>
           </div>
@@ -468,18 +527,18 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
                 <div
                   key={idx}
                   onClick={() => openHistoryDetail(item.date, item.group_id)}
-                  className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm cursor-pointer hover:shadow-md hover:border-slate-200 transition-all"
+                  className="bg-white p-4 md:p-5 rounded-xl border border-slate-100 shadow-sm cursor-pointer hover:shadow-md hover:border-emerald-200 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
                 >
-                  <div className="flex justify-between items-start mb-2">
+                  <div className="flex justify-between items-start md:items-center w-full md:w-auto flex-1">
                     <div>
-                      <h4 className="font-bold text-slate-700 text-sm">{formatDate(item.date)}</h4>
+                      <h4 className="font-bold text-slate-700 text-sm md:text-base">{formatDate(item.date)}</h4>
                       <p className="text-xs text-slate-500 flex gap-2 mt-0.5">
-                        <span>{item.group_name || 'Tanpa Kelompok'}</span>
-                        <span>•</span>
-                        <span>{item.teacher_name || 'Guru'}</span>
+                        <span className="font-semibold text-slate-600">{item.group_name || 'Tanpa Kelas'}</span>
+                        <span className="hidden md:inline">•</span>
+                        <span className="hidden md:inline">{item.teacher_name || 'Guru'}</span>
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right md:hidden">
                       <span className={`text-sm font-bold ${ pct >= 75 ? 'text-emerald-600' : pct >= 50 ? 'text-yellow-600' : 'text-red-500' }`}>
                         {hadir}/{total} Hadir
                       </span>
@@ -488,10 +547,21 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
                       </span>
                     </div>
                   </div>
+                  
+                  {/* Right side stats for desktop */}
+                  <div className="hidden md:flex flex-col items-end min-w-[120px]">
+                      <span className={`text-sm font-bold ${ pct >= 75 ? 'text-emerald-600' : pct >= 50 ? 'text-yellow-600' : 'text-red-500' }`}>
+                        {hadir} dari {total} Hadir
+                      </span>
+                      <span className="text-[10px] text-slate-400 flex items-center justify-end gap-1 mt-1 font-bold">
+                        LIHAT DETAIL <ChevronRight size={12} />
+                      </span>
+                  </div>
+
                   {/* Progress bar */}
-                  <div className="w-full bg-slate-100 rounded-full h-1.5">
+                  <div className="w-full md:w-48 bg-slate-100 rounded-full h-1.5 md:h-2 mt-2 md:mt-0 order-last">
                     <div
-                      className={`h-1.5 rounded-full transition-all ${ pct >= 75 ? 'bg-emerald-500' : pct >= 50 ? 'bg-yellow-400' : 'bg-red-400' }`}
+                      className={`h-1.5 md:h-2 rounded-full transition-all ${ pct >= 75 ? 'bg-emerald-500' : pct >= 50 ? 'bg-yellow-400' : 'bg-red-400' }`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -499,6 +569,65 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
               );
             })
           )}
+        </div>
+      )}
+
+    
+      {/* Add Student Modal */}
+      {showAddStudentModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h3 className="font-bold text-slate-800">Tambah Santri ke Kelas</h3>
+              <button 
+                onClick={() => setShowAddStudentModal(false)}
+                className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Nama Lengkap Santri</label>
+                  <input 
+                    type="text" 
+                    value={newStudentName}
+                    onChange={e => setNewStudentName(e.target.value)}
+                    placeholder="Contoh: Ahmad Faiz"
+                    className="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Jenis Kelamin</label>
+                  <select 
+                    value={newStudentGender}
+                    onChange={e => setNewStudentGender(e.target.value as 'L' | 'P')}
+                    className="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-white"
+                  >
+                    <option value="" disabled>Pilih Jenis Kelamin</option>
+                    <option value="L">Laki-laki</option>
+                    <option value="P">Perempuan</option>
+                  </select>
+                </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 flex gap-2">
+              <button 
+                onClick={() => setShowAddStudentModal(false)}
+                className="flex-1 py-3 text-slate-600 font-bold hover:bg-slate-200 rounded-xl transition-colors"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={handleAddStudent}
+                disabled={isAddingStudent}
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors disabled:opacity-70"
+              >
+                {isAddingStudent ? 'Menyimpan...' : 'Tambah'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

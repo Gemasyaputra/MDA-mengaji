@@ -3,20 +3,12 @@ import { query, execute } from '@/lib/api-helpers';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const mosqueId = searchParams.get('mosque_id');
-
   let sql = `
-    SELECT u.id, u.name, u.email, u.phone, u.role, u.mosque_id, m.name as mosque_name 
+    SELECT u.id, u.name, u.email, u.phone, u.role
     FROM users u
-    LEFT JOIN mosques m ON u.mosque_id = m.id
     WHERE u.role = 'teacher'
   `;
   const params: (string | number)[] = [];
-
-  if (mosqueId) {
-    sql += ` AND u.mosque_id = $${params.length + 1}`;
-    params.push(mosqueId);
-  }
 
   sql += ' ORDER BY u.name ASC';
 
@@ -32,14 +24,14 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { 
-      name, email, phone, mosque_id, password, 
+      name, email, phone, password, 
       nik, tempat_lahir, tanggal_lahir, jenis_kelamin, golongan_darah,
       alamat, rt_rw, kel_desa, kecamatan, agama, status_perkawinan,
       pekerjaan, kewarganegaraan
     } = body;
 
-    if (!name || !email || !mosque_id) {
-        return NextResponse.json({ success: false, error: 'Name, Email, and Mosque ID are required' }, { status: 400 });
+    if (!name || !email) {
+        return NextResponse.json({ success: false, error: 'Name and Email are required' }, { status: 400 });
     }
 
     // Check if email already exists
@@ -53,14 +45,14 @@ export async function POST(req: NextRequest) {
 
     const result = await execute(
         `INSERT INTO users (
-           name, email, phone, role, mosque_id, password_hash, is_verified, created_at,
+           name, email, phone, role, password_hash, is_verified, created_at,
            nik, tempat_lahir, tanggal_lahir, jenis_kelamin, golongan_darah,
            alamat, rt_rw, kel_desa, kecamatan, agama, status_perkawinan,
            pekerjaan, kewarganegaraan
          )
-         VALUES ($1, $2, $3, 'teacher', $4, $5, true, NOW(), $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
+         VALUES ($1, $2, $3, 'teacher', $4, true, NOW(), $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
         [
-          name, email, phone || null, mosque_id, passwordHash,
+          name, email, phone || null, passwordHash,
           nik || null, tempat_lahir || null, tanggal_lahir || null, jenis_kelamin || null, golongan_darah || null,
           alamat || null, rt_rw || null, kel_desa || null, kecamatan || null, agama || null, status_perkawinan || null,
           pekerjaan || null, kewarganegaraan || null

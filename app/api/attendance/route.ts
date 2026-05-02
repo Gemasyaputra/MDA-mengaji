@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 
     // 1. Get History Summary (grouped by date and group)
     if (history === 'true') {
-        const mosqueId = searchParams.get('mosque_id');
+
         const teacherId = searchParams.get('teacher_id');
         
         let sql = `
@@ -54,12 +54,7 @@ export async function GET(req: NextRequest) {
         const params: (string | number)[] = [];
         let idx = 1;
 
-        if (mosqueId) {
-            sql += ` AND s.mosque_id = $${idx}`;
-            params.push(mosqueId);
-            idx++;
-        }
-        
+
         if (teacherId) {
             sql += ` AND a.teacher_id = $${idx}`;
             params.push(teacherId);
@@ -181,9 +176,9 @@ export async function POST(req: NextRequest) {
         const teacherId = records[0].teacher_id;
         const dateStr = records[0].date || new Date().toLocaleDateString('en-CA');
 
-        // Fetch teacher name, group name, mosque_id via first student
+        // Fetch teacher name, group name via first student
         const infoResult = await query(`
-          SELECT u.name as teacher_name, g.name as group_name, s.mosque_id
+          SELECT u.name as teacher_name, g.name as group_name
           FROM users u
           JOIN students s ON s.id = $2
           LEFT JOIN study_groups g ON g.id = s.group_id
@@ -192,12 +187,11 @@ export async function POST(req: NextRequest) {
         `, [teacherId, records[0].student_id]);
 
         if (infoResult.data && infoResult.data.length > 0) {
-          const { teacher_name, group_name, mosque_id } = infoResult.data[0];
+          const { teacher_name, group_name } = infoResult.data[0];
           const hadirCount = records.filter((r: any) => r.status === 'HADIR').length;
           const formattedDate = new Date(dateStr + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
 
           await createNotification({
-            mosque_id,
             type: 'attendance',
             message: `Presensi ${group_name || 'kelompok'} tgl ${formattedDate} tersimpan — ${hadirCount}/${records.length} hadir (oleh ${teacher_name || 'Guru'})`
           });

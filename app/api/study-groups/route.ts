@@ -4,20 +4,20 @@ import { query, executeReturning, execute } from '@/lib/api-helpers';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { mosque_id, teacher_id, name, description } = body;
+    const { teacher_id, name, description } = body;
 
-    if (!mosque_id || !name) {
+    if (!name) {
       return NextResponse.json(
-        { success: false, error: 'Mosque ID and Name are required' },
+        { success: false, error: 'Name is required' },
         { status: 400 },
       );
     }
 
     const result = await executeReturning(
-      `INSERT INTO study_groups (mosque_id, teacher_id, name, description)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO study_groups (teacher_id, name, description)
+       VALUES ($1, $2, $3)
        RETURNING *`,
-      [mosque_id, teacher_id || null, name, description || null],
+      [teacher_id || null, name, description || null],
     );
 
     return NextResponse.json(result);
@@ -31,11 +31,11 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const mosqueId = searchParams.get('mosque_id');
+
   const teacherId = searchParams.get('teacher_id');
 
   let sql = `
-    SELECT sg.id, sg.mosque_id, sg.teacher_id, sg.name, sg.description, u.name as teacher_name
+    SELECT sg.id, sg.teacher_id, sg.name, sg.description, u.name as teacher_name
     FROM study_groups sg
     LEFT JOIN users u ON sg.teacher_id = u.id
     WHERE 1=1
@@ -43,12 +43,7 @@ export async function GET(req: NextRequest) {
   const params: (string | number)[] = [];
   let idx = 1;
 
-  if (mosqueId) {
-    sql += ` AND sg.mosque_id = $${idx}`;
-    params.push(mosqueId);
-    idx++;
-  }
-  
+
   if (teacherId) {
     sql += ` AND sg.teacher_id = $${idx}`;
     params.push(teacherId);
@@ -64,21 +59,21 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, mosque_id, teacher_id, name, description } = body;
+    const { id, teacher_id, name, description } = body;
 
-    if (!id || !mosque_id || !name) {
+    if (!id || !name) {
       return NextResponse.json(
-        { success: false, error: 'ID, Mosque ID, and Name are required' },
+        { success: false, error: 'ID and Name are required' },
         { status: 400 },
       );
     }
 
     const result = await executeReturning(
       `UPDATE study_groups 
-       SET mosque_id = $1, teacher_id = $2, name = $3, description = $4
-       WHERE id = $5
+       SET teacher_id = $1, name = $2, description = $3
+       WHERE id = $4
        RETURNING *`,
-      [mosque_id, teacher_id || null, name, description || null, id],
+      [teacher_id || null, name, description || null, id],
     );
 
     if (!result.success) {

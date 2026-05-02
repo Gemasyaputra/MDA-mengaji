@@ -7,10 +7,10 @@ const pool = new Pool({
 
 async function run() {
   try {
-    const res = await pool.query(
-      "UPDATE users SET is_verified = true, password_hash = 'pass123' WHERE email IN ('ali@hikmah.com', 'admin@hikmah.com')"
-    );
-    console.log('Rows updated:', res.rowCount);
+    const res1 = await pool.query("UPDATE users SET is_verified = true");
+    console.log('Users verified:', res1.rowCount);
+    const res2 = await pool.query("UPDATE mosques SET is_approved = true");
+    console.log('Mosques approved:', res2.rowCount);
   } catch(e) {
     console.error(e);
   } finally {

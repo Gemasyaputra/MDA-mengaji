@@ -26,6 +26,7 @@ export default function BottomNav({ role, currentPage, onNavigate }: BottomNavPr
       case 'teacher':
         return [
           { id: 'dashboard', label: 'Home', icon: Home },
+          { id: 'santri-list', label: 'Santri', icon: Users },
           { id: 'presensi', label: 'Presensi', icon: BarChart3 },
           { id: 'kabar', label: 'Kabar', icon: MessageSquare },
           { id: 'login', label: 'Keluar', icon: Settings },
@@ -37,10 +38,11 @@ export default function BottomNav({ role, currentPage, onNavigate }: BottomNavPr
 
   const navItems = getNavItems(role);
   const isSuperAdmin = role === 'superadmin';
+  const gridCols = isSuperAdmin ? 'grid-cols-2' : navItems.length === 5 ? 'grid-cols-5' : 'grid-cols-4';
 
   return (
-    <nav className="bg-white border-t border-slate-200 fixed bottom-0 left-0 right-0 max-w-md mx-auto">
-      <div className={`h-16 grid ${isSuperAdmin ? 'grid-cols-2' : 'grid-cols-4'}`}>
+    <nav className="md:hidden bg-white border-t border-slate-200 fixed bottom-0 left-0 right-0 z-[60]">
+      <div className={`max-w-7xl mx-auto h-16 grid ${gridCols}`}>
         {navItems.map(({ id, label, icon: Icon }) => (
           <button
             key={id}

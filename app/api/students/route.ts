@@ -13,16 +13,15 @@ function slugify(name: string): string {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
-  const mosqueId = searchParams.get('mosque_id');
+
   const groupId = searchParams.get('group_id');
   const search = searchParams.get('search');
   const teacherId = searchParams.get('teacher_id');
 
   if (id) {
     const result = await queryOne(
-      `SELECT s.*, m.name as mosque_name, g.name as group_name 
+      `SELECT s.*, g.name as group_name 
        FROM students s 
-       LEFT JOIN mosques m ON s.mosque_id = m.id 
        LEFT JOIN study_groups g ON s.group_id = g.id 
        WHERE s.id = $1`,
       [id]
@@ -31,20 +30,15 @@ export async function GET(req: NextRequest) {
   }
 
   let sql = `
-    SELECT s.*, m.name as mosque_name, g.name as group_name 
+    SELECT s.*, g.name as group_name 
     FROM students s 
-    LEFT JOIN mosques m ON s.mosque_id = m.id 
     LEFT JOIN study_groups g ON s.group_id = g.id 
     WHERE 1=1
   `;
   const params: (string | number)[] = [];
   let idx = 1;
 
-  if (mosqueId) {
-    sql += ` AND s.mosque_id = $${idx}`;
-    params.push(mosqueId);
-    idx++;
-  }
+
   if (groupId) {
     sql += ` AND s.group_id = $${idx}`;
     params.push(groupId);
@@ -70,7 +64,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const {
-    mosque_id,
+
     group_id,
     name,
     slug,
@@ -82,9 +76,9 @@ export async function POST(req: NextRequest) {
     current_level,
   } = body;
 
-  if (!mosque_id || !name) {
+  if (!name) {
     return NextResponse.json(
-      { success: false, error: 'mosque_id dan name wajib diisi' },
+      { success: false, error: 'name wajib diisi' },
       { status: 400 }
     );
   }
@@ -93,11 +87,10 @@ export async function POST(req: NextRequest) {
   const validGender = gender === 'L' || gender === 'P' ? gender : null;
 
   const result = await executeReturning(
-    `INSERT INTO students (mosque_id, group_id, name, slug, parent_name, parent_phone, birth_date, gender, address, current_level)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    `INSERT INTO students (group_id, name, slug, parent_name, parent_phone, birth_date, gender, address, current_level)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
     [
-      mosque_id,
       group_id || null,
       name,
       finalSlug,
@@ -124,7 +117,7 @@ export async function PUT(req: NextRequest) {
   const body = await req.json();
   const {
     id,
-    mosque_id,
+
     group_id,
     name,
     slug,
@@ -147,13 +140,12 @@ export async function PUT(req: NextRequest) {
 
   const result = await executeReturning(
     `UPDATE students SET 
-      mosque_id = $1, group_id = $2, name = $3, slug = COALESCE($4, slug),
-      parent_name = $5, parent_phone = $6, birth_date = $7, gender = $8,
-      address = $9, current_level = $10
-     WHERE id = $11
+      group_id = $1, name = $2, slug = COALESCE($3, slug),
+      parent_name = $4, parent_phone = $5, birth_date = $6, gender = $7,
+      address = $8, current_level = $9
+     WHERE id = $10
      RETURNING *`,
     [
-      mosque_id,
       group_id || null,
       name,
       slug || null,

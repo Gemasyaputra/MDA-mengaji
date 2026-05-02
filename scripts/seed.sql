@@ -150,7 +150,8 @@ INSERT INTO users (mosque_id, name, email, password_hash, phone, role) VALUES
 (1, 'Admin Hikmah', 'admin@hikmah.com', 'pass123', '081-123456', 'admin'),
 (1, 'Ustadz Ali', 'ali@hikmah.com', 'pass123', '081-123457', 'teacher'),
 (2, 'Admin Nurul', 'admin@nurul.com', 'pass123', '082-234567', 'admin'),
-(2, 'Ustadzah Dina', 'dina@nurul.com', 'pass123', '082-234568', 'teacher')
+(2, 'Ustadzah Dina', 'dina@nurul.com', 'pass123', '082-234568', 'teacher'),
+(1, 'Admin JTest', 'jtest7464@gmail.com', 'pass123', '081-00000000', 'admin')
 ON CONFLICT DO NOTHING;
 
 -- E. SEED DATA SANTRI

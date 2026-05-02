@@ -4,21 +4,11 @@ export interface User {
   id: number;
   name: string;
   role: UserRole;
-  mosque_id?: number;
-  mosque_name?: string;
   email?: string;
-}
-
-export interface Mosque {
-  id: number;
-  name: string;
-  slug: string;
-  address?: string;
 }
 
 export interface StudyGroup {
   id: number;
-  mosque_id: number;
   teacher_id: number | null;
   name: string;
   teacher_name?: string; // Optional, sometimes joined
@@ -26,7 +16,6 @@ export interface StudyGroup {
 
 export interface Santri {
   id: number;
-  mosque_id: number;
   group_id: number | null;
   name: string;
   slug: string;
@@ -36,7 +25,6 @@ export interface Santri {
   gender: string | null;
   address: string | null;
   current_level: string | null;
-  mosque_name?: string;
   group_name?: string | null;
 }
 
@@ -52,7 +40,6 @@ export interface Post {
   activity_date?: string;
   comment_count?: number;
   images?: string[];
-  mosque_id?: number;
 }
 
 export interface Comment {

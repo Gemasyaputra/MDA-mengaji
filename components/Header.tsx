@@ -51,9 +51,8 @@ export default function Header({ role, title, onBack, showBackButton, currentUse
 
   // ─── Fetch notifications from API ───────────────────────────────────────────
   const fetchNotifications = useCallback(async () => {
-    if (!currentUser?.mosque_id) return;
     try {
-      const params = new URLSearchParams({ mosque_id: String(currentUser.mosque_id), limit: '20' });
+      const params = new URLSearchParams({ limit: '20' });
       if (currentUser?.id) params.set('user_id', String(currentUser.id));
       const res = await fetch(`/api/notifications?${params}`);
       const json = await res.json();
@@ -113,8 +112,8 @@ export default function Header({ role, title, onBack, showBackButton, currentUse
   const getRoleDisplay = (role: string | null) => {
     switch (role) {
       case 'superadmin': return { badge: 'SUPER ADMIN', subtitle: 'Panel Pusat', badgeClass: 'bg-slate-800 text-white' };
-      case 'admin': return { badge: 'ADMIN DKM', subtitle: currentUser?.mosque_name || 'Masjid', badgeClass: 'bg-yellow-500 text-white' };
-      case 'teacher': return { badge: 'GURU', subtitle: currentUser?.mosque_name || 'Masjid', badgeClass: 'bg-white/20 text-white' };
+      case 'admin': return { badge: 'ADMIN DKM', subtitle: currentUser?.mosque_name || 'MDA Masjid Nurul Huda', badgeClass: 'bg-yellow-500 text-white' };
+      case 'teacher': return { badge: 'GURU', subtitle: currentUser?.mosque_name || 'MDA Masjid Nurul Huda', badgeClass: 'bg-white/20 text-white' };
       case 'parent': return { badge: 'ORANG TUA', subtitle: 'Portal Orang Tua', badgeClass: 'bg-emerald-700 text-white' };
       default: return { badge: 'USER', subtitle: 'App', badgeClass: 'bg-white/20 text-white' };
     }
@@ -132,12 +131,12 @@ export default function Header({ role, title, onBack, showBackButton, currentUse
   };
 
   return (
-    <header className="bg-emerald-600 text-white p-4 sticky top-0 z-50 shadow-md">
-      <div className="flex justify-between items-center">
+    <header className="bg-emerald-600 md:bg-white text-white md:text-slate-800 p-4 sticky top-0 z-50 shadow-md md:shadow-sm md:border-b md:border-slate-200 transition-colors">
+      <div className="flex justify-between items-center max-w-7xl mx-auto w-full">
         {/* Left: Back + Title */}
         <div className="flex items-center gap-3">
           {showBackButton && (
-            <button onClick={onBack} className="text-white hover:bg-emerald-700 p-2 rounded-full transition">
+            <button onClick={onBack} className="text-white hover:bg-emerald-700 md:text-slate-600 md:hover:bg-slate-100 p-2 rounded-full transition">
               <ChevronLeft size={20} />
             </button>
           )}
@@ -145,7 +144,7 @@ export default function Header({ role, title, onBack, showBackButton, currentUse
             <h1 className="font-bold text-lg leading-tight">{title}</h1>
             <div className="flex items-center gap-2">
               <span className={`text-[10px] px-1.5 rounded font-bold uppercase ${badgeClass}`}>{badge}</span>
-              <p className="text-xs text-emerald-100 truncate w-32">{subtitle}</p>
+              <p className="text-xs text-emerald-100 md:text-slate-500 truncate max-w-[150px] md:max-w-xs transition-colors">{subtitle}</p>
             </div>
           </div>
         </div>
@@ -156,7 +155,7 @@ export default function Header({ role, title, onBack, showBackButton, currentUse
           <div ref={notifRef} className="relative">
             <button
               onClick={handleBellClick}
-              className="relative p-1 hover:bg-emerald-700 rounded-full transition"
+              className="relative p-1 text-white hover:bg-emerald-700 md:text-slate-600 md:hover:bg-slate-100 rounded-full transition"
               aria-label="Notifikasi"
             >
               <Bell size={20} />

@@ -152,7 +152,7 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
               <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
                 <BookOpen className="text-white" size={18} />
               </div>
-              <span className="font-bold text-xl text-emerald-900">MagribMengaji<span className="text-emerald-500">.</span></span>
+              <span className="font-bold text-xl text-emerald-900">MDA Masjid Nurul Huda</span>
             </div>
             <div className="hidden md:flex space-x-8">
               <a href="#solusi" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Solusi</a>
@@ -179,20 +179,20 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
           <div className="flex-1 text-center lg:text-left">
             <AnimateOnScroll animation="fade-up" delay={100}>
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 text-emerald-800 text-sm font-bold mb-6">
-                <span className="text-xl">🚀</span> Transformasi Digital untuk Madrasah & Masjid
+                <span className="text-xl">🕌</span> Portal Akademik Resmi
               </span>
             </AnimateOnScroll>
             
             <AnimateOnScroll animation="fade-up" delay={200}>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-tight mb-6">
-                Tinggalkan Buku Kertas.<br />
-                <span className="text-emerald-600">Pantau Ngaji Anak 100% Digital.</span>
+                Portal Informasi & Akademik <br />
+                <span className="text-emerald-600">MDA Masjid Nurul Huda.</span>
               </h1>
             </AnimateOnScroll>
             
             <AnimateOnScroll animation="fade-up" delay={300}>
               <p className="text-lg md:text-xl text-slate-600 mb-8 max-w-2xl mx-auto lg:mx-0">
-                Tinggalkan cara lama yang repot. Platform manajemen Magrib Mengaji terlengkap untuk Pengurus Masjid, MDA, Pengajar, dan Orang Tua. Pantau progres, absensi, dan hafalan secara real-time.
+                Sistem informasi akademik terpadu untuk pengurus, pengajar, dan orang tua santri MDA Masjid Nurul Huda. Pantau presensi, pencapaian hafalan, dan jurnal mengaji secara real-time.
               </p>
             </AnimateOnScroll>
             
@@ -200,12 +200,8 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
               <button 
                 onClick={() => onNavigate && onNavigate('login')}
                 className="w-full sm:w-auto px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-bold text-lg transition-all shadow-lg shadow-emerald-200 flex items-center justify-center gap-2 group">
-                Buat Akun Lembaga Baru
+                Masuk Portal / Login
                 <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
-              </button>
-              <button className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-full font-bold text-lg transition-all flex items-center justify-center gap-2">
-                <Play className="text-emerald-600" size={20} fill="currentColor" />
-                Tonton Demo Aplikasi
               </button>
             </AnimateOnScroll>
           </div>
@@ -236,49 +232,49 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
         </div>
       </section>
 
-      {/* 2. PROBLEM SECTION */}
+      {/* 2. LATAR BELAKANG SECTION */}
       <section className="py-20 bg-white relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <AnimateOnScroll delay={100}>
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Masalah Klasik yang Sering Menghambat Kegiatan Mengaji</h2>
-              <div className="w-20 h-1 bg-red-400 mx-auto rounded-full"></div>
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Latar Belakang Digitalisasi MDA</h2>
+              <div className="w-20 h-1 bg-emerald-400 mx-auto rounded-full"></div>
             </AnimateOnScroll>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             <AnimateOnScroll animation="fade-up" delay={200}>
               <div className="bg-slate-50 p-8 rounded-2xl border border-slate-100 h-full hover:shadow-lg transition-shadow">
-                <div className="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center mb-6 text-red-500">
+                <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mb-6 text-emerald-500">
                   <FileText size={28} />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">Rawan Hilang & Rusak</h3>
+                <h3 className="text-xl font-bold text-slate-900 mb-3">Penyimpanan Data Aman</h3>
                 <p className="text-slate-600 leading-relaxed">
-                  Masih Pakai Kertas. Buku prestasi dan kartu SPP masih berupa fisik. Sangat rawan sobek, terselip, basah, atau hilang terbawa oleh anak.
+                  Buku prestasi fisik rawan hilang, sobek, atau terselip. Dengan sistem digital, seluruh data akademik santri tersimpan aman di database tanpa khawatir kehilangan rekam jejak.
                 </p>
               </div>
             </AnimateOnScroll>
 
             <AnimateOnScroll animation="fade-up" delay={300}>
               <div className="bg-slate-50 p-8 rounded-2xl border border-slate-100 h-full hover:shadow-lg transition-shadow">
-                <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mb-6 text-amber-600">
+                <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mb-6 text-emerald-600">
                   <History size={28} />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">Sulit Dilacak & Direkap</h3>
+                <h3 className="text-xl font-bold text-slate-900 mb-3">Rekapitulasi Otomatis</h3>
                 <p className="text-slate-600 leading-relaxed">
-                  Tidak ada riwayat perkembangan bacaan yang tersimpan rapi. Pengurus repot merekap data kehadiran dan nilai secara manual setiap akhir bulan.
+                  Meringankan beban pengurus dalam merekap data kehadiran dan nilai setiap akhir bulan. Sistem menghasilkan laporan secara otomatis dan akurat.
                 </p>
               </div>
             </AnimateOnScroll>
 
             <AnimateOnScroll animation="fade-up" delay={400}>
               <div className="bg-slate-50 p-8 rounded-2xl border border-slate-100 h-full hover:shadow-lg transition-shadow">
-                <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 text-blue-500">
+                <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mb-6 text-emerald-500">
                   <Clock size={28} />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">Tidak Real-Time</h3>
+                <h3 className="text-xl font-bold text-slate-900 mb-3">Informasi Real-Time</h3>
                 <p className="text-slate-600 leading-relaxed">
-                  Orang Tua Kehilangan Jejak. Informasi perkembangan anak terlambat sampai ke orang tua karena harus menunggu buku dikembalikan.
+                  Orang tua dapat memantau perkembangan hafalan dan kehadiran anak secara langsung tanpa harus menunggu buku prestasi dikembalikan.
                 </p>
               </div>
             </AnimateOnScroll>
@@ -429,23 +425,18 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
               <div className="space-y-6">
                 {[
                   {
-                    title: "Satu Klik ke WhatsApp",
-                    desc: "Pengajar tidak perlu mencetak laporan. Tautan unik profil santri dikirim otomatis ke WA orang tua.",
-                    icon: <Smartphone className="text-green-500" size={24} />
-                  },
-                  {
-                    title: "Detail Hafalan & Bacaan",
-                    desc: "Orang tua melihat riwayat harian anak. Contoh: Senin: Iqra 4 Hal 15 - Lancar | Rabu: Al-Ma'un - Perbaiki Tajwid.",
-                    icon: <BookOpen className="text-blue-500" size={24} />
-                  },
-                  {
-                    title: "Rekap Kehadiran Akurat",
-                    desc: "Orang tua tahu pasti apakah anak hadir, terlambat, atau izin di kelas Magrib Mengaji.",
+                    title: "Presensi Digital",
+                    desc: "Pencatatan kehadiran santri yang cepat dan akurat. Orang tua dapat memantau status kehadiran anak setiap hari.",
                     icon: <CheckCircle2 className="text-emerald-500" size={24} />
                   },
                   {
-                    title: "Catatan Ustadz (Evaluasi)",
-                    desc: "Kolom khusus di mana pengajar meninggalkan pesan area yang perlu dilatih ulang oleh anak di rumah.",
+                    title: "Pencatatan Hafalan",
+                    desc: "Rekam jejak hafalan surat, doa, dan bacaan Iqro/Al-Qur'an secara terperinci beserta nilai kualitas bacaannya.",
+                    icon: <BookOpen className="text-blue-500" size={24} />
+                  },
+                  {
+                    title: "Jurnal Mengaji & Evaluasi",
+                    desc: "Ustadz dapat memberikan catatan khusus (Jurnal Mengaji) sebagai evaluasi yang langsung dapat dibaca oleh wali santri.",
                     icon: <MessageCircle className="text-amber-500" size={24} />
                   }
                 ].map((item, idx) => (
@@ -468,75 +459,7 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
         </div>
       </section>
 
-      {/* 4.5 AI KTP UPLOAD SECTION */}
-      <section className="py-24 bg-slate-50 border-t border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
-            
-            <div className="flex-1 order-1 w-full">
-              <AnimateOnScroll animation="fade-right" delay={100}>
-                <div className="bg-white rounded-[2rem] p-8 lg:p-12 text-slate-800 shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden">
-                  
-                  <h2 className="text-3xl md:text-4xl font-bold mb-6 text-slate-900">
-                    Otomatisasi Isi Data KTP dengan AI
-                  </h2>
-                  <p className="text-lg text-slate-600 mb-8">
-                    Daftar akun pengajar jadi lebih mudah dan cepat. Cukup dengan mengunggah foto KTP Anda, teknologi Kecerdasan Buatan (AI) kami akan membaca dan mengisi kolom data diri secara otomatis ke dalam form.
-                  </p>
-                  
-                  <div className="space-y-6">
-                    <div className="flex items-start gap-5 p-4 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
-                      <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-emerald-100">
-                        <Smartphone className="text-emerald-500" size={26} />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-slate-900 text-lg">Upload Foto</h4>
-                        <p className="text-slate-500 mt-1">Ambil/unggah foto KTP Anda langsung dari perangkat Anda.</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-5 p-4 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
-                      <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-blue-100">
-                        <CheckCircle2 className="text-blue-500" size={26} />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-slate-900 text-lg">Ekstraksi Pintar</h4>
-                        <p className="text-slate-500 mt-1">Sistem AI mengenali NIK, Nama, dan ekstraksi data lainnya.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </AnimateOnScroll>
-            </div>
-
-            <div className="flex-1 order-2 w-full flex justify-center">
-              <AnimateOnScroll animation="fade-left" delay={200}>
-                <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border-8 border-white bg-slate-100 max-w-[260px] lg:max-w-[300px] mx-auto transform hover:scale-105 transition-transform duration-500">
-                  <video 
-                    autoPlay 
-                    loop 
-                    muted 
-                    playsInline 
-                    className="w-full h-auto object-cover rounded-[1.5rem]"
-                  >
-                    <source src="/video_upload_ktp_ai.mp4" type="video/mp4" />
-                    Browser Anda tidak mendukung tag video.
-                  </video>
-                  {/* Decorative element */}
-                  <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm flex items-center gap-2">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                    </span>
-                    <span className="text-xs font-bold text-slate-700">AI Powered</span>
-                  </div>
-                </div>
-              </AnimateOnScroll>
-            </div>
-            
-          </div>
-        </div>
-      </section>
+      {/* Removed AI KTP UPLOAD SECTION */}
 
       {/* 5. DIFFERENTIATOR SECTION */}
       <section className="py-20 bg-white">
@@ -574,8 +497,8 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <AnimateOnScroll delay={100}>
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Dirancang Khusus Sesuai Peran Anda</h2>
-              <p className="text-lg text-slate-600">Setiap pengguna mendapatkan dashboard khusus yang fokus pada tugas mereka.</p>
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Akses Pengguna Sistem</h2>
+              <p className="text-lg text-slate-600">Sistem ini dirancang dengan hak akses yang disesuaikan untuk setiap peran di MDA Masjid Nurul Huda.</p>
             </AnimateOnScroll>
           </div>
 
@@ -586,12 +509,12 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
                 <div className="h-2 bg-blue-500 w-full"></div>
                 <div className="p-8 flex-1 flex flex-col">
                   <LayoutDashboard className="text-blue-500 mb-4" size={36} />
-                  <h3 className="text-xl font-bold text-slate-800 mb-3">Pengurus Masjid / Admin MDA</h3>
+                  <h3 className="text-xl font-bold text-slate-800 mb-3">Admin (Pengelola Data)</h3>
                   <p className="text-slate-600 mb-6 flex-1">
-                    Pantau total santri aktif, kinerja pengajar, sebar Kabar Masjid (seperti foto acara Tarawih), dan cetak laporan rekapitulasi instan dari satu layar.
+                    Bertanggung jawab mengelola data master (santri, pengajar, kelompok belajar), menyebarkan informasi/kabar, serta memantau statistik dan laporan rekapitulasi.
                   </p>
                   <button onClick={() => setSelectedRoleModal('admin')} className="text-blue-600 font-bold flex items-center gap-1 group-hover:gap-2 transition-all">
-                    Pelajari Dasbor Admin <ArrowRight size={16} />
+                    Lihat Detail Akses <ArrowRight size={16} />
                   </button>
                 </div>
               </div>
@@ -603,12 +526,12 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
                 <div className="h-2 bg-emerald-500 w-full"></div>
                 <div className="p-8 flex-1 flex flex-col">
                   <GraduationCap className="text-emerald-500 mb-4" size={36} />
-                  <h3 className="text-xl font-bold text-slate-800 mb-3">Pengajar / Ustadz</h3>
+                  <h3 className="text-xl font-bold text-slate-800 mb-3">Pengajar (Pencatat Nilai)</h3>
                   <p className="text-slate-600 mb-6 flex-1">
-                    Asisten Penilaian Digital. Bebas repot menulis. Fitur input nilai (A/B/C), catatan khusus, dan absensi harian yang dirancang praktis digunakan saat mengajar.
+                    Bertugas melakukan presensi kehadiran harian, memberikan penilaian hafalan/bacaan, dan menulis jurnal atau evaluasi untuk setiap santri.
                   </p>
                   <button onClick={() => setSelectedRoleModal('teacher')} className="text-emerald-600 font-bold flex items-center gap-1 group-hover:gap-2 transition-all">
-                    Lihat Fitur Pengajar <ArrowRight size={16} />
+                    Lihat Detail Akses <ArrowRight size={16} />
                   </button>
                 </div>
               </div>
@@ -620,12 +543,12 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
                 <div className="h-2 bg-amber-500 w-full"></div>
                 <div className="p-8 flex-1 flex flex-col">
                   <Smartphone className="text-amber-500 mb-4" size={36} />
-                  <h3 className="text-xl font-bold text-slate-800 mb-3">Orang Tua Santri</h3>
+                  <h3 className="text-xl font-bold text-slate-800 mb-3">Orang Tua (Pemantau)</h3>
                   <p className="text-slate-600 mb-6 flex-1">
-                    Akses Monitoring Anak. Cek riwayat perkembangan bacaan, absensi, dan catatan evaluasi dari Ustadz kapan saja dan di mana saja.
+                    Pantau progres anak tanpa perlu login, cukup melalui tautan/link khusus. Melihat riwayat absensi, hafalan, dan pesan dari Ustadz secara real-time.
                   </p>
                   <button onClick={() => setSelectedRoleModal('parent')} className="text-amber-600 font-bold flex items-center gap-1 group-hover:gap-2 transition-all">
-                    Cara Memantau Anak <ArrowRight size={16} />
+                    Lihat Detail Akses <ArrowRight size={16} />
                   </button>
                 </div>
               </div>
@@ -634,73 +557,52 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
         </div>
       </section>
 
-      {/* 7. SOCIAL PROOF & STATS */}
+      {/* 7. VISI MISI & SAMBUTAN */}
       <section className="py-20 bg-emerald-600 text-white relative">
         <div className="absolute inset-0 bg-black/10"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-16">
             <AnimateOnScroll delay={100}>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Standar Baru Administrasi Pendidikan Al-Qur'an</h2>
-            </AnimateOnScroll>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center mb-16 divide-y md:divide-y-0 md:divide-x divide-emerald-400/50">
-            <AnimateOnScroll animation="scale" delay={200} className="py-4">
-              <p className="text-5xl md:text-6xl font-extrabold mb-2">0</p>
-              <p className="text-emerald-100 font-medium text-lg uppercase tracking-wider">Buku Fisik Hilang</p>
-            </AnimateOnScroll>
-            <AnimateOnScroll animation="scale" delay={300} className="py-4">
-              <p className="text-5xl md:text-6xl font-extrabold mb-2">100%</p>
-              <p className="text-emerald-100 font-medium text-lg uppercase tracking-wider">Data Terekap Otomatis</p>
-            </AnimateOnScroll>
-            <AnimateOnScroll animation="scale" delay={400} className="py-4">
-              <p className="text-5xl md:text-6xl font-extrabold mb-2">24/7</p>
-              <p className="text-emerald-100 font-medium text-lg uppercase tracking-wider">Akses Riwayat Belajar</p>
-            </AnimateOnScroll>
-          </div>
-
-          <AnimateOnScroll animation="fade-up" delay={500}>
-            <div className="max-w-4xl mx-auto bg-white/10 backdrop-blur-lg p-8 md:p-10 rounded-3xl border border-white/20 text-center relative mt-10">
-              <Star className="text-amber-300 absolute -top-5 left-1/2 -translate-x-1/2" fill="currentColor" size={40} />
-              <p className="text-xl md:text-2xl font-medium italic leading-relaxed mb-6 mt-4">
-                "Dulu tiap akhir semester pusing merekap absensi dan nilai ratusan santri MDA. Sejak pakai sistem ini, tidak ada lagi kertas tercecer, pengurus tenang, dan orang tua senang karena bisa pantau progres anaknya secara real-time dari HP."
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Membangun Generasi Qur'ani</h2>
+              <p className="text-emerald-100 text-lg max-w-2xl mx-auto">
+                Melalui digitalisasi, kami berupaya memberikan pelayanan pendidikan agama yang lebih baik, terukur, dan transparan bagi seluruh pihak.
               </p>
-              <div>
-                <p className="font-bold text-lg">H. Abdullah</p>
-                <p className="text-emerald-200">Pengurus DKM & Kepala MDA Al-Hikmah</p>
-              </div>
-            </div>
-          </AnimateOnScroll>
-        </div>
-      </section>
-
-      {/* 8. USE CASES */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <AnimateOnScroll delay={100}>
-              <h2 className="text-3xl font-bold text-slate-900 mb-4">Solusi Tepat untuk Berbagai Lembaga</h2>
             </AnimateOnScroll>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-             {[
-               { icon: <BookOpen />, title: "TPA / TPQ", desc: "(Taman Pendidikan Al-Qur'an)" },
-               { icon: <Building />, title: "MDA / MDT", desc: "(Madrasah Diniyah Awaliyah / Takmiliyah)" },
-               { icon: <Users />, title: "Magrib Mengaji", desc: "Berbasis Masjid Tingkat RW / Desa" }
-             ].map((item, i) => (
-                <AnimateOnScroll key={i} animation="fade-up" delay={200 + (i*100)}>
-                  <div className="bg-slate-50 border border-slate-200 p-6 rounded-2xl flex items-center gap-4 hover:border-emerald-500 hover:bg-emerald-50 transition-colors">
-                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-emerald-600 shadow-sm shrink-0">
-                      {item.icon}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-slate-800 text-lg">{item.title}</h4>
-                      <p className="text-sm text-slate-500">{item.desc}</p>
-                    </div>
-                  </div>
-                </AnimateOnScroll>
-             ))}
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            <AnimateOnScroll animation="fade-up" delay={200}>
+              <div className="bg-white/10 backdrop-blur-lg p-8 rounded-3xl border border-white/20 h-full">
+                <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                  <Star className="text-amber-300" fill="currentColor" size={24} /> Visi Kami
+                </h3>
+                <p className="text-emerald-50 leading-relaxed">
+                  Menjadi lembaga pendidikan agama Islam yang unggul dalam mencetak generasi cinta Al-Qur'an, berakhlak mulia, dan siap menghadapi tantangan zaman dengan pondasi iman yang kuat.
+                </p>
+              </div>
+            </AnimateOnScroll>
+            
+            <AnimateOnScroll animation="fade-up" delay={300}>
+              <div className="bg-white/10 backdrop-blur-lg p-8 rounded-3xl border border-white/20 h-full">
+                <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                  <CheckCircle2 className="text-emerald-300" size={24} /> Misi Kami
+                </h3>
+                <ul className="text-emerald-50 space-y-3">
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-300 mt-2 shrink-0"></div>
+                    <span>Menyelenggarakan kegiatan belajar mengaji yang interaktif dan efektif.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-300 mt-2 shrink-0"></div>
+                    <span>Mengoptimalkan teknologi informasi untuk transparansi dan komunikasi wali santri.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-300 mt-2 shrink-0"></div>
+                    <span>Membina akhlakul karimah melalui pembiasaan ibadah harian dan keteladanan.</span>
+                  </li>
+                </ul>
+              </div>
+            </AnimateOnScroll>
           </div>
         </div>
       </section>
@@ -746,14 +648,14 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <AnimateOnScroll delay={100}>
             <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
-              Tinggalkan Cara Lama.<br />
-              <span className="text-emerald-400">Jadikan Manajemen Lebih Profesional!</span>
+              Portal Akademik & Presensi<br />
+              <span className="text-emerald-400">MDA Masjid Nurul Huda</span>
             </h2>
           </AnimateOnScroll>
           
           <AnimateOnScroll delay={200}>
             <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
-              Bebaskan pengurus dan pengajar dari administrasi yang repot. Berikan pengalaman terbaik bagi orang tua dalam memantau progres anak mereka hari ini.
+              Sistem informasi terpadu untuk mendukung kelancaran kegiatan belajar mengajar dan pemantauan perkembangan santri secara digital.
             </p>
           </AnimateOnScroll>
           
@@ -761,12 +663,7 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
             <button 
               onClick={() => onNavigate && onNavigate('login')}
               className="w-full sm:w-auto px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full font-bold text-lg transition-all shadow-lg shadow-emerald-900/50">
-              Daftar / Registrasi DKM
-            </button>
-            <button 
-              onClick={() => onNavigate && onNavigate('login')}
-              className="w-full sm:w-auto px-8 py-4 bg-transparent border-2 border-slate-600 hover:border-slate-400 text-white rounded-full font-bold text-lg transition-all">
-              Sudah Punya Akun? Masuk
+              Masuk ke Portal
             </button>
           </AnimateOnScroll>
         </div>
@@ -777,7 +674,7 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
            <div className="flex items-center gap-2 font-bold text-white">
              <BookOpen className="text-emerald-500" size={18} />
-             MagribMengaji.
+             MDA Masjid Nurul Huda.
            </div>
            <p>© {new Date().getFullYear()} Hak Cipta Dilindungi. Platform Digital Madrasah & Masjid.</p>
            <div className="flex gap-4">

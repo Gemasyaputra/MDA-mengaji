@@ -3,7 +3,6 @@ import { query, execute, executeReturning } from '@/lib/api-helpers';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const mosqueId = searchParams.get('mosque_id');
   const id = searchParams.get('id');
   const limit = parseInt(searchParams.get('limit') || '5');
   const page = parseInt(searchParams.get('page') || '1');
@@ -37,10 +36,7 @@ export async function GET(req: NextRequest) {
       params.push(id);
   }
 
-  if (mosqueId) {
-    sql += ` AND ap.mosque_id = $${params.length + 1}`;
-    params.push(mosqueId);
-  }
+
 
   sql += ` ORDER BY ap.created_at DESC`;
 
@@ -60,7 +56,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
       const body = await req.json();
-      const { mosque_id, author_id, title, content, activity_date, images } = body;
+      const { author_id, title, content, activity_date, images } = body;
     
       if (!title || !author_id) {
            return NextResponse.json({ success: false, error: 'Title and Author ID are required' }, { status: 400 });
@@ -68,14 +64,13 @@ export async function POST(req: NextRequest) {
 
       // 1. Insert Post
       const postResult = await executeReturning(
-        `INSERT INTO activity_posts (mosque_id, author_id, title, content, activity_date, created_at)
-         VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING id`,
+        `INSERT INTO activity_posts (author_id, title, content, activity_date, created_at)
+         VALUES ($1, $2, $3, $4, NOW()) RETURNING id`,
         [
-            mosque_id || 1, 
             author_id, 
             title, 
             content, 
-            activity_date || new Date().toISOString()
+            activity_date ? new Date(activity_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
         ]
       );
 

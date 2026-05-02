@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     if (result.success) {
       try {
         const infoResult = await query(`
-          SELECT st.name as student_name, u.name as teacher_name, st.mosque_id,
+          SELECT st.name as student_name, u.name as teacher_name,
                  mdp.title as prayer_title, mpr.title as reading_title
           FROM students st
           JOIN users u ON u.id = $2
@@ -59,11 +59,10 @@ export async function POST(req: NextRequest) {
         `, [student_id, teacher_id, daily_prayer_id || null, prayer_reading_id || null]);
 
         if (infoResult.data && infoResult.data.length > 0) {
-          const { student_name, teacher_name, mosque_id, prayer_title, reading_title } = infoResult.data[0];
+          const { student_name, teacher_name, prayer_title, reading_title } = infoResult.data[0];
           const itemName = type === 'DOA_HARIAN' ? (prayer_title || 'Doa Harian') : (reading_title || 'Bacaan Sholat');
           const status = is_completed ? 'Lulus' : 'Belum Lulus';
           await createNotification({
-            mosque_id,
             type: 'worship',
             message: `Hafalan ${student_name}: ${itemName} — ${status} (Nilai ${quality}) oleh ${teacher_name}`
           });

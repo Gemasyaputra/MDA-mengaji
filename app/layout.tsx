@@ -10,8 +10,8 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'SimMengaji - Aplikasi Manajemen Kajian Islam',
-  description: 'Platform manajemen pembelajaran Islam di masjid dengan fitur lengkap untuk santri, guru, dan orang tua',
+  title: 'MDA Masjid Nurul Huda',
+  description: 'Aplikasi Manajemen MDA Masjid Nurul Huda untuk pencatatan hafalan dan presensi santri.',
   generator: 'v0.app',
   viewport: {
     width: 'device-width',

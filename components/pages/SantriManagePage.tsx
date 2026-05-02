@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import SearchableSelect from '@/components/SearchableSelect';
 import DeleteModal from '@/components/DeleteModal';
 import { toast } from 'sonner';
-import { Mosque, StudyGroup, Santri, User } from '@/types';
+import { StudyGroup, Santri, User } from '@/types';
 
 interface SantriManagePageProps {
   onNavigate: (page: string) => void;
@@ -15,7 +15,7 @@ interface SantriManagePageProps {
 }
 
 const emptyForm = {
-  mosque_id: '',
+
   group_id: '',
   name: '',
   parent_name: '',
@@ -44,14 +44,11 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
 
   // 1. Fetch Santris
   const { data: santris = [], isLoading: loadingSantri, isError: errorSantri } = useQuery<Santri[]>({
-    queryKey: ['santris', currentUser?.id, currentUser?.mosque_id],
+    queryKey: ['santris', currentUser?.id],
     queryFn: async () => {
       let url = '/api/students';
       const params = new URLSearchParams();
       
-      if (currentUser?.mosque_id) {
-        params.append('mosque_id', String(currentUser.mosque_id));
-      }
       if (currentUser?.role === 'teacher' && currentUser?.id) {
         params.append('teacher_id', String(currentUser.id));
       }
@@ -69,34 +66,21 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
     }
   });
 
-  // 2. Fetch Mosques
-  const { data: mosques = [] } = useQuery<Mosque[]>({
-    queryKey: ['mosques'],
-    queryFn: async () => {
-      const res = await fetch('/api/mosques');
-      const json = await res.json();
-      if (json.success !== false && json.data) return json.data;
-      if (Array.isArray(json)) return json;
-      return [];
-    }
-  });
 
-  // 3. Fetch Study Groups (Dependent on mosque_id)
+  // 3. Fetch Study Groups
   const { data: studyGroups = [] } = useQuery<StudyGroup[]>({
-    queryKey: ['study-groups', formData.mosque_id, currentUser?.id],
+    queryKey: ['study-groups', currentUser?.id],
     queryFn: async () => {
-        if (!formData.mosque_id) return [];
-        let url = `/api/study-groups?mosque_id=${formData.mosque_id}`;
+        let url = `/api/study-groups`;
         if (currentUser?.role === 'teacher' && currentUser?.id) {
-            url += `&teacher_id=${currentUser.id}`;
+            url += `?teacher_id=${currentUser.id}`;
         }
         const res = await fetch(url);
         const json = await res.json();
         if (json.success !== false && json.data) return json.data;
         if (Array.isArray(json)) return json;
         return [];
-    },
-    enabled: !!formData.mosque_id
+    }
   });
 
   // loading state combination
@@ -106,10 +90,8 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
 
   const openAddModal = () => {
     setEditingId(null);
-    const initialMosqueId = currentUser?.mosque_id ? String(currentUser.mosque_id) : '';
     setFormData({
       ...emptyForm,
-      mosque_id: initialMosqueId,
     });
     // If we have a mosque ID, fetch study groups for it immediately (will be handled by useEffect)
     setShowModal(true);
@@ -118,7 +100,6 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
   const openEditModal = (s: Santri) => {
     setEditingId(s.id);
     setFormData({
-      mosque_id: String(s.mosque_id),
       group_id: s.group_id ? String(s.group_id) : '',
       name: s.name,
       parent_name: s.parent_name || '',
@@ -186,13 +167,7 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
       toast.error('Nama wajib diisi');
       return;
     }
-    if (!formData.mosque_id) {
-      toast.error('Pilih masjid');
-      return;
-    }
-
     const payload = {
-        mosque_id: parseInt(formData.mosque_id),
         group_id: formData.group_id ? parseInt(formData.group_id) : null,
         name: formData.name.trim(),
         parent_name: formData.parent_name.trim() || null,
@@ -262,11 +237,7 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
                   {santri.current_level && (
                     <p className="text-xs text-slate-500 mb-1">{santri.current_level}</p>
                   )}
-                  {santri.mosque_name && (
-                    <span className="inline-block px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded font-semibold">
-                      {santri.mosque_name}
-                    </span>
-                  )}
+
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -311,16 +282,7 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
               {editingId ? 'Edit Santri' : 'Tambah Santri'}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Masjid *</label>
-                <SearchableSelect
-                  disabled={!!currentUser?.mosque_id}
-                  options={mosques.map(m => ({ value: m.id, label: m.name }))}
-                  value={formData.mosque_id}
-                  onChange={(val) => setFormData({ ...formData, mosque_id: String(val) })}
-                  placeholder="Pilih Masjid"
-                />
-              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
                   Kelompok Belajar

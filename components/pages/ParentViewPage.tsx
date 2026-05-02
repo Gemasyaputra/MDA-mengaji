@@ -197,7 +197,7 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
             setRecentActivities(combined);
             
             // 5. Fetch Kabar Masjid
-            const resKabar = await fetch(`/api/activities?mosque_id=${jsonStudent.data.mosque_id}&limit=5`);
+            const resKabar = await fetch(`/api/activities?limit=5`);
             const jsonKabar = await resKabar.json();
             if (jsonKabar.success && Array.isArray(jsonKabar.data)) {
                 setKabarMasjid(jsonKabar.data.map((p: any) => ({
@@ -244,25 +244,23 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
-      <div className="bg-emerald-600 text-white rounded-b-[2.5rem] shadow-lg mb-6 relative p-6 pt-8">
-        <button
-          onClick={onBack}
-          className="absolute left-4 top-4 text-white/80 hover:text-white transition-colors"
-        >
-          <ArrowLeft size={24} />
-        </button>
-        <div className="text-center">
-          <p className="text-xs font-light opacity-80 mb-1">Portal Orang Tua</p>
+      <div className="bg-emerald-600 text-white shadow-lg mb-6 relative p-6 pt-10">
+        <div className="max-w-5xl mx-auto text-center">
+          <p className="text-xs font-light opacity-70 mb-1 uppercase tracking-widest">Portal Orang Tua</p>
           <h1 className="text-2xl font-bold mb-3">{selectedStudent.name}</h1>
-          <div className="inline-block bg-emerald-800 bg-opacity-50 px-4 py-2 rounded-full text-xs font-semibold">
-            {selectedStudent.mosque_name || 'Masjid Al-Hikmah'}
+          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-xs font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
+            MDA Masjid Nurul Huda
           </div>
         </div>
       </div>
 
-      <div className="px-4 pb-20">
+      <div className="px-4 pb-20 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* ====== KOLOM KIRI ====== */}
+          <div className="lg:col-span-4 space-y-6">
         {/* Stats Card */}
-        <div className="bg-white p-6 rounded-2xl shadow-md border border-slate-100 mb-6 -mt-10 relative z-10">
+        <div className="bg-white p-6 rounded-2xl shadow-md border border-slate-100 -mt-10 relative z-10">
           <div className="text-center">
             <p className="text-sm text-slate-600 mb-2">Level Pembelajaran</p>
             <p className="text-2xl font-bold text-emerald-600 mb-4">{selectedStudent.current_level || 'Belum ada data'}</p>
@@ -334,7 +332,7 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
         </div>
 
         {/* Attendance Chart */}
-        <div className="bg-white p-5 rounded-2xl shadow-md border border-slate-100 mb-6">
+        <div className="bg-white p-5 rounded-2xl shadow-md border border-slate-100">
         <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
             <Activity size={16} className="text-emerald-500"/> Statistik Kehadiran
         </h3>
@@ -361,6 +359,10 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
         </div>
         <p className="text-[10px] text-slate-400 text-center mt-2">Grafik kehadiran 6 bulan terakhir</p>
         </div>
+
+        </div>
+        {/* ====== KOLOM KANAN ====== */}
+        <div className="lg:col-span-8 space-y-6">
 
         {/* Recent Activities */}
         <div>
@@ -461,17 +463,23 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
                                 
                                 {/* Image Preview (limit to 2) */}
                                 {post.images && post.images.length > 0 && (
-                                    <div className="flex gap-1 overflow-hidden h-40 rounded-lg bg-slate-100 mt-3">
-                                        {post.images.slice(0, 2).map((img: string, idx: number) => (
-                                            <div key={idx} className="flex-1 relative h-full">
-                                                <img src={img} className="w-full h-full object-cover" />
-                                                {idx === 1 && post.images.length > 2 && (
-                                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-lg font-bold">
-                                                        +{post.images.length - 2}
+                                    <div className="mt-3 rounded-lg overflow-hidden bg-slate-100">
+                                        {post.images.length === 1 ? (
+                                            <img src={post.images[0]} className="w-full h-48 object-cover rounded-md" />
+                                        ) : (
+                                            <div className="flex gap-1 h-48">
+                                                {post.images.slice(0, 2).map((img: string, idx: number) => (
+                                                    <div key={idx} className="flex-1 relative h-full">
+                                                        <img src={img} className="w-full h-full object-cover" />
+                                                        {idx === 1 && post.images.length > 2 && (
+                                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-lg font-bold">
+                                                                +{post.images.length - 2}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                )}
+                                                ))}
                                             </div>
-                                        ))}
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -479,7 +487,9 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
                     ))
                 )}
             </div>
-        </div>
+            </div>
+        </div>{/* end right col */}
+        </div>{/* end grid */}
       </div>
       
       {/* Detail Modal */}

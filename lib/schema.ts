@@ -42,21 +42,9 @@ export const masterPrayerReadings = pgTable("master_prayer_readings", {
 
 // ==================== CORE TABLES ====================
 
-export const mosques = pgTable("mosques", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  name: varchar("name", { length: 100 }).notNull(),
-  slug: varchar("slug", { length: 100 }).notNull().unique(),
-  address: text("address"),
-  contactPhone: varchar("contact_phone", { length: 20 }),
-  isApproved: boolean("is_approved").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-});
 
 export const users = pgTable("users", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
-  mosqueId: bigint("mosque_id", { mode: "number" })
-    .notNull()
-    .references(() => mosques.id),
   name: varchar("name", { length: 100 }).notNull(),
   email: varchar("email", { length: 100 }).notNull(),
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
@@ -69,9 +57,6 @@ export const users = pgTable("users", {
 
 export const studyGroups = pgTable("study_groups", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
-  mosqueId: bigint("mosque_id", { mode: "number" })
-    .notNull()
-    .references(() => mosques.id, { onDelete: "cascade" }),
   teacherId: bigint("teacher_id", { mode: "number" }).references(
     () => users.id,
     {
@@ -84,9 +69,6 @@ export const studyGroups = pgTable("study_groups", {
 
 export const students = pgTable("students", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
-  mosqueId: bigint("mosque_id", { mode: "number" })
-    .notNull()
-    .references(() => mosques.id),
   groupId: bigint("group_id", { mode: "number" }).references(
     () => studyGroups.id,
   ),
@@ -98,6 +80,8 @@ export const students = pgTable("students", {
   gender: varchar("gender", { length: 1 }),
   address: text("address"),
   currentLevel: varchar("current_level", { length: 50 }),
+  readingLevel: varchar("reading_level", { length: 20, enum: ['IQRO', 'ALQURAN'] }).default('IQRO'),
+  iqroGraduatedAt: timestamp("iqro_graduated_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -178,9 +162,6 @@ export const worshipRecords = pgTable("worship_records", {
 
 export const activityPosts = pgTable("activity_posts", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
-  mosqueId: bigint("mosque_id", { mode: "number" })
-    .notNull()
-    .references(() => mosques.id),
   authorId: bigint("author_id", { mode: "number" })
     .notNull()
     .references(() => users.id),

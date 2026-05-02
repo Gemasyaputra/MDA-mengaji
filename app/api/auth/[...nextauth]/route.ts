@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { db } from "@/lib/db";
-import { users, mosques } from "@/lib/schema";
+import { users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 
 const handler = NextAuth({
@@ -28,8 +28,7 @@ const handler = NextAuth({
           const existingUser = await db
             .select({
               id: users.id,
-              isVerified: users.isVerified,
-              mosqueId: users.mosqueId
+              isVerified: users.isVerified
             })
             .from(users)
             .where(eq(users.email, user.email))
@@ -43,15 +42,7 @@ const handler = NextAuth({
               return "/?error=UnverifiedEmail";
             }
             
-            // For admins/teachers/parents, check if mosque is approved by Super Admin
-            if (dbUser.mosqueId) {
-               const mosqueCheck = await db.select({ isApproved: mosques.isApproved }).from(mosques).where(eq(mosques.id, dbUser.mosqueId)).limit(1);
-               if (mosqueCheck.length > 0 && !mosqueCheck[0].isApproved) {
-                  return "/?error=MosqueNotApproved";
-               }
-            }
-            
-            // User exists, verified, and mosque approved
+            // User exists and verified
             return true;
           } else {
             // User does not exist in DB, deny login
@@ -72,12 +63,9 @@ const handler = NextAuth({
               .select({
                 id: users.id,
                 name: users.name, // Fetch name from our DB
-                role: users.role,
-                mosqueId: users.mosqueId,
-                mosqueName: mosques.name
+                role: users.role
               })
               .from(users)
-              .leftJoin(mosques, eq(users.mosqueId, mosques.id))
               .where(eq(users.email, user.email))
               .limit(1);
             
@@ -85,8 +73,6 @@ const handler = NextAuth({
                token.id = dbUser[0].id.toString();
                token.name = dbUser[0].name; // Override Google name with DB name
                token.role = dbUser[0].role;
-               token.mosqueId = dbUser[0].mosqueId?.toString();
-               token.mosqueName = dbUser[0].mosqueName;
             }
          } catch (e) {
             console.error(e);
@@ -100,8 +86,6 @@ const handler = NextAuth({
         (session.user as any).id = token.id;
         (session.user as any).name = token.name; // Apply DB name to session
         (session.user as any).role = token.role;
-        (session.user as any).mosqueId = token.mosqueId;
-        (session.user as any).mosqueName = token.mosqueName;
       }
       return session;
     },

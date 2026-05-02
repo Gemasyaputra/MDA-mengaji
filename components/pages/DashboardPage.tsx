@@ -59,16 +59,15 @@ export default function DashboardPage({ role, onNavigate, currentUser }: Dashboa
   const [nextPrayerName, setNextPrayerName] = useState<string>('...');
   const [nextPrayerTime, setNextPrayerTime] = useState<Date | null>(null);
   const [countdown, setCountdown] = useState<string>('--:--:--');
-  const [stats, setStats] = useState({ total_santri: 0, present_today: 0, mosque_name: 'Masjid Anda' });
+  const [stats, setStats] = useState({ total_santri: 0, present_today: 0, total_teachers: 0, total_groups: 0 });
 
   // Fetch Dashboard Stats
   useEffect(() => {
-      if (!currentUser?.mosque_id) return;
       const fetchStats = async () => {
           try {
-              let url = `/api/dashboard/stats?mosque_id=${currentUser.mosque_id}`;
-              if (currentUser.role === 'teacher' && currentUser.id) {
-                  url += `&teacher_id=${currentUser.id}`;
+              let url = `/api/dashboard/stats`;
+              if (currentUser?.role === 'teacher' && currentUser?.id) {
+                  url += `?teacher_id=${currentUser.id}`;
               }
               const res = await fetch(url);
               const json = await res.json();
@@ -260,23 +259,35 @@ export default function DashboardPage({ role, onNavigate, currentUser }: Dashboa
   }
 
   return (
-    <div className="p-4">
+    <div className="p-4 md:p-8">
       {/* Kartu Salam + Jadwal Shalat ala desain */}
-      <div className="bg-linear-to-r from-emerald-500 to-teal-600 rounded-2xl p-5 text-white shadow-lg mb-6 relative overflow-hidden">
+      <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-3xl p-6 text-white shadow-lg mb-8 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between">
         <div className="absolute right-0 top-0 opacity-10 text-8xl -mr-4 -mt-4">
           <Home size={80} />
         </div>
-        <p className="text-sm opacity-90">Assalamualaikum,</p>
-        <h2 className="text-2xl font-bold mb-2">{currentUser?.name || 'Ustadz Ali'}</h2>
-
-        <div className="flex items-center gap-2 text-xs bg-white/20 w-fit px-3 py-1 rounded-full backdrop-blur-sm mb-4">
-          <Users size={12} className="mr-1" />
-          <span>{stats.mosque_name}</span>
+        
+        <div className="md:w-1/2 z-10">
+          <p className="text-sm opacity-90 mb-1">Assalamualaikum,</p>
+          <h2 className="text-2xl font-bold mb-3">{currentUser?.name || 'Ustadz Ali'}</h2>
+          
+          <div className="md:hidden flex items-center gap-2 text-xs bg-white/20 w-fit px-3 py-1.5 rounded-full backdrop-blur-sm mb-4">
+            <Users size={12} className="mr-1" />
+            <span>MDA Masjid Nurul Huda</span>
+          </div>
+          
+          <div className="hidden md:block mt-4">
+            <p className="text-emerald-50 font-medium text-sm mb-1">{hijriDate} • {gregDate}</p>
+            <p className="text-xs text-emerald-100 flex items-center gap-1.5">
+              <MapPin size={12} /> {locationLabel}
+            </p>
+          </div>
         </div>
 
-        <div className="border-t border-white/20 pt-3 mt-3">
-          <div className="flex justify-between items-start mb-3">
-            <div className="text-[10px] space-y-1">
+        <div className="md:w-1/2 md:bg-white/10 md:rounded-2xl md:p-5 md:backdrop-blur-sm mt-4 md:mt-0 z-10 md:max-w-md">
+          <div className="md:hidden border-t border-white/20 pt-3 mt-3"></div>
+          
+          <div className="flex justify-between items-center mb-3">
+            <div className="text-[10px] space-y-1 md:hidden">
               <p className="text-emerald-100 font-medium">{hijriDate}</p>
               <p className="text-[11px] font-bold text-white">{gregDate}</p>
               <p className="text-[9px] text-emerald-200 flex items-center gap-1">
@@ -284,20 +295,30 @@ export default function DashboardPage({ role, onNavigate, currentUser }: Dashboa
                 <span>{locationLabel}</span>
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold leading-none">{currentTime || '--:--:--'}</p>
-              <p className="text-[9px] text-emerald-100 mt-1">
-                Menuju <span className="font-semibold">{nextPrayerName}</span>:{' '}
-                <span className="font-mono">{countdown}</span>
-              </p>
+            
+            <div className="text-right md:text-left md:flex md:justify-between md:w-full md:items-center">
+              <div>
+                <p className="text-[9px] md:text-xs text-emerald-100 md:mb-1">
+                  Menuju <span className="font-bold text-white">{nextPrayerName}</span>
+                </p>
+                <p className="text-2xl md:text-3xl font-black tracking-tight leading-none">{currentTime || '--:--:--'}</p>
+              </div>
+              <div className="hidden md:block text-right">
+                <span className="font-mono text-xl font-bold bg-black/20 text-emerald-50 px-3 py-1.5 rounded-xl border border-white/10">{countdown}</span>
+              </div>
             </div>
           </div>
+          
+          <p className="text-[9px] text-emerald-100 mt-1 mb-3 md:hidden">
+            Menuju <span className="font-semibold text-white">{nextPrayerName}</span>:{' '}
+            <span className="font-mono font-bold">{countdown}</span>
+          </p>
 
-          <div className="grid grid-cols-5 gap-1 text-center text-[11px]">
+          <div className="grid grid-cols-5 gap-1.5 md:gap-2 text-center text-[11px] mt-2 md:mt-4">
             {prayerTimes.map((p) => (
-              <div key={p.name} className="bg-white/10 rounded p-1">
-                <p className="text-[8px] uppercase opacity-80">{p.name}</p>
-                <p className="text-xs font-bold">{p.time}</p>
+              <div key={p.name} className={`rounded-xl p-1.5 md:p-2 transition-colors ${p.name === nextPrayerName ? 'bg-white/20 ring-1 ring-white/40' : 'bg-black/10'}`}>
+                <p className="text-[8px] md:text-[9px] font-semibold tracking-wider uppercase text-emerald-100">{p.name}</p>
+                <p className="text-xs md:text-sm font-bold mt-0.5">{p.time}</p>
               </div>
             ))}
           </div>
@@ -305,33 +326,96 @@ export default function DashboardPage({ role, onNavigate, currentUser }: Dashboa
       </div>
 
       {/* Statistik ringkas */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-          <p className="text-xs text-slate-500">Total Santri</p>
-          <h3 className="text-2xl font-bold text-slate-800">{stats.total_santri}</h3>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 mb-8">
+        <div className="bg-white p-5 rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-slate-100/60 relative overflow-hidden group hover:border-emerald-200 transition-colors">
+          <Users size={64} className="absolute -right-4 -bottom-4 text-emerald-50 opacity-40 group-hover:scale-110 transition-transform" />
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Total Santri</p>
+          <h3 className="text-3xl font-black text-slate-800">{stats.total_santri}</h3>
         </div>
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-          <p className="text-xs text-slate-500">Hadir Hari Ini</p>
-          <h3 className="text-2xl font-bold text-emerald-600">{stats.present_today}</h3>
+        <div className="bg-white p-5 rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-slate-100/60 relative overflow-hidden group hover:border-blue-200 transition-colors">
+          <Activity size={64} className="absolute -right-4 -bottom-4 text-blue-50 opacity-40 group-hover:scale-110 transition-transform" />
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Hadir Hari Ini</p>
+          <div className="flex items-baseline gap-2">
+            <h3 className="text-3xl font-black text-blue-600">{stats.present_today}</h3>
+            <span className="text-xs font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md">
+              {stats.total_santri > 0 ? Math.round((stats.present_today / stats.total_santri) * 100) : 0}%
+            </span>
+          </div>
+        </div>
+        <div className="bg-white p-5 rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-slate-100/60 relative overflow-hidden group hover:border-amber-200 transition-colors">
+          <BookOpen size={64} className="absolute -right-4 -bottom-4 text-amber-50 opacity-40 group-hover:scale-110 transition-transform" />
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Total Kelompok</p>
+          <h3 className="text-3xl font-black text-amber-600">{stats.total_groups || 0}</h3>
+        </div>
+        <div className="bg-white p-5 rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-slate-100/60 relative overflow-hidden group hover:border-purple-200 transition-colors">
+          <Users size={64} className="absolute -right-4 -bottom-4 text-purple-50 opacity-40 group-hover:scale-110 transition-transform" />
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Total Pengajar</p>
+          <h3 className="text-3xl font-black text-purple-600">{stats.total_teachers || 0}</h3>
         </div>
       </div>
 
-      {/* Menu utama */}
-      <div className="mb-4">
-        <h3 className="font-bold text-slate-700 mb-3 text-sm uppercase tracking-wide">
-          Menu Utama
+      {/* Menu utama (Hanya Tampil di Mobile) */}
+      <div className="mb-8 md:hidden">
+        <h3 className="font-bold text-slate-800 mb-4 text-xs uppercase tracking-widest flex items-center gap-2">
+          <div className="w-1.5 h-4 bg-emerald-500 rounded-full"></div>
+          Akses Cepat
         </h3>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {dashboardMenu.map(({ icon: Icon, label, page, color }) => (
             <button
               key={page}
               onClick={() => onNavigate(page)}
-              className={`${color} border rounded-xl p-4 text-center shadow-sm active:bg-slate-50 transition`}
+              className={`${color} border rounded-2xl p-4 text-center shadow-sm active:scale-95 transition-transform`}
             >
-              <Icon className="mx-auto mb-2" size={22} />
-              <p className="text-xs font-semibold">{label}</p>
+              <Icon className="mx-auto mb-2" size={24} />
+              <p className="text-[11px] font-bold">{label}</p>
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Aktivitas Terakhir */}
+      <div className="mb-8">
+        <h3 className="font-bold text-slate-800 mb-4 text-xs uppercase tracking-widest flex items-center gap-2">
+          <div className="w-1.5 h-4 bg-blue-500 rounded-full"></div>
+          Aktivitas Terakhir
+        </h3>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+          <div className="flex flex-col divide-y divide-slate-50">
+             <div className="flex items-start gap-4 p-4 hover:bg-slate-50 transition-colors">
+                <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                   <Activity size={18} />
+                </div>
+                <div>
+                   <p className="text-sm text-slate-700 leading-snug">
+                     <span className="font-bold text-slate-900">Ustadz Ahmad</span> baru saja mengisi presensi kehadiran <span className="font-bold text-slate-900">Kelompok A</span>.
+                   </p>
+                   <p className="text-[11px] font-medium text-slate-400 mt-1">10 menit yang lalu</p>
+                </div>
+             </div>
+             <div className="flex items-start gap-4 p-4 hover:bg-slate-50 transition-colors">
+                <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                   <BookOpen size={18} />
+                </div>
+                <div>
+                   <p className="text-sm text-slate-700 leading-snug">
+                     Santri <span className="font-bold text-slate-900">Budi Santoso</span> baru saja menyetorkan hafalan <span className="font-bold text-slate-900">Surah An-Naba</span>.
+                   </p>
+                   <p className="text-[11px] font-medium text-slate-400 mt-1">35 menit yang lalu</p>
+                </div>
+             </div>
+             <div className="flex items-start gap-4 p-4 hover:bg-slate-50 transition-colors">
+                <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                   <Users size={18} />
+                </div>
+                <div>
+                   <p className="text-sm text-slate-700 leading-snug">
+                     Admin mendaftarkan santri baru bernama <span className="font-bold text-slate-900">Fatimah Azzahra</span>.
+                   </p>
+                   <p className="text-[11px] font-medium text-slate-400 mt-1">2 jam yang lalu</p>
+                </div>
+             </div>
+          </div>
         </div>
       </div>
     </div>

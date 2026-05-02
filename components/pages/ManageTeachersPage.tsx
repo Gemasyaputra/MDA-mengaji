@@ -10,8 +10,6 @@ interface Teacher {
   name: string;
   email: string;
   phone: string;
-  mosque_name?: string;
-  mosque_id?: number;
   nik?: string;
   tempat_lahir?: string;
   tanggal_lahir?: string;
@@ -69,9 +67,9 @@ export default function ManageTeachersPage({ onNavigate, currentUser }: ManageTe
 
   // Fetch Teachers
   const fetchTeachers = async () => {
-      if (!currentUser?.mosque_id) return;
+      
       try {
-          const res = await fetch(`/api/teachers?mosque_id=${currentUser.mosque_id}`);
+          const res = await fetch(`/api/teachers`);
           const json = await res.json();
           if (json.success && Array.isArray(json.data)) {
               setTeachers(json.data);
@@ -125,15 +123,14 @@ export default function ManageTeachersPage({ onNavigate, currentUser }: ManageTe
   };
 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.email || !currentUser?.mosque_id) return;
+    if (!formData.name || !formData.email) return;
 
     try {
         const url = isEditing ? '/api/teachers' : '/api/teachers';
         const method = isEditing ? 'PUT' : 'POST';
         
         const payload: any = {
-            ...formData,
-            mosque_id: currentUser.mosque_id
+            ...formData
         };
         
         if (isEditing && currentTeacherId) {
@@ -278,7 +275,7 @@ export default function ManageTeachersPage({ onNavigate, currentUser }: ManageTe
                     <div className="mb-3">
                     <h4 className="font-bold text-slate-800 text-sm mb-1">{teacher.name}</h4>
                     <span className="inline-block px-2 py-1 bg-slate-100 text-slate-600 text-[10px] rounded font-semibold uppercase">
-                        {teacher.mosque_name || 'Masjid'}
+                        MDA Masjid Nurul Huda
                     </span>
                     </div>
                     <div className="space-y-1 mb-3 text-xs text-slate-600">

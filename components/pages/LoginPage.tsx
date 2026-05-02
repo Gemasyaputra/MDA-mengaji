@@ -9,11 +9,7 @@ interface LoginPageProps {
   onLogin: (role: UserRole, user?: User) => void;
   initialShowRegister?: boolean;
 }
-
 export default function LoginPage({ onLogin, initialShowRegister = false }: LoginPageProps) {
-  const [showRegisterModal, setShowRegisterModal] = useState(initialShowRegister);
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [isSuccessRegistration, setIsSuccessRegistration] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   
   const searchParams = useSearchParams();
@@ -46,192 +42,93 @@ export default function LoginPage({ onLogin, initialShowRegister = false }: Logi
 
   
   
-  // Registration Form State
-  const [regMosqueName, setRegMosqueName] = useState('');
-  const [regMosqueAddress, setRegMosqueAddress] = useState('');
-  const [regAdminName, setRegAdminName] = useState('');
-  const [regEmail, setRegEmail] = useState('');
 
-  const handleRegister = async () => {
-    if (!regMosqueName || !regAdminName || !regEmail) {
-      toast.error('Mohon lengkapi semua data wajib!');
-      return;
-    }
-
-    setIsRegistering(true);
-    try {
-      const res = await fetch('/api/register-mosque', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mosque_name: regMosqueName,
-          mosque_address: regMosqueAddress,
-          admin_name: regAdminName,
-          admin_email: regEmail
-        })
-      });
-
-      const json = await res.json();
-
-      if (json.success) {
-        setIsSuccessRegistration(true);
-        toast.success(json.message || 'Pendaftaran berhasil! Silakan cek email Anda.');
-      } else {
-        toast.error('Gagal mendaftar: ' + (json.error || 'Terjadi kesalahan'));
-      }
-    } catch (err: any) {
-      toast.error('Terjadi kesalahan sistem: ' + err.message);
-    } finally {
-      setIsRegistering(false);
-    }
-  };
   return (
-    <div 
-      className="min-h-screen flex flex-col justify-center items-center p-6 bg-[#0E945F] text-white relative overflow-hidden"
-      style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0l30 30-30 30L0 30z' fill='none' stroke='%23ffffff' stroke-width='1' stroke-opacity='0.08'/%3E%3C/svg%3E")`,
-        backgroundSize: '60px 60px'
-      }}
-    >
-      <div className="text-center mb-8 mt-4 z-10">
-        <div className="w-24 h-24 bg-white text-[#0E945F] rounded-[2rem] flex items-center justify-center mx-auto mb-4 shadow-xl">
-          {/* Custom Mosque Icon to match screenshot */}
-          <svg width="50" height="50" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2C11.5 2 11 2.5 11 3v2.1A5.002 5.002 0 0 0 7 10v4H5a2 2 0 0 0-2 2v2h18v-2a2 2 0 0 0-2-2h-2v-4a5.002 5.002 0 0 0-4-4.9V3c0-.5-.5-1-1-1zm0 24c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zM9 13v-3c0-1.7 1.3-3 3-3s3 1.3 3 3v3h-6zm-4 7v-2h14v2H5z"/>
-          </svg>
-        </div>
-        <h1 className="text-[2.2rem] font-black mb-2 tracking-tight">MagribMengaji</h1>
-        <p className="text-white/90 text-sm font-medium">Aplikasi Manajemen Maghrib Mengaji</p>
-      </div>
+    <div className="min-h-screen flex items-center justify-center md:bg-slate-50 md:p-6 relative overflow-hidden">
+      {/* Mobile background */}
+      <div 
+        className="absolute inset-0 md:hidden bg-[#0E945F]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0l30 30-30 30L0 30z' fill='none' stroke='%23ffffff' stroke-width='1' stroke-opacity='0.08'/%3E%3C/svg%3E")`,
+          backgroundSize: '60px 60px'
+        }}
+      ></div>
 
-      <div className="w-full bg-white text-slate-800 p-8 rounded-3xl shadow-2xl max-w-sm mb-8 z-10">
-        <h3 className="font-bold text-center mb-6 text-[#1E293B] text-[1.1rem]">Masuk Aplikasi</h3>
-
-        <button 
-          onClick={() => signIn('google', { callbackUrl: '/' })}
-          className="w-full bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-[#1E293B] font-bold py-3.5 rounded-2xl shadow-sm transition-all focus:ring-4 focus:ring-slate-100 flex items-center justify-center gap-3 mb-5"
-        >
-          <img
-            src="https://www.svgrepo.com/show/475656/google-color.svg"
-            className="w-6 h-6"
-            alt="Google Logo"
-          />
-          Masuk dengan Google
-        </button>
-
-        <p className="text-center text-[11px] text-slate-400 font-medium px-2">
-          Dengan masuk, Anda menyetujui Ketentuan Layanan kami.
-        </p>
-      </div>
-
-      <div className="z-10">
-        <button 
-          onClick={() => {
-             setIsSuccessRegistration(false);
-             setShowRegisterModal(true);
+      {/* Main Container */}
+      <div className="relative z-10 w-full max-w-5xl flex flex-col md:flex-row rounded-[2rem] md:shadow-2xl overflow-hidden md:bg-white md:h-[600px]">
+        
+        {/* Left Side: Branding / Illustration */}
+        <div 
+          className="md:w-[55%] flex flex-col justify-center items-center p-6 md:p-12 text-white bg-transparent md:bg-[#0E945F] relative"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0l30 30-30 30L0 30z' fill='none' stroke='%23ffffff' stroke-width='1' stroke-opacity='0.08'/%3E%3C/svg%3E")`,
+            backgroundSize: '60px 60px'
           }}
-          className="border-2 border-white hover:bg-white hover:text-[#0E945F] text-white font-bold py-3 px-7 rounded-[2rem] transition-colors text-sm"
         >
-          Daftar Masjid Baru (Admin DKM)
-        </button>
-      </div>
-
-      {/* Registration Modal */}
-      {showRegisterModal && (
-        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4">
-          <div 
-            className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="font-bold text-xl mb-1 text-slate-800">Registrasi Masjid Baru</h3>
-            
-            {isSuccessRegistration ? (
-               <div className="py-6 text-center animate-in fade-in zoom-in duration-300">
-                  <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                     <Shield size={32} />
-                  </div>
-                  <h4 className="font-bold text-lg text-slate-800 mb-2">Cek Email Anda</h4>
-                  <p className="text-sm text-slate-500 mb-6 px-4">
-                     Pendaftaran berhasil! Kami telah mengirimkan tautan verifikasi ke email <span className="font-bold text-slate-700">{regEmail}</span>. Silakan klik tautan tersebut sebelum login.
-                  </p>
-                  <button 
-                     onClick={() => setShowRegisterModal(false)}
-                     className="block w-full text-center mt-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors"
-                  >
-                     Tutup
-                  </button>
+          <div className="w-24 h-24 bg-white text-[#0E945F] rounded-[2rem] flex items-center justify-center mx-auto mb-4 md:mb-8 shadow-xl relative z-10 md:scale-110">
+            {/* Custom Mosque Icon to match screenshot */}
+            <svg width="50" height="50" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C11.5 2 11 2.5 11 3v2.1A5.002 5.002 0 0 0 7 10v4H5a2 2 0 0 0-2 2v2h18v-2a2 2 0 0 0-2-2h-2v-4a5.002 5.002 0 0 0-4-4.9V3c0-.5-.5-1-1-1zm0 24c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zM9 13v-3c0-1.7 1.3-3 3-3s3 1.3 3 3v3h-6zm-4 7v-2h14v2H5z"/>
+            </svg>
+          </div>
+          <h1 className="text-[2rem] md:text-[2.5rem] font-black mb-2 md:mb-4 tracking-tight leading-tight text-center relative z-10">MDA Masjid<br/>Nurul Huda</h1>
+          <p className="text-white/90 text-sm md:text-lg font-medium text-center relative z-10 md:mb-8">Aplikasi Manajemen MDA Terpadu</p>
+          
+          {/* Desktop Features Highlight */}
+          <div className="hidden md:flex flex-col gap-4 mt-8 relative z-10 w-full max-w-sm">
+            <div className="flex items-center gap-4 bg-white/10 p-4 rounded-2xl backdrop-blur-sm border border-white/10 hover:bg-white/20 transition-colors">
+               <div className="bg-white/20 p-3 rounded-xl"><Shield size={24} className="text-white" /></div>
+               <div>
+                 <h4 className="font-bold text-sm text-white mb-0.5">Akses Tersentralisasi</h4>
+                 <p className="text-xs text-emerald-50 leading-relaxed">Pantau seluruh data santri, guru, dan kelompok dalam satu ekosistem.</p>
                </div>
-            ) : (
-               <>
-                  <p className="text-slate-500 text-xs mb-6">Daftarkan masjid Anda untuk mulai menggunakan MagribMengaji.</p>
-                  
-                  <div className="space-y-3 mb-6 max-h-[60vh] overflow-y-auto px-1">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Nama Masjid</label>
-                <input 
-                  type="text" 
-                  className="w-full p-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 text-slate-900"
-                  placeholder="Contoh: Masjid Al-Ikhlas"
-                  value={regMosqueName}
-                  onChange={e => setRegMosqueName(e.target.value)}
-                  spellCheck={false}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Alamat Masjid</label>
-                <textarea 
-                  className="w-full p-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 h-20 resize-none text-slate-900"
-                  placeholder="Alamat lengkap..."
-                  value={regMosqueAddress}
-                  onChange={e => setRegMosqueAddress(e.target.value)}
-                  spellCheck={false}
-                />
-              </div>
-              <div className="pt-2 border-t border-slate-100"></div>
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap Admin DKM</label>
-                <input 
-                  type="text" 
-                  className="w-full p-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 text-slate-900"
-                  placeholder="Nama Anda"
-                  value={regAdminName}
-                  onChange={e => setRegAdminName(e.target.value)}
-                  spellCheck={false}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Email Login</label>
-                <input 
-                  type="email" 
-                  className="w-full p-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 text-slate-900"
-                  placeholder="email@contoh.com"
-                  value={regEmail}
-                  onChange={e => setRegEmail(e.target.value)}
-                  autoComplete="email"
-                />
-              </div>
             </div>
-
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setShowRegisterModal(false)}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors text-sm"
-              >
-                Batal
-              </button>
-              <button 
-                onClick={handleRegister}
-                disabled={isRegistering}
-                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-colors text-sm disabled:opacity-70 flex justify-center items-center gap-2"
-              >
-                {isRegistering ? 'Mendaftar...' : 'Daftar Sekarang'}
-              </button>
+            <div className="flex items-center gap-4 bg-white/10 p-4 rounded-2xl backdrop-blur-sm border border-white/10 hover:bg-white/20 transition-colors">
+               <div className="bg-white/20 p-3 rounded-xl"><Landmark size={24} className="text-white" /></div>
+               <div>
+                 <h4 className="font-bold text-sm text-white mb-0.5">Transparansi Data</h4>
+                 <p className="text-xs text-emerald-50 leading-relaxed">Monitoring progres tahfidz, kehadiran harian, dan evaluasi capaian santri.</p>
+               </div>
             </div>
-            </>
-          )}
           </div>
         </div>
-      )}
+
+        {/* Right Side: Login Form */}
+        <div className="md:w-[45%] flex flex-col justify-center items-center p-6 md:p-12 bg-transparent md:bg-white relative">
+          <div className="w-full bg-white text-slate-800 p-8 md:p-10 rounded-3xl shadow-2xl md:shadow-none max-w-sm mx-auto border border-transparent md:border-slate-100">
+            <div className="mb-8 text-center md:text-left">
+              <h3 className="font-black text-[#1E293B] text-2xl mb-2 hidden md:block">Selamat Datang 👋</h3>
+              <h3 className="font-bold text-center mb-6 text-[#1E293B] text-[1.1rem] md:hidden">Masuk Aplikasi</h3>
+              <p className="text-sm text-slate-500 font-medium hidden md:block">Silakan masuk menggunakan akun Google Anda yang telah didaftarkan ke sistem.</p>
+            </div>
+
+            <button 
+              onClick={() => signIn('google', { callbackUrl: '/' })}
+              className="w-full bg-white border border-slate-200 hover:bg-slate-50 hover:border-emerald-500 hover:shadow-md text-[#1E293B] font-bold py-3.5 md:py-4 rounded-2xl shadow-sm transition-all focus:ring-4 focus:ring-emerald-50 flex items-center justify-center gap-3 mb-5 group"
+            >
+              <img
+                src="https://www.svgrepo.com/show/475656/google-color.svg"
+                className="w-6 h-6 group-hover:scale-110 transition-transform"
+                alt="Google Logo"
+              />
+              Masuk dengan Google
+            </button>
+
+            <div className="relative flex py-5 items-center hidden md:flex">
+              <div className="flex-grow border-t border-slate-200"></div>
+              <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-semibold uppercase tracking-wider">Akses Aman</span>
+              <div className="flex-grow border-t border-slate-200"></div>
+            </div>
+
+            <p className="text-center text-[11px] text-slate-400 font-medium px-2 mt-2 md:mt-0">
+              Dengan masuk, Anda menyetujui <span className="underline cursor-pointer hover:text-[#0E945F] transition-colors">Ketentuan Layanan</span> kami.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+
     </div>
   );
 }

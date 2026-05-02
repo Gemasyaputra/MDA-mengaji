@@ -31,7 +31,7 @@ export default function KabarPage({ onNavigate, currentUser }: KabarPageProps) {
   // Fetch Posts
   const fetchPosts = async (pageNum: number = 1) => {
       try {
-          const res = await fetch(`/api/activities?page=${pageNum}&limit=5`);
+          const res = await fetch(`/api/activities?page=${pageNum}&limit=5&t=${Date.now()}`);
           const json = await res.json();
           if (json.success && Array.isArray(json.data)) {
               const mappedPosts = json.data.map((p: any) => ({
@@ -125,6 +125,7 @@ export default function KabarPage({ onNavigate, currentUser }: KabarPageProps) {
   const [postTitle, setPostTitle] = useState('');
   const [postContent, setPostContent] = useState('');
   const [postImages, setPostImages] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Image Compression Helper
@@ -195,13 +196,13 @@ export default function KabarPage({ onNavigate, currentUser }: KabarPageProps) {
         return;
     }
 
+    setIsSubmitting(true);
     try {
         const method = isEditing ? 'PUT' : 'POST';
         const payload: any = {
             title: postTitle,
             content: postContent,
-            author_id: currentUser.id,
-            mosque_id: currentUser.mosque_id || 1, // Defaulting if missing
+            author_id: currentUser.id,// Defaulting if missing
             activity_date: new Date().toISOString(),
             images: postImages
         };
@@ -231,6 +232,8 @@ export default function KabarPage({ onNavigate, currentUser }: KabarPageProps) {
     } catch (err) {
         console.error(err);
         toast.error('Terjadi kesalahan jaringan.');
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -506,72 +509,111 @@ export default function KabarPage({ onNavigate, currentUser }: KabarPageProps) {
 
       {/* Create Post Modal */}
       {showPostModal && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm p-6">
-            <h3 className="font-bold text-lg mb-4 text-slate-800">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-[95%] max-w-md md:max-w-2xl p-6 md:p-8 shadow-2xl">
+            <h3 className="font-bold text-xl mb-6 text-slate-800 border-b border-slate-100 pb-4">
                 {isEditing ? 'Edit Kabar' : 'Buat Kabar'}
             </h3>
-            <input
-              type="text"
-              placeholder="Judul..."
-              value={postTitle}
-              onChange={(e) => setPostTitle(e.target.value)}
-              className="w-full p-3 border border-slate-200 rounded-lg mb-3 text-sm focus:outline-none focus:border-emerald-500"
-            />
-            <textarea
-              placeholder="Konten..."
-              value={postContent}
-              onChange={(e) => setPostContent(e.target.value)}
-              className="w-full p-3 border border-slate-200 rounded-lg mb-4 text-sm h-24 focus:outline-none focus:border-emerald-500 resize-none"
-            />
             
-            {/* Image Preview */}
-            {postImages.length > 0 && (
-                <div className="flex gap-2 overflow-x-auto pb-2 mb-3">
-                    {postImages.map((img, idx) => (
-                        <div key={idx} className="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden border border-slate-200 group">
-                            <img src={img} className="w-full h-full object-cover" />
-                            <button 
-                                onClick={() => removeImage(idx)}
-                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-80 hover:opacity-100"
-                            >
-                                <X size={12} />
-                            </button>
-                        </div>
-                    ))}
-                </div>
-            )}
-
             <div className="mb-4">
-                <input 
-                    type="file" 
-                    multiple 
-                    accept="image/*"
-                    ref={fileInputRef}
-                    onChange={handleImageUpload}
-                    className="hidden"
-                />
-                <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full py-2 border-2 border-dashed border-slate-300 rounded-lg text-slate-500 text-xs font-bold hover:border-emerald-500 hover:text-emerald-500 transition-colors flex items-center justify-center gap-2"
-                >
-                    <ImageIcon size={16} /> Tambah Foto
-                </button>
-                <p className="text-[10px] text-slate-400 mt-1 text-center">
-                </p>
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                Judul Kabar <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Masukkan judul kabar..."
+                value={postTitle}
+                onChange={(e) => setPostTitle(e.target.value)}
+                disabled={isSubmitting}
+                className="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:opacity-50 transition-all"
+              />
             </div>
-            <div className="flex gap-2">
+
+            <div className="mb-5">
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                Isi Konten <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                placeholder="Tulis isi kabar atau pengumuman di sini..."
+                value={postContent}
+                onChange={(e) => setPostContent(e.target.value)}
+                disabled={isSubmitting}
+                rows={5}
+                className="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:opacity-50 transition-all resize-y"
+              />
+            </div>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                Foto / Gambar Lampiran
+              </label>
+              
+              {/* Image Preview or Upload Button */}
+              {postImages.length > 0 ? (
+                  <div className="flex flex-wrap gap-3">
+                      {postImages.map((img, idx) => (
+                          <div key={idx} className="relative w-24 h-24 md:w-32 md:h-32 rounded-xl overflow-hidden border-2 border-emerald-100 shadow-sm group">
+                              <img src={img} className="w-full h-full object-cover" />
+                              <button 
+                                  onClick={() => removeImage(idx)}
+                                  disabled={isSubmitting}
+                                  className="absolute top-1.5 right-1.5 bg-red-500 text-white rounded-full p-1 opacity-90 hover:opacity-100 hover:bg-red-600 transition-all disabled:opacity-50 shadow-md"
+                              >
+                                  <X size={14} />
+                              </button>
+                          </div>
+                      ))}
+                  </div>
+              ) : (
+                  <div>
+                      <input 
+                          type="file" 
+                          multiple 
+                          accept="image/*"
+                          ref={fileInputRef}
+                          onChange={handleImageUpload}
+                          disabled={isSubmitting}
+                          className="hidden"
+                      />
+                      <button 
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isSubmitting}
+                          className="w-full py-8 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 flex flex-col items-center justify-center gap-2 hover:border-emerald-500 hover:text-emerald-600 hover:bg-emerald-50/50 transition-all disabled:opacity-50"
+                      >
+                          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-1">
+                            <ImageIcon size={20} />
+                          </div>
+                          <span className="text-sm font-bold">Pilih Foto</span>
+                          <span className="text-xs text-slate-400 font-medium">Klik untuk mencari file (Opsional)</span>
+                      </button>
+                  </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t border-slate-100">
               <button
                 onClick={handleCloseModal}
-                className="flex-1 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-semibold transition-colors"
+                disabled={isSubmitting}
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors disabled:opacity-50"
               >
                 Batal
               </button>
               <button
                 onClick={handleCreatePost}
-                className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition-colors"
+                disabled={isSubmitting}
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
               >
-                {isEditing ? 'Simpan' : 'Posting'}
+                {isSubmitting ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Loading...
+                    </>
+                ) : (
+                    isEditing ? 'Simpan Perubahan' : 'Posting Kabar'
+                )}
               </button>
             </div>
           </div>

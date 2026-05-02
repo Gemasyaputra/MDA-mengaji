@@ -6,7 +6,6 @@ async function ensureTable() {
   await execute(`
     CREATE TABLE IF NOT EXISTS notifications (
       id          SERIAL PRIMARY KEY,
-      mosque_id   INTEGER NOT NULL,
       user_id     INTEGER,
       type        TEXT NOT NULL DEFAULT 'system',
       message     TEXT NOT NULL,
@@ -14,30 +13,24 @@ async function ensureTable() {
       created_at  TIMESTAMPTZ DEFAULT NOW()
     )
   `, []);
-  await execute(`CREATE INDEX IF NOT EXISTS idx_notif_mosque ON notifications(mosque_id)`, []);
 }
 
 export async function GET(req: NextRequest) {
   await ensureTable();
   const { searchParams } = new URL(req.url);
-  const mosqueId = searchParams.get('mosque_id');
   const userId = searchParams.get('user_id');
   const limit = searchParams.get('limit') || '20';
 
-  if (!mosqueId) {
-    return NextResponse.json({ success: false, error: 'mosque_id required' }, { status: 400 });
-  }
-
   try {
-    const params: (string | number)[] = [mosqueId];
+    const params: (string | number)[] = [];
     let sql = `
       SELECT * FROM notifications
-      WHERE mosque_id = $1
+      WHERE 1=1
     `;
 
     // Filter: tampilkan notifikasi milik user ini ATAU broadcast (user_id IS NULL)
     if (userId) {
-      sql += ` AND (user_id = $2 OR user_id IS NULL)`;
+      sql += ` AND (user_id = $1 OR user_id IS NULL)`;
       params.push(userId);
     } else {
       sql += ` AND user_id IS NULL`;
@@ -77,12 +70,10 @@ export async function PATCH(req: NextRequest) {
 
 // Helper: create a notification (used by other API routes)
 export async function createNotification({
-  mosque_id,
   user_id = null,
   type = 'system',
   message,
 }: {
-  mosque_id: number;
   user_id?: number | null;
   type?: string;
   message: string;
@@ -90,8 +81,8 @@ export async function createNotification({
   try {
     await ensureTable();
     await execute(
-      `INSERT INTO notifications (mosque_id, user_id, type, message) VALUES ($1, $2, $3, $4)`,
-      [mosque_id, user_id, type, message]
+      `INSERT INTO notifications (user_id, type, message) VALUES ($1, $2, $3)`,
+      [user_id, type, message]
     );
   } catch (err) {
     // Non-fatal — don't block the main save

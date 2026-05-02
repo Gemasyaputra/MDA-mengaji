@@ -9,7 +9,6 @@ interface User {
   id: number;
   name: string;
   role: 'teacher' | 'admin' | 'parent' | 'superadmin' | null;
-  mosque_id?: number;
 }
 
 interface InputHafalnDoaProps {
@@ -87,11 +86,11 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
   // Fetch Groups
   useEffect(() => {
     const fetchGroups = async () => {
-      if (!currentUser?.mosque_id) return;
+      
       try {
-        let url = `/api/study-groups?mosque_id=${currentUser.mosque_id}`;
-        if (currentUser.role === 'teacher' && currentUser.id) {
-            url += `&teacher_id=${currentUser.id}`;
+        let url = `/api/study-groups`;
+        if (currentUser?.role === 'teacher' && currentUser?.id) {
+            url += `?teacher_id=${currentUser.id}`;
         }
         const res = await fetch(url);
         const data = await res.json();
@@ -222,9 +221,9 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
       const data = await res.json();
       if (data.success) {
         onSave('Hafalan berhasil disimpan!');
-        // Update todayRecords locally so indicator appears immediately
+        // Append new record ke todayRecords tanpa menghapus yang sudah ada
         setTodayRecords(prev => [
-          ...prev.filter(r => Number(r.student_id) !== Number(selectedStudent.id)),
+          ...prev,
           { ...payload } as unknown as TodayRecord
         ]);
         setStep(2);
@@ -238,10 +237,10 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
     }
   };
 
-  const getStudentTodayRecord = (studentId: number) =>
-    todayRecords.find(r => Number(r.student_id) === Number(studentId));
+  const getStudentTodayRecords = (studentId: number) =>
+    todayRecords.filter(r => Number(r.student_id) === Number(studentId));
 
-  const doneCount = students.filter(s => getStudentTodayRecord(s.id)).length;
+  const doneCount = students.filter(s => getStudentTodayRecords(s.id).length > 0).length;
 
   const qualityColor = (q: string) => {
     if (q === 'A') return 'bg-emerald-100 text-emerald-700';
@@ -324,8 +323,12 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
             <div className="text-center p-8 text-slate-500">Belum ada santri di kelompok ini.</div>
           ) : (
             students.map(student => {
-              const todayRec = getStudentTodayRecord(student.id);
-              const isDone = !!todayRec;
+              const todayRecs = getStudentTodayRecords(student.id);
+              const isDone = todayRecs.length > 0;
+
+              // Group by type
+              const doaHarian = todayRecs.filter(r => r.type === 'DOA_HARIAN');
+              const bacaanSholat = todayRecs.filter(r => r.type === 'BACAAN_SHOLAT');
 
               return (
                 <div
@@ -353,13 +356,25 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
                       )}
                     </div>
                     {isDone ? (
-                      <p className="text-xs text-purple-600 mt-0.5">
-                        {getRecordLabel(todayRec)}
-                        {' · '}
-                        {todayRec.is_completed ? '✓ Lulus' : '○ Belum'}
-                        {' · '}
-                        <span className="font-bold">{todayRec.quality}</span>
-                      </p>
+                      <div className="text-xs text-purple-600 mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
+                        {doaHarian.length > 0 && (
+                          <span>
+                            <span className="font-medium">Doa Harian:</span>{' '}
+                            {doaHarian.length} disetor{' '}
+                            <span className="text-purple-400">(Nilai: {doaHarian.map(r => r.quality).join(', ')})</span>
+                          </span>
+                        )}
+                        {doaHarian.length > 0 && bacaanSholat.length > 0 && (
+                          <span className="text-purple-300">&bull;</span>
+                        )}
+                        {bacaanSholat.length > 0 && (
+                          <span>
+                            <span className="font-medium">Bacaan Sholat:</span>{' '}
+                            {bacaanSholat.length} disetor{' '}
+                            <span className="text-purple-400">(Nilai: {bacaanSholat.map(r => r.quality).join(', ')})</span>
+                          </span>
+                        )}
+                      </div>
                     ) : (
                       <p className="text-xs text-slate-400 mt-0.5">
                         <span className="text-amber-500 font-medium">Belum diisi</span>
@@ -388,7 +403,7 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
                 <h3 className="font-bold text-slate-800">{selectedStudent.name}</h3>
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold text-slate-500">Input Data Hafalan</span>
-                  {getStudentTodayRecord(selectedStudent.id) && (
+                  {getStudentTodayRecords(selectedStudent.id).length > 0 && (
                     <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">
                       ⚠️ Sudah diisi hari ini — akan menambah
                     </span>

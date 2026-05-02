@@ -4,11 +4,6 @@ import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import DeleteModal from '@/components/DeleteModal';
 
-interface Mosque {
-  id: number;
-  name: string;
-}
-
 interface Teacher {
   id: number;
   name: string;
@@ -16,11 +11,9 @@ interface Teacher {
 
 interface StudyGroup {
   id: number;
-  mosque_id: number;
   teacher_id: number | null;
   name: string;
   description: string | null;
-  mosque_name?: string;
   teacher_name?: string;
 }
 
@@ -28,7 +21,6 @@ interface User {
   id: number;
   name: string;
   role: 'teacher' | 'admin' | 'parent' | 'superadmin' | null;
-  mosque_id?: number;
 }
 
 interface StudyGroupManagePageProps {
@@ -37,8 +29,7 @@ interface StudyGroupManagePageProps {
   currentUser?: User | null;
 }
 
-const emptyForm = {
-  mosque_id: '',
+const emptyForm = {
   teacher_id: '',
   name: '',
   description: '',
@@ -46,7 +37,6 @@ const emptyForm = {
 
 export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }: StudyGroupManagePageProps) {
   const [groups, setGroups] = useState<StudyGroup[]>([]);
-  const [mosques, setMosques] = useState<Mosque[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -62,9 +52,6 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
     try {
       let url = '/api/study-groups';
       const params = new URLSearchParams();
-      if (currentUser?.mosque_id) {
-        params.append('mosque_id', String(currentUser.mosque_id));
-      }
       if (currentUser?.role === 'teacher' && currentUser?.id) {
         params.append('teacher_id', String(currentUser.id));
       }
@@ -88,26 +75,11 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
     }
   };
 
-  const fetchMosques = async () => {
-    try {
-      const res = await fetch('/api/mosques');
-      const json = await res.json();
-      if (json.success !== false && json.data) {
-        setMosques(json.data);
-      } else if (Array.isArray(json)) {
-        setMosques(json);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
 
-  const fetchTeachers = async (mosqueId?: string) => {
+
+  const fetchTeachers = async () => {
     try {
       let url = '/api/teachers';
-      if (mosqueId) {
-        url += `?mosque_id=${mosqueId}`;
-      }
       const res = await fetch(url);
       const json = await res.json();
       if (json.success !== false && json.data) {
@@ -122,41 +94,26 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
 
   useEffect(() => {
     fetchGroups();
-    fetchMosques();
     fetchTeachers();
   }, []);
 
-  useEffect(() => {
-    if (formData.mosque_id) {
-      fetchTeachers(formData.mosque_id);
-    } else {
-      setTeachers([]); 
-    }
-  }, [formData.mosque_id]);
+
 
   const openAddModal = () => {
     setEditingId(null);
-    const initialMosqueId = currentUser?.mosque_id ? String(currentUser.mosque_id) : '';
     setFormData({
       ...emptyForm,
-      mosque_id: initialMosqueId,
     });
-    // If we have a mosque ID, fetch teachers for it immediately
-    if (initialMosqueId) {
-      fetchTeachers(initialMosqueId);
-    }
     setShowModal(true);
   };
 
   const openEditModal = (g: StudyGroup) => {
     setEditingId(g.id);
-    setFormData({
-      mosque_id: String(g.mosque_id),
-      teacher_id: g.teacher_id ? String(g.teacher_id) : '',
+    setFormData({teacher_id: g.teacher_id ? String(g.teacher_id) : '',
       name: g.name,
       description: g.description || '',
     });
-    fetchTeachers(String(g.mosque_id)); // update teachers for this mosque
+
     setShowModal(true);
   };
 
@@ -172,15 +129,10 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
       onSave?.('Nama kelompok wajib diisi');
       return;
     }
-    if (!formData.mosque_id) {
-      onSave?.('Pilih masjid');
-      return;
-    }
+
 
     try {
-      const payload = {
-        mosque_id: parseInt(formData.mosque_id),
-        teacher_id: formData.teacher_id ? parseInt(formData.teacher_id) : null,
+      const payload = {teacher_id: formData.teacher_id ? parseInt(formData.teacher_id) : null,
         name: formData.name.trim(),
         description: formData.description.trim() || null,
       };
@@ -330,23 +282,7 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
               {editingId ? 'Edit Kelompok' : 'Tambah Kelompok'}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Masjid *</label>
-                <select
-                  required
-                  value={formData.mosque_id}
-                  onChange={(e) => setFormData({ ...formData, mosque_id: e.target.value })}
-                  className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
-                  disabled={!!currentUser?.mosque_id} // Disable if user is bound to a mosque
-                >
-                  <option value="">Pilih Masjid</option>
-                  {mosques.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
                   Nama Kelompok *

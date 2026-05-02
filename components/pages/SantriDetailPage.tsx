@@ -1,6 +1,6 @@
 'use client';
 
-import { User, BarChart3, MessageCircle, CheckCircle } from 'lucide-react';
+import { User, BarChart3, MessageCircle, CheckCircle, BookOpen, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface SantriDetailPageProps {
@@ -17,14 +17,39 @@ interface SantriData {
   birth_date: string | null;
   gender: string | null;
   address: string | null;
-  mosque_name?: string;
   group_name?: string | null;
+  reading_level?: string | null;
+  iqro_graduated_at?: string | null;
   created_at?: string;
 }
 
 export default function SantriDetailPage({ onNavigate, santriId }: SantriDetailPageProps) {
   const [santri, setSantri] = useState<SantriData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
+
+  const handleUpgrade = async () => {
+    if (!santri) return;
+    setUpgrading(true);
+    try {
+      const res = await fetch(`/api/students/${santri.id}/upgrade`, {
+        method: 'PATCH',
+      });
+      const json = await res.json();
+      if (json.success) {
+        setSantri({ ...santri, reading_level: 'ALQURAN' });
+        setShowUpgradeModal(false);
+      } else {
+        alert('Gagal mengupgrade santri');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Terjadi kesalahan');
+    } finally {
+      setUpgrading(false);
+    }
+  };
 
   useEffect(() => {
     if (!santriId) {
@@ -178,13 +203,14 @@ export default function SantriDetailPage({ onNavigate, santriId }: SantriDetailP
         </div>
         <h2 className="text-xl font-bold text-slate-800 mb-2">{santri.name}</h2>
         {santri.current_level && (
-          <div className="inline-block bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-semibold mb-4">
+          <div className="inline-block bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-semibold mb-4 mr-2">
             {santri.current_level}
           </div>
         )}
-        {santri.mosque_name && (
-          <p className="text-xs text-slate-500 mb-1">{santri.mosque_name}</p>
-        )}
+        <div className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold mb-4">
+          {santri.reading_level === 'ALQURAN' ? 'Al-Quran' : 'Iqro'}
+        </div>
+        
         {santri.created_at && (
           <p className="text-xs text-slate-500">Bergabung: {formatDate(santri.created_at)}</p>
         )}
@@ -402,7 +428,55 @@ export default function SantriDetailPage({ onNavigate, santriId }: SantriDetailP
             No. HP orang tua belum diisi
           </button>
         )}
+
+        {(!santri.reading_level || santri.reading_level === 'IQRO') && (
+          <button
+            onClick={() => setShowUpgradeModal(true)}
+            className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 rounded-xl transition-colors mt-2"
+          >
+            <BookOpen className="w-4 h-4" />
+            Khatam Iqro & Lanjut Al-Quran
+          </button>
+        )}
       </div>
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-xl animate-in fade-in zoom-in duration-200">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-500">
+                <AlertCircle size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 mb-2">Konfirmasi Khatam</h3>
+              <p className="text-slate-600 text-sm mb-6">
+                Apakah Anda yakin santri <strong>{santri.name}</strong> telah menyelesaikan Iqro dan siap lanjut ke Al-Quran? Tindakan ini akan mengubah status bacaannya.
+              </p>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowUpgradeModal(false)}
+                  disabled={upgrading}
+                  className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-colors disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleUpgrade}
+                  disabled={upgrading}
+                  className="flex-1 py-3 px-4 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
+                >
+                  {upgrading ? (
+                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  ) : (
+                    'Ya, Lanjut'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

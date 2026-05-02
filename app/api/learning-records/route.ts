@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
   const limit = searchParams.get('limit') || '20';
   const groupStudentIds = searchParams.get('group_student_ids'); // comma-separated student IDs
   const date = searchParams.get('date'); // YYYY-MM-DD — filter by specific date
+  const beforeDate = searchParams.get('before_date'); // YYYY-MM-DD — fetch latest record before this date
 
   let sql = `
     SELECT lr.*, u.name as teacher_name 
@@ -43,6 +44,12 @@ export async function GET(req: NextRequest) {
   if (date) {
     sql += ` AND lr.date::date = $${params.length + 1}::date`;
     params.push(date);
+  }
+
+  // Fetch only records strictly before a given date (for auto-fill previous session)
+  if (beforeDate) {
+    sql += ` AND lr.date::date < $${params.length + 1}::date`;
+    params.push(beforeDate);
   }
 
   sql += ` ORDER BY lr.date DESC, lr.created_at DESC LIMIT ${groupStudentIds ? 999 : limit}`;
@@ -103,17 +110,16 @@ export async function POST(req: NextRequest) {
       // Fire notification (non-fatal)
       try {
         const infoResult = await query(`
-          SELECT st.name as student_name, u.name as teacher_name, st.mosque_id
+          SELECT st.name as student_name, u.name as teacher_name
           FROM students st
           JOIN users u ON u.id = $2
           WHERE st.id = $1 LIMIT 1
         `, [student_id, teacher_id]);
 
         if (infoResult.data && infoResult.data.length > 0) {
-          const { student_name, teacher_name, mosque_id } = infoResult.data[0];
+          const { student_name, teacher_name } = infoResult.data[0];
           const halStr = start_point && end_point ? ` · Hal ${start_point}–${end_point}` : '';
           await createNotification({
-            mosque_id,
             type: 'learning',
             message: `Setoran ${student_name}: ${level_or_surah}${halStr} (Nilai ${quality}) — oleh ${teacher_name}`
           });

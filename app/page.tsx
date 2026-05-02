@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
+import Sidebar from '@/components/Sidebar';
 import LoginPage from '@/components/pages/LoginPage';
 import DashboardPage from '@/components/pages/DashboardPage';
 import SantriManagePage from '@/components/pages/SantriManagePage';
@@ -14,8 +15,6 @@ import PresensiDetailPage from '@/components/pages/PresensiDetailPage';
 import KabarPage from '@/components/pages/KabarPage';
 import KabarDetailPage from "@/components/pages/KabarDetailPage";
 import ParentViewPage from '@/components/pages/ParentViewPage';
-import SuperAdminDashboard from '@/components/pages/SuperAdminDashboard';
-import SuperAdminMosqueDetail from '@/components/pages/SuperAdminMosqueDetail';
 import StudyGroupManagePage from '@/components/pages/StudyGroupManagePage';
 import ManageTeachersPage from '@/components/pages/ManageTeachersPage';
 import MasterHafalanPage from '@/components/pages/MasterHafalanPage';
@@ -33,7 +32,7 @@ interface User {
   id: number;
   name: string;
   role: UserRole;
-  mosque_id?: number;
+
 }
 */
 
@@ -63,9 +62,7 @@ export default function Home() {
          handleLogin(u.role as UserRole, {
            id: parseInt(u.id),
            name: u.name || 'User',
-           role: u.role as UserRole,
-           mosque_id: u.mosqueId ? parseInt(u.mosqueId) : undefined,
-           mosque_name: u.mosqueName
+           role: u.role as UserRole
          });
       }
     }
@@ -80,13 +77,7 @@ export default function Home() {
       setCurrentUser({ id: 0, name: 'Guest', role });
     }
 
-    if (role === 'superadmin') {
-      setCurrentPage('dashboard-superadmin');
-    } else if (role === 'parent') {
-      setCurrentPage('parent-view');
-    } else {
-      setCurrentPage('dashboard');
-    }
+    setCurrentPage('dashboard');
   };
 
   const handleConfirmLogout = () => {
@@ -155,8 +146,7 @@ export default function Home() {
         return <KabarPage onNavigate={navigateTo} currentUser={currentUser} />;
       // case 'parent-view': REMOVED - handled in default for query params
 
-      case 'dashboard-superadmin':
-        return <SuperAdminDashboard onNavigate={navigateTo} currentUser={currentUser} />;
+
       case 'manage-teachers':
         return <ManageTeachersPage onNavigate={navigateTo} currentUser={currentUser} />;
       case 'study-groups':
@@ -189,10 +179,7 @@ export default function Home() {
           const returnPath = params.get('returnPath');
           return <SantriHistoryPage onNavigate={navigateTo} santriId={id} mode={mode} returnPath={returnPath} />;
         }
-        if (currentPage?.startsWith('superadmin-mosque-detail')) {
-          const mosqueId = currentPage.includes('?id=') ? currentPage.split('?id=')[1] : null;
-          return <SuperAdminMosqueDetail onNavigate={navigateTo} mosqueId={mosqueId} />;
-        }
+
         if (currentPage?.startsWith('parent-view')) {
           const parentStudentId = currentPage.includes('?student_id=') ? currentPage.split('?student_id=')[1] : null;
           return <ParentViewPage onBack={goBack} onNavigate={navigateTo} studentId={parentStudentId} />;
@@ -204,7 +191,6 @@ export default function Home() {
   const showChrome = currentPage !== 'landing' && currentPage !== 'login' && currentPage !== 'register' && !currentPage.startsWith('parent-view');
 
   const getHeaderTitle = () => {
-    if (currentPage === 'dashboard-superadmin') return 'Super Admin';
     if (currentPage === 'dashboard') return 'Dashboard';
     if (currentPage === 'santri-list') return 'Daftar Santri';
     if (currentPage === 'manage-teachers') return 'Data Guru';
@@ -229,29 +215,43 @@ export default function Home() {
   }
 
   return (
-    <div className={`${currentPage === 'landing' ? 'w-full' : 'mx-auto max-w-md'} bg-white min-h-screen shadow-2xl relative overflow-hidden flex flex-col`}>
-      {showChrome && (
-        <Header
-          role={currentRole}
-          title={getHeaderTitle()}
-          onBack={goBack}
-          currentUser={currentUser}
-          onLogout={() => navigateTo('login')}
-          showBackButton={
-            !['dashboard', 'dashboard-superadmin', 'santri-list', 'kabar', 'manage-teachers'].includes(
-              currentPage,
-            )
-          }
-        />
-      )}
-
-      <main className={`flex-1 overflow-y-auto ${(showChrome && currentRole) ? 'pb-20' : ''} bg-slate-50`}>
-        {renderPage()}
-      </main>
-
+    <div className="w-full h-screen bg-slate-50 relative flex flex-col md:flex-row overflow-hidden">
+      {/* Sidebar for Desktop */}
       {showChrome && currentRole && (
-        <BottomNav role={currentRole} currentPage={currentPage} onNavigate={navigateTo} />
+        <Sidebar role={currentRole} currentPage={currentPage} onNavigate={navigateTo} onLogout={() => navigateTo('login')} />
       )}
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 h-full relative">
+        {showChrome && (
+          <Header
+            role={currentRole}
+            title={getHeaderTitle()}
+            onBack={goBack}
+            currentUser={currentUser}
+            onLogout={() => navigateTo('login')}
+            showBackButton={
+              !['dashboard', 'santri-list', 'kabar', 'manage-teachers'].includes(
+                currentPage,
+              )
+            }
+          />
+        )}
+
+        <main className={`flex-1 overflow-y-auto ${(showChrome && currentRole) ? 'pb-20 md:pb-6' : ''} w-full`}>
+          {['login', 'register', 'landing'].includes(currentPage) ? (
+            renderPage()
+          ) : (
+            <div className="max-w-7xl mx-auto w-full">
+              {renderPage()}
+            </div>
+          )}
+        </main>
+
+        {showChrome && currentRole && (
+          <BottomNav role={currentRole} currentPage={currentPage} onNavigate={navigateTo} />
+        )}
+      </div>
 
       {/* Logout Confirmation Modal */}
       {showLogoutConfirm && (

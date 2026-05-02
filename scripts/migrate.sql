@@ -36,20 +36,10 @@ CREATE TABLE IF NOT EXISTS master_prayer_readings (
 -- BAGIAN 2: STRUKTUR UTAMA (CORE TABLES)
 -- ==========================================
 
--- 4. Tabel Masjid
-CREATE TABLE IF NOT EXISTS mosques (
-    id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    slug VARCHAR(100) NOT NULL UNIQUE,
-    address TEXT,
-    contact_phone VARCHAR(20),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 -- 5. Tabel Users (Admin & Pengajar)
 CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
-    mosque_id BIGINT NOT NULL REFERENCES mosques(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
@@ -74,7 +64,6 @@ CREATE TABLE IF NOT EXISTS users (
 -- 6. Tabel Kelompok Belajar
 CREATE TABLE IF NOT EXISTS study_groups (
     id BIGSERIAL PRIMARY KEY,
-    mosque_id BIGINT NOT NULL REFERENCES mosques(id) ON DELETE CASCADE,
     teacher_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
     name VARCHAR(50) NOT NULL,
     description TEXT
@@ -83,7 +72,6 @@ CREATE TABLE IF NOT EXISTS study_groups (
 -- 7. Tabel Santri
 CREATE TABLE IF NOT EXISTS students (
     id BIGSERIAL PRIMARY KEY,
-    mosque_id BIGINT NOT NULL REFERENCES mosques(id) ON DELETE CASCADE,
     group_id BIGINT REFERENCES study_groups(id) ON DELETE SET NULL,
     name VARCHAR(100) NOT NULL,
     slug VARCHAR(100) NOT NULL UNIQUE,
@@ -158,7 +146,6 @@ CREATE TABLE IF NOT EXISTS worship_records (
 -- 12. Tabel Dokumentasi (News Feed)
 CREATE TABLE IF NOT EXISTS activity_posts (
     id BIGSERIAL PRIMARY KEY,
-    mosque_id BIGINT NOT NULL REFERENCES mosques(id) ON DELETE CASCADE,
     author_id BIGINT NOT NULL REFERENCES users(id),
     title VARCHAR(200) NOT NULL,
     content TEXT,
@@ -174,6 +161,18 @@ CREATE TABLE IF NOT EXISTS activity_images (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS activity_comments (
+    id BIGSERIAL PRIMARY KEY,
+    post_id BIGINT NOT NULL REFERENCES activity_posts(id) ON DELETE CASCADE,
+    user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    parent_name VARCHAR(100),
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- ADD JUZ COLUMN
 ALTER TABLE master_surahs ADD COLUMN IF NOT EXISTS juz VARCHAR(50);
+
+-- ADD READING LEVEL COLUMNS
+ALTER TABLE students ADD COLUMN IF NOT EXISTS reading_level VARCHAR(20) DEFAULT 'IQRO' CHECK (reading_level IN ('IQRO', 'ALQURAN'));
+ALTER TABLE students ADD COLUMN IF NOT EXISTS iqro_graduated_at TIMESTAMP;

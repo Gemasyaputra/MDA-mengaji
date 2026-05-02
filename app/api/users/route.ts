@@ -4,29 +4,18 @@ import { query, executeReturning, execute } from '@/lib/api-helpers';
 // GET: List Users (Admin DKM for a specific mosque)
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const mosque_id = searchParams.get('mosque_id');
   const role = searchParams.get('role'); // e.g., 'admin'
-
-  if (!mosque_id && role !== 'superadmin') {
-    return NextResponse.json({ success: false, error: "Mosque ID is required for non-superadmin roles" }, { status: 400 });
-  }
 
   try {
     let sql: string;
     const params: any[] = [];
 
-    if (role === 'superadmin') {
-       sql = 'SELECT id, name, email, phone, role, created_at FROM users WHERE role = $1 ORDER BY created_at DESC';
-       params.push('superadmin');
-    } else {
-       sql = 'SELECT id, name, email, phone, role, created_at FROM users WHERE mosque_id = $1';
-       params.push(mosque_id);
-       if (role) {
-         sql += ' AND role = $2';
-         params.push(role);
-       }
-       sql += ' ORDER BY created_at DESC';
+    sql = 'SELECT id, name, email, phone, role, created_at FROM users WHERE 1=1';
+    if (role) {
+      sql += ' AND role = $1';
+      params.push(role);
     }
+    sql += ' ORDER BY created_at DESC';
 
     const result = await query(sql, params);
     if (!result.success) {
@@ -42,29 +31,15 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { mosque_id, name, email, password, role = 'admin' } = body;
+    const { name, email, password, role = 'admin' } = body;
 
-    let targetMosqueId: number;
-    let password_hash: string;
-
-    if (role === 'superadmin') {
-      if (!name || !email) {
-        return NextResponse.json({ success: false, error: "Name and email are required" }, { status: 400 });
-      }
-      // Super admins don't need a real mosque_id or password since they use Google SSO
-      targetMosqueId = 1;
-      password_hash = 'OAUTH_ACCOUNT_NO_PASSWORD';
-    } else {
-      if (!mosque_id || !name || !email || !password) {
-        return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
-      }
-      targetMosqueId = mosque_id;
-      password_hash = password;
+    if (!name || !email || !password) {
+      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
     }
 
     const result = await executeReturning(
-      `INSERT INTO users (mosque_id, name, email, password_hash, role) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, role`,
-      [targetMosqueId, name, email, password_hash, role]
+      `INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role`,
+      [name, email, password, role]
     );
 
     if (!result.success) {
