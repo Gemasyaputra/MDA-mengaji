@@ -58,9 +58,6 @@ export default function ManageTeachersPage({ onNavigate, currentUser }: ManageTe
     kewarganegaraan: '',
   });
 
-  const [isExtractingKTP, setIsExtractingKTP] = useState(false);
-  const [ktpPreview, setKtpPreview] = useState<string | null>(null);
-
   // Delete Modal State
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: 0, name: '' });
   const [isDeleting, setIsDeleting] = useState(false);
@@ -87,7 +84,6 @@ export default function ManageTeachersPage({ onNavigate, currentUser }: ManageTe
 
   const handleOpenAdd = () => {
       setIsEditing(false);
-      setKtpPreview(null);
       setFormData({ 
         name: '', email: '', phone: '',
         nik: '', tempat_lahir: '', tanggal_lahir: '', jenis_kelamin: '', golongan_darah: '',
@@ -99,7 +95,6 @@ export default function ManageTeachersPage({ onNavigate, currentUser }: ManageTe
 
   const handleOpenEdit = (teacher: Teacher) => {
       setIsEditing(true);
-      setKtpPreview(null);
       setCurrentTeacherId(teacher.id);
       setFormData({
           name: teacher.name,
@@ -149,7 +144,6 @@ export default function ManageTeachersPage({ onNavigate, currentUser }: ManageTe
             setShowModal(false);
             fetchTeachers();
             setFormData({ name: '', email: '', phone: '' });
-            setKtpPreview(null);
         } else {
             toast.error(json.error || 'Gagal menyimpan data');
         }
@@ -182,69 +176,6 @@ export default function ManageTeachersPage({ onNavigate, currentUser }: ManageTe
     } finally {
         setIsDeleting(false);
     }
-  };
-
-  const handleKTPUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast.error('File harus berupa gambar');
-      return;
-    }
-
-    // Set preview immediately
-    const objectUrl = URL.createObjectURL(file);
-    setKtpPreview(objectUrl);
-    setIsExtractingKTP(true);
-
-    // Give UI time to update by pushing execution to the end of the callback queue
-    setTimeout(() => {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        try {
-          const base64data = reader.result as string;
-
-          const res = await fetch('/api/extract-ktp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ imageBase64: base64data }),
-          });
-
-          const json = await res.json();
-          if (json.success && json.data) {
-            toast.success('Berhasil membaca KTP!', { id: 'ktp-toast' });
-            const ktp = json.data;
-            setFormData((prev) => ({
-              ...prev,
-              nik: ktp.nik || prev.nik,
-              name: ktp.name || prev.name,
-              tempat_lahir: ktp.tempat_lahir || prev.tempat_lahir,
-              tanggal_lahir: ktp.tanggal_lahir || prev.tanggal_lahir,
-              jenis_kelamin: ktp.jenis_kelamin || prev.jenis_kelamin,
-              golongan_darah: ktp.golongan_darah || prev.golongan_darah,
-              alamat: ktp.alamat || prev.alamat,
-              rt_rw: ktp.rt_rw || prev.rt_rw,
-              kel_desa: ktp.kel_desa || prev.kel_desa,
-              kecamatan: ktp.kecamatan || prev.kecamatan,
-              agama: ktp.agama || prev.agama,
-              status_perkawinan: ktp.status_perkawinan || prev.status_perkawinan,
-              pekerjaan: ktp.pekerjaan || prev.pekerjaan,
-              kewarganegaraan: ktp.kewarganegaraan || prev.kewarganegaraan,
-            }));
-          } else {
-            throw new Error(json.error || 'Gagal mengekstrak data');
-          }
-        } catch (err: any) {
-          toast.error('Error: ' + err.message, { id: 'ktp-toast' });
-          console.error(err);
-        } finally {
-          setIsExtractingKTP(false);
-          e.target.value = ''; // Reset input
-        }
-      };
-      reader.readAsDataURL(file);
-    }, 100);
   };
 
   return (
@@ -318,71 +249,6 @@ export default function ManageTeachersPage({ onNavigate, currentUser }: ManageTe
                 {isEditing ? 'Edit Guru' : 'Tambah Guru'}
             </h3>
             <div className="space-y-4 mb-6">
-              
-              <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl text-center">
-                <p className="text-sm font-bold text-emerald-800 mb-1">Pindai KTP (Otomatis Diisi AI)</p>
-                <p className="text-xs text-emerald-600 mb-4 px-2">Unggah foto KTP pengajar untuk memproses data NIK, Nama, Tanggal Lahir, dll secara otomatis.</p>
-                  
-                {ktpPreview ? (
-                  <div className="relative w-full max-w-[280px] mx-auto mt-2 rounded-xl overflow-hidden shadow-sm border border-emerald-200 h-[170px] bg-slate-100 group">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                      src={ktpPreview} 
-                      alt="KTP Preview" 
-                      className={`w-full h-full object-cover transition-all duration-500 ease-in-out ${isExtractingKTP ? 'blur-md brightness-[0.6] grayscale-[15%] scale-105' : ''}`}
-                    />
-                    
-                    {isExtractingKTP ? (
-                       <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-slate-900/40 backdrop-blur-[2px]">
-                         <div className="relative w-20 h-20 flex items-center justify-center mb-3">
-                           {/* Outer glowing ring */}
-                           <div className="absolute inset-0 rounded-full border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
-                           
-                           {/* Outer spinning dash pattern */}
-                           <div className="absolute inset-2 rounded-full border-t-2 border-r-2 border-emerald-400 animate-[spin_1.5s_linear_infinite]"></div>
-                           
-                           {/* Inner spinning ring (opposite direction) */}
-                           <div className="absolute inset-4 rounded-full border-b-2 border-l-2 border-emerald-300 animate-[spin_1s_linear_infinite_reverse]"></div>
-                           
-                           {/* Center pulsating dot */}
-                           <div className="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
-                         </div>
-                         
-                         <div className="flex flex-col items-center">
-                            <span className="text-emerald-300 font-bold text-sm tracking-widest uppercase animate-pulse drop-shadow-md">
-                              AI Scanning
-                            </span>
-                            <span className="text-white/80 text-[10px] font-medium mt-1">
-                              Membaca data KTP...
-                            </span>
-                         </div>
-                       </div>
-                    ) : (
-                      <div className="absolute top-2 right-2 flex gap-2">
-                        <button
-                          onClick={() => setKtpPreview(null)}
-                          className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-lg transition-transform hover:scale-110 active:scale-95"
-                          title="Hapus / Ganti KTP"
-                        >
-                          <X size={14} strokeWidth={3} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <label className="inline-flex cursor-pointer bg-white border border-emerald-300 hover:bg-emerald-100 text-emerald-700 px-5 py-2.5 rounded-lg text-sm font-bold shadow-sm transition-colors items-center gap-2">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                    Pilih Foto KTP
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      className="hidden" 
-                      onChange={handleKTPUpload} 
-                      disabled={isExtractingKTP}
-                    />
-                  </label>
-                )}
-              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="md:col-span-2">
