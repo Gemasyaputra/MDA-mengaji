@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 interface User {
   id: number;
   name: string;
-  role: 'teacher' | 'admin' | 'parent' | 'superadmin' | null;
+  role: 'teacher' | 'admin' | 'parent' | null;
 }
 
 interface InputIqroPageProps {

@@ -12,10 +12,6 @@ interface SidebarProps {
 export default function Sidebar({ role, currentPage, onNavigate, onLogout }: SidebarProps) {
   const getNavItems = (role: string) => {
     switch (role) {
-      case 'superadmin':
-        return [
-          { id: 'dashboard-superadmin', label: 'Dashboard', icon: Home },
-        ];
       case 'admin':
         return [
           { id: 'dashboard', label: 'Dashboard', icon: Home },

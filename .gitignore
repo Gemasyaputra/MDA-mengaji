@@ -19,3 +19,14 @@ pnpm-debug.log*
 .pnpm-debug.log
 .env
 PRD.md
+
+# Internal notes / catatan kerja (tidak perlu di-commit)
+analisis_fitur.md
+remake.md
+summary.md
+
+# TypeScript build cache (auto-generated)
+tsconfig.tsbuildinfo
+
+# SQL patch one-shot
+surahs_seed_patch.sql

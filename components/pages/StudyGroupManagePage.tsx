@@ -20,7 +20,7 @@ interface StudyGroup {
 interface User {
   id: number;
   name: string;
-  role: 'teacher' | 'admin' | 'parent' | 'superadmin' | null;
+  role: 'teacher' | 'admin' | 'parent' | null;
 }
 
 interface StudyGroupManagePageProps {
@@ -29,7 +29,8 @@ interface StudyGroupManagePageProps {
   currentUser?: User | null;
 }
 
-const emptyForm = {
+const emptyForm = {
+
   teacher_id: '',
   name: '',
   description: '',

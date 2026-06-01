@@ -1,254 +1,219 @@
 # SimMengaji - Project Summary
 
-## ✅ Completion Status
+## ✅ Ringkasan
 
-Semua komponen aplikasi telah dibangun sesuai dengan spesifikasi yang diberikan berdasarkan SQL schema dan HTML design attachment.
+Aplikasi web *single-tenant* yang dikhususkan untuk operasional **MDA Masjid Nurul Huda**. Mendigitalisasi pencatatan akademik (presensi, setoran tilawah, hafalan doa) dan menyediakan portal pemantauan untuk orang tua tanpa perlu login.
 
-## 📦 Yang Telah Dibangun
+## 📦 Yang Dibangun
 
 ### 1. Database Setup
-- ✅ Drizzle ORM schema (`lib/schema.ts`)
+- ✅ Drizzle ORM schema (`lib/schema.ts`) — tanpa multi-tenant
 - ✅ Database configuration (`lib/db.ts`)
-- ✅ Migration script (`scripts/migrate.sql`)
-- ✅ Seed data script (`scripts/seed.sql`)
-- ✅ Migration runner (`scripts/migrate.js`)
+- ✅ Migration script (`scripts/migrate.sql`, `scripts/migrate.js`)
+- ✅ Seed master data (`scripts/seed.js`, `scripts/generate_surahs.js`)
 
-**Status**: Siap dijalankan saat DATABASE_URL sudah dikonfigurasi
+### 2. API Routes
+Mix Raw SQL parameterized + Drizzle ORM (untuk auth & migrasi):
 
-### 2. API Routes (Raw SQL Queries)
-Semua API menggunakan raw SQL queries (bukan ORM), sesuai requirement:
-
-- ✅ `/api/students` - CRUD santri
-- ✅ `/api/attendance` - CRUD presensi
-- ✅ `/api/learning-records` - CRUD pembelajaran (Iqro/Hafalan Quran)
-- ✅ `/api/doa-records` - CRUD hafalan doa
-- ✅ `/api/activities` - CRUD kabar/activity feed
-- ✅ `/api/upload` - Upload file ke Vercel Blob
-- ✅ `/api/export-pdf` - Export PDF (client-side dengan html2canvas)
-
-**Fitur**: Parameterized queries untuk security, error handling, proper HTTP status codes
+- ✅ `/api/auth/[...nextauth]` — NextAuth Google OAuth
+- ✅ `/api/students` — CRUD santri
+- ✅ `/api/attendance` — CRUD presensi
+- ✅ `/api/learning-records` — Setoran tilawah Iqro/Al-Qur'an
+- ✅ `/api/worship-records` — Setoran doa harian / bacaan sholat
+- ✅ `/api/activities` — Kabar/feed
+- ✅ `/api/study-groups` — Kelompok belajar
+- ✅ `/api/teachers` — Data guru
+- ✅ `/api/users` — Manajemen user
+- ✅ `/api/master/*` & `/api/master-data` — Master surah, doa, bacaan sholat
+- ✅ `/api/dashboard/stats` & `/api/dashboard/activity` — Stats & feed
+- ✅ `/api/notifications` — Notifikasi
+- ✅ `/api/upload` — Upload ke Vercel Blob
+- ✅ `/api/export-pdf` — Stub (PDF di-handle client-side)
+- ✅ `/api/verify-email` — Verifikasi email
 
 ### 3. Frontend Pages
 
 #### Shared Components
-- ✅ `Header.tsx` - Header dengan role badge
-- ✅ `BottomNav.tsx` - Bottom navigation (dinamis sesuai role)
-- ✅ `Toast.tsx` - Toast notifications
+- ✅ `Header.tsx` — Header dengan role badge & notifikasi
+- ✅ `BottomNav.tsx` — Navigation mobile (admin/teacher)
+- ✅ `Sidebar.tsx` — Sidebar desktop (admin/teacher)
+- ✅ `SearchableSelect.tsx`, `DeleteModal.tsx`, `Toast.tsx`
 
-#### Authentication & Main Pages
-- ✅ `LoginPage.tsx` - Login simulasi dengan 4 role
-- ✅ `DashboardPage.tsx` - Dashboard utama dengan jadwal shalat
+#### Authentication & Landing
+- ✅ `LandingPage.tsx` — Halaman publik
+- ✅ `LoginPage.tsx` — Login Google OAuth
 
-#### Student Management
-- ✅ `SantriListPage.tsx` - Daftar santri dengan search
-- ✅ `SantriDetailPage.tsx` - Detail profil santri dengan aktivitas
+#### Dashboard & Manajemen
+- ✅ `DashboardPage.tsx` — Dashboard utama
+- ✅ `SantriManagePage.tsx` — Daftar & kelola santri
+- ✅ `SantriDetailPage.tsx` — Profil santri
+- ✅ `SantriHistoryPage.tsx` — Riwayat aktivitas
+- ✅ `StudyGroupManagePage.tsx` — Kelompok belajar
+- ✅ `ManageTeachersPage.tsx` — Data guru (Admin DKM)
+- ✅ `MasterHafalanPage.tsx` — Bank materi
 
-#### Learning Input Pages
-- ✅ `InputIqroPage.tsx` - Input pembelajaran Iqro
-- ✅ `InputHafalnDoa.tsx` - Input hafalan doa
+#### Input Pembelajaran
+- ✅ `InputIqroPage.tsx` — Setoran tilawah
+- ✅ `InputHafalnDoa.tsx` — Setoran doa harian / bacaan sholat
+- ✅ `PresensiPage.tsx` & `PresensiDetailPage.tsx` — Presensi
 
-#### Attendance & Activity
-- ✅ `PresensiPage.tsx` - Input & riwayat presensi
-- ✅ `KabarPage.tsx` - Activity feed dengan modal posting
+#### Kabar & Activity
+- ✅ `KabarPage.tsx` & `KabarDetailPage.tsx` — Activity feed dengan komentar publik
+- ✅ `ActivityLogPage.tsx` — Log aktivitas
 
-#### Parent Portal
-- ✅ `ParentViewPage.tsx` - Portal orang tua dengan chart
+#### Portal Orang Tua (Publik, Tanpa Login)
+- ✅ `ParentViewPage.tsx` — Portal pemantauan
+- ✅ `app/laporan/[studentId]/` — Laporan PDF cetak
 
-#### Admin Features
-- ✅ `ManageTeachersPage.tsx` - Manajemen data guru
-- ✅ `SuperAdminDashboard.tsx` - Dashboard super admin
-- ✅ `SuperAdminMosqueDetail.tsx` - Detail masjid dengan struktur pengurus
+### 4. Features
+- ✅ Role-based navigation (admin, teacher, parent)
+- ✅ Google OAuth via NextAuth
+- ✅ Akses publik portal ortu via `student_id`
+- ✅ Auto-fill setoran dari sesi sebelumnya
+- ✅ Validasi batas ayat per surah
+- ✅ Notifikasi sistem (polling 60s)
+- ✅ Upload gambar (Vercel Blob) dengan kompresi WebP
+- ✅ Bagikan kabar ke WhatsApp via tautan publik
 
-### 4. Styling & Design
-- ✅ Tailwind CSS (v4) dengan design tokens
-- ✅ Responsive design (mobile-first)
-- ✅ shadcn/ui components
-- ✅ Color scheme: Emerald (primary), dengan slate, blue, purple, yellow accents
-- ✅ Consistent typography dan spacing
-
-### 5. Features
-- ✅ Role-based navigation (guru, admin, orang tua, superadmin)
-- ✅ Search functionality (santri search)
-- ✅ Modal dialogs (create post, add teacher)
-- ✅ Form inputs dengan validation ready
-- ✅ Real-time clock display
-- ✅ Date picker integration
-- ✅ Progress indicators (attendance rate)
-- ✅ Chart placeholder untuk statistik
-
-## 🔧 Teknologi yang Digunakan
+## 🔧 Tech Stack
 
 ```
 Frontend:
-- Next.js 16 dengan App Router
+- Next.js 16 (App Router)
 - React 19
 - TypeScript
 - Tailwind CSS v4
-- shadcn/ui components
+- shadcn/ui
 - Lucide icons
+- @tanstack/react-query
+- sonner (toast)
+- Recharts
 
 Backend:
 - Next.js API Routes
 - PostgreSQL (Neon)
-- Drizzle ORM (untuk migrations)
-- Raw SQL queries (untuk API)
+- Drizzle ORM (auth & migrations)
+- Raw SQL parameterized (transaksi)
 
-Storage:
-- Vercel Blob (file upload)
-- html2canvas (PDF export)
-- Recharts (charts - ready to use)
+Auth & Storage:
+- NextAuth.js (Google OAuth)
+- Vercel Blob
 
-Development:
-- pnpm package manager
+Tooling:
+- pnpm
+- Drizzle Kit
 ```
 
-## 📁 File Structure
+## 📁 Struktur File
 
 ```
-/vercel/share/v0-project/
-├── app/
-│   ├── page.tsx                  # Main app entry
-│   ├── layout.tsx                # Root layout
-│   ├── globals.css               # Global styles
-│   └── api/                      # API routes
-│       ├── students/route.ts
-│       ├── attendance/route.ts
-│       ├── learning-records/route.ts
-│       ├── doa-records/route.ts
-│       ├── activities/route.ts
-│       ├── upload/route.ts
-│       └── export-pdf/route.ts
-├── components/
-│   ├── Header.tsx
-│   ├── BottomNav.tsx
-│   ├── Toast.tsx
-│   └── pages/
-│       ├── LoginPage.tsx
-│       ├── DashboardPage.tsx
-│       ├── SantriListPage.tsx
-│       ├── SantriDetailPage.tsx
-│       ├── InputIqroPage.tsx
-│       ├── InputHafalnDoa.tsx
-│       ├── PresensiPage.tsx
-│       ├── KabarPage.tsx
-│       ├── ParentViewPage.tsx
-│       ├── SuperAdminDashboard.tsx
-│       ├── SuperAdminMosqueDetail.tsx
-│       └── ManageTeachersPage.tsx
-├── lib/
-│   ├── db.ts                     # DB connection
-│   ├── schema.ts                 # Drizzle schema
-│   └── api-helpers.ts            # SQL query helpers
-├── scripts/
-│   ├── migrate.js
-│   ├── migrate.sql
-│   └── seed.sql
-├── package.json
-├── tsconfig.json
-├── next.config.mjs
-└── README.md
+app/
+├── page.tsx              # Main entry (client routing)
+├── layout.tsx
+├── api/
+│   ├── auth/[...nextauth]/
+│   ├── students/, attendance/, learning-records/, worship-records/
+│   ├── activities/, study-groups/, teachers/, users/
+│   ├── master/, master-data/
+│   ├── dashboard/, notifications/, upload/, export-pdf/, verify-email/
+├── laporan/[studentId]/   # Halaman cetak PDF publik
+└── public/kabar/          # Halaman kabar publik
+
+components/
+├── Header.tsx, BottomNav.tsx, Sidebar.tsx
+├── SearchableSelect.tsx, DeleteModal.tsx, Toast.tsx
+└── pages/
+    ├── LandingPage.tsx, LoginPage.tsx, DashboardPage.tsx
+    ├── SantriManagePage.tsx, SantriDetailPage.tsx, SantriHistoryPage.tsx
+    ├── InputIqroPage.tsx, InputHafalnDoa.tsx
+    ├── PresensiPage.tsx, PresensiDetailPage.tsx
+    ├── KabarPage.tsx, KabarDetailPage.tsx, ActivityLogPage.tsx
+    ├── ParentViewPage.tsx
+    ├── StudyGroupManagePage.tsx, ManageTeachersPage.tsx
+    └── MasterHafalanPage.tsx
+
+lib/
+├── db.ts (Drizzle DB pool)
+├── schema.ts (Drizzle schema — single-tenant)
+└── api-helpers.ts (Raw SQL helpers)
+
+scripts/
+├── migrate.js, migrate.sql
+├── seed.js, generate_surahs.js
+└── (helper scripts lain)
 ```
 
-## 🚀 Next Steps untuk Deployment
+## 👥 Login & Akses
 
-1. **Set DATABASE_URL Environment Variable**
-   - Di Vercel project settings atau `.env.local`
-   - Format: `postgresql://user:password@host/database`
+Aplikasi mengenali **3 peran**:
 
-2. **Run Database Migrations**
-   ```bash
-   node scripts/migrate.js
-   ```
+1. **Admin DKM** (`admin`)
+   - Login Google OAuth
+   - Akses: dashboard, santri, presensi, semua setoran, kelompok, guru, master, kabar
 
-3. **Set Vercel Blob Token (opsional)**
-   - Di `.env.local`: `BLOB_READ_WRITE_TOKEN=your_token`
-   - Hanya diperlukan jika ingin menggunakan file upload
+2. **Guru / Pengajar** (`teacher`)
+   - Login Google OAuth
+   - Akses: dashboard, santri di kelompoknya, presensi, setoran, master, kabar
 
-4. **Deploy ke Vercel**
-   ```bash
-   git push origin main
-   # Vercel akan auto-deploy
-   ```
+3. **Orang Tua** (`parent`)
+   - **Tidak perlu login**
+   - Akses via tautan publik berisi `student_id` yang dibagikan via WhatsApp
+   - Lihat progres, kehadiran, hafalan anak, cetak laporan PDF
 
-## 📝 Login Roles
+## 📊 Database Schema
 
-Aplikasi menyediakan 4 role untuk simulasi:
+**Master Data:**
+- `master_surahs` — Daftar surah Al-Qur'an
+- `master_daily_prayers` — Doa harian
+- `master_prayer_readings` — Bacaan sholat
 
-1. **Guru** (Blue)
-   - Akses: Dashboard, input pembelajaran, presensi, kabar
+**Core:**
+- `users` — Admin & Guru (`role IN ('admin', 'teacher')`)
+- `study_groups` — Kelompok belajar
+- `students` — Santri (+ slug untuk portal ortu)
+- `attendance` — Presensi harian
 
-2. **Admin DKM** (Yellow)
-   - Akses: Dashboard, daftar santri, presensi, kabar, manajemen
+**Transaksi:**
+- `learning_records` — Setoran tilawah (Iqro/QURAN)
+- `memorization_records` — Tahfidz (Ziyadah/Murajaah)
+- `worship_records` — Setoran doa & bacaan sholat
+- `activity_posts`, `activity_images`, `activity_comments` — Kabar
 
-3. **Orang Tua** (Green)
-   - Akses: Portal melihat progress anak dengan chart
+## 🚀 Deployment
 
-4. **Super Admin** (Dark)
-   - Akses: Overview seluruh masjid, statistik, manajemen guru
+1. Set environment variables di Vercel:
+   - `DATABASE_URL`
+   - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+   - `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
+   - `BLOB_READ_WRITE_TOKEN`
+2. Run migration: `node scripts/migrate.js`
+3. Push ke GitHub → Vercel auto-deploy
 
-## ⚠️ Implementation Notes
+## ✨ Catatan Implementasi
 
-### Database
-- Migrations siap jalan dengan `node scripts/migrate.js`
-- Seed data otomatis menambah data dummy untuk testing
-- Gunakan raw SQL di API untuk flexibility maksimal
+### Single-Tenant
+Aplikasi sengaja dirancang **single-tenant** untuk MDA Masjid Nurul Huda saja. Tidak ada tabel `mosques`, kolom `mosque_id`, atau role *Super Admin*. Penyederhanaan ini sesuai dengan keputusan revisi proyek (lihat `remake.md`).
 
-### Frontend
-- Login adalah simulasi - untuk production perlu implementasi auth proper
-- Chart placeholder sudah siap untuk Recharts integration
-- html2canvas sudah di-install untuk PDF export dari client-side
-- Semua forms ready untuk backend integration
+### Strategi Query
+- **Drizzle ORM**: dipakai untuk auth (`app/api/auth/[...nextauth]`) dan migrasi schema
+- **Raw SQL Parameterized**: dipakai untuk seluruh transaksi (presensi, setoran, kabar) untuk fleksibilitas query kompleks (UNION ALL, JOIN multi-tabel)
 
-### API
-- Raw SQL queries dengan parameterized statements (SQL injection safe)
-- Error handling dan proper HTTP status codes
-- Ready untuk integrasi dengan frontend
+### Routing
+- App Router untuk API & layout
+- Custom client-side routing di `app/page.tsx` (state-based) untuk SPA-like UX dengan persistensi via `sessionStorage`
 
-### Storage
-- Vercel Blob configuration sudah siap
-- Upload API endpoint sudah built
-- PDF export siap untuk implementasi di client-side
+## 📊 Status
 
-## ✨ Design Highlights
-
-- **Color Palette**: Emerald primary (#059669), dengan slate, blue, purple, yellow accents
-- **Typography**: 2 font families (sans + mono via next/font/google)
-- **Spacing**: Tailwind scale (p-4, gap-3, etc)
-- **Components**: shadcn/ui untuk consistency
-- **Responsiveness**: Mobile-first approach, max-w-md container untuk mobile app look
-- **Icons**: Lucide React icons throughout
-
-## 🎯 Design Compliance
-
-Aplikasi dibangun mengikuti HTML design yang diberikan dalam attachment:
-- ✅ Layout sesuai dengan original design
-- ✅ Color scheme dan typography match
-- ✅ Component structure sama
-- ✅ Navigation pattern sesuai
-- ✅ Form elements dan inputs match design
-- ✅ All pages dari attachment sudah diimplementasikan
-
-## 📊 Status Summary
-
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Database | ✅ Ready | Perlu migration dijalankan |
-| API Routes | ✅ Ready | Raw SQL implementation |
-| Frontend Pages | ✅ Complete | 12 pages + shared components |
-| Authentication | ✅ Simulasi | Login mock untuk demo |
-| Styling | ✅ Complete | Tailwind + shadcn/ui |
-| File Upload | ✅ Ready | Vercel Blob integrated |
-| PDF Export | ✅ Ready | html2canvas + client-side |
-| Charts | ✅ Ready | Recharts ready to use |
-
-## 💡 Pro Tips
-
-1. **Untuk development**: `pnpm dev` dan akses localhost:3000
-2. **Database debug**: Check `lib/db.ts` untuk connection status
-3. **API testing**: Gunakan `/api/*` routes untuk test
-4. **Styling changes**: Edit Tailwind classes langsung di components
-5. **Adding new pages**: Copy pattern dari page components yang ada
+| Komponen | Status |
+|----------|--------|
+| Database | ✅ Schema single-tenant ready |
+| API Routes | ✅ Lengkap |
+| Frontend Pages | ✅ 17 halaman utama |
+| Authentication | ✅ Google OAuth (NextAuth) |
+| Portal Ortu | ✅ Akses publik tanpa login |
+| File Upload | ✅ Vercel Blob |
+| PDF Export | ✅ Client-side (html2canvas) |
 
 ---
 
-**Semua file sudah disiapkan dan siap untuk digunakan. Database migration dapat dijalankan setelah DATABASE_URL dikonfigurasi.**
+**Aplikasi siap digunakan untuk operasional MDA Masjid Nurul Huda.**

@@ -11,11 +11,6 @@ interface BottomNavProps {
 export default function BottomNav({ role, currentPage, onNavigate }: BottomNavProps) {
   const getNavItems = (role: string) => {
     switch (role) {
-      case 'superadmin':
-        return [
-          { id: 'dashboard-superadmin', label: 'Home', icon: Home },
-          { id: 'login', label: 'Keluar', icon: Settings },
-        ];
       case 'admin':
         return [
           { id: 'dashboard', label: 'Home', icon: Home },
@@ -37,8 +32,7 @@ export default function BottomNav({ role, currentPage, onNavigate }: BottomNavPr
   };
 
   const navItems = getNavItems(role);
-  const isSuperAdmin = role === 'superadmin';
-  const gridCols = isSuperAdmin ? 'grid-cols-2' : navItems.length === 5 ? 'grid-cols-5' : 'grid-cols-4';
+  const gridCols = navItems.length === 5 ? 'grid-cols-5' : 'grid-cols-4';
 
   return (
     <nav className="md:hidden bg-white border-t border-slate-200 fixed bottom-0 left-0 right-0 z-[60]">

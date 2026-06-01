@@ -29,6 +29,12 @@ Buat file `.env.local` di root project:
 # Database
 DATABASE_URL=postgresql://username:password@host/database?sslmode=require
 
+# NextAuth (Google OAuth)
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+NEXTAUTH_SECRET=your_random_secret
+NEXTAUTH_URL=http://localhost:3000
+
 # Vercel Blob (opsional, hanya jika mau file upload)
 BLOB_READ_WRITE_TOKEN=your_vercel_blob_token_here
 ```
@@ -80,11 +86,10 @@ Server akan berjalan di `http://localhost:3000`
 ### Login Test
 
 1. Buka browser ke `http://localhost:3000`
-2. Pilih salah satu role untuk login:
-   - **Login sebagai Guru** → Akses dashboard guru
-   - **Login sebagai Admin DKM** → Akses dashboard admin
-   - **Login sebagai Orang Tua** → Portal parent
-   - **Login sebagai Super Admin** → Super admin panel
+2. Pilih cara akses sesuai peran:
+   - **Admin DKM** → Login dengan Google (email harus terdaftar di tabel `users` dengan role `admin`)
+   - **Guru / Pengajar** → Login dengan Google (email harus terdaftar di tabel `users` dengan role `teacher`)
+   - **Orang Tua** → Akses langsung via tautan publik berisi `student_id` (tanpa login)
 
 ### Explore Features
 
@@ -104,11 +109,7 @@ Server akan berjalan di `http://localhost:3000`
 - Lihat progress anak
 - Chart kehadiran
 - Aktivitas terkini
-
-**Super Admin:**
-- Overview semua masjid
-- Statistik santri & guru
-- Kelola struktur pengurus
+- Cetak laporan PDF
 
 ## 🛠️ Development Workflow
 
@@ -245,17 +246,24 @@ git push -u origin main
 
 ## 📝 Database Schema Quick Reference
 
-**Tabel Utama:**
-- `users` - Pengguna (guru, admin, etc)
-- `students` - Santri/murid
-- `teachers` - Guru/ustadz
-- `mosques` - Data masjid
-- `attendance` - Data presensi
-- `learning_records` - Pembelajaran (Iqro, Quran)
-- `doa_records` - Hafalan doa
-- `activities` - Kabar/feed
-- `surahs` - Surat Al-Quran
-- `duas` - Data doa
+**Tabel Utama (single-tenant — hanya untuk MDA Masjid Nurul Huda):**
+
+Master data:
+- `master_surahs` - Daftar surah Al-Qur'an + jumlah ayat
+- `master_daily_prayers` - Doa harian
+- `master_prayer_readings` - Bacaan sholat
+
+Core:
+- `users` - Admin DKM & Guru (role: `admin` | `teacher`)
+- `study_groups` - Kelompok belajar
+- `students` - Data santri (+ slug untuk portal ortu)
+- `attendance` - Presensi harian
+
+Transaksi:
+- `learning_records` - Setoran tilawah Iqro/Al-Qur'an
+- `memorization_records` - Setoran tahfidz (Ziyadah/Murajaah)
+- `worship_records` - Setoran doa harian / bacaan sholat
+- `activity_posts`, `activity_images`, `activity_comments` - Kabar
 
 ## 💾 API Examples
 

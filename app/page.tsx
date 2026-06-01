@@ -26,16 +26,6 @@ import { toast } from 'sonner';
 import { User, UserRole } from '@/types';
 import { useSession, signOut } from 'next-auth/react';
 
-/* 
-type UserRole = 'teacher' | 'admin' | 'parent' | 'superadmin' | null;
-
-interface User {
-  id: number;
-  name: string;
-  role: UserRole;
-
-}
-*/
 
 export default function Home() {
   const [currentPage, setCurrentPage] = useState<string>(() => {

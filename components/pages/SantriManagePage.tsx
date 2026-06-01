@@ -27,10 +27,6 @@ const emptyForm = {
 };
 
 export default function SantriManagePage({ onNavigate, onSave, currentUser }: SantriManagePageProps) {
-  /* const [santris, setSantris] = useState<Santri[]>([]);
-  const [mosques, setMosques] = useState<Mosque[]>([]);
-  const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([]);
-  const [loading, setLoading] = useState(true); */
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,7 +44,6 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
   
   // Delete Modal State
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: 0, name: '' });
-  /* const [isDeleting, setIsDeleting] = useState(false); */
 
   const queryClient = useQueryClient();
 
@@ -96,14 +91,11 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
   // loading state combination
   const loading = loadingSantri;
 
-  /* REMOVED MANUAL FETCH FUNCTIONS AND USEEFFECTS */
-
   const openAddModal = () => {
     setEditingId(null);
     setFormData({
       ...emptyForm,
     });
-    // If we have a mosque ID, fetch study groups for it immediately (will be handled by useEffect)
     setShowModal(true);
   };
 

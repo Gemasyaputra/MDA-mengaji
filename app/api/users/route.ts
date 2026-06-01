@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, executeReturning, execute } from '@/lib/api-helpers';
 
-// GET: List Users (Admin DKM for a specific mosque)
+// GET: List Users
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const role = searchParams.get('role'); // e.g., 'admin'

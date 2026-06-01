@@ -111,9 +111,8 @@ export default function Header({ role, title, onBack, showBackButton, currentUse
   // ─── Helpers ─────────────────────────────────────────────────────────────────
   const getRoleDisplay = (role: string | null) => {
     switch (role) {
-      case 'superadmin': return { badge: 'SUPER ADMIN', subtitle: 'Panel Pusat', badgeClass: 'bg-slate-800 text-white' };
-      case 'admin': return { badge: 'ADMIN DKM', subtitle: currentUser?.mosque_name || 'MDA Masjid Nurul Huda', badgeClass: 'bg-yellow-500 text-white' };
-      case 'teacher': return { badge: 'GURU', subtitle: currentUser?.mosque_name || 'MDA Masjid Nurul Huda', badgeClass: 'bg-white/20 text-white' };
+      case 'admin': return { badge: 'ADMIN DKM', subtitle: 'MDA Masjid Nurul Huda', badgeClass: 'bg-yellow-500 text-white' };
+      case 'teacher': return { badge: 'GURU', subtitle: 'MDA Masjid Nurul Huda', badgeClass: 'bg-white/20 text-white' };
       case 'parent': return { badge: 'ORANG TUA', subtitle: 'Portal Orang Tua', badgeClass: 'bg-emerald-700 text-white' };
       default: return { badge: 'USER', subtitle: 'App', badgeClass: 'bg-white/20 text-white' };
     }
@@ -123,7 +122,6 @@ export default function Header({ role, title, onBack, showBackButton, currentUse
 
   const getRoleBadgeColor = (role: string | null) => {
     switch (role) {
-      case 'superadmin': return 'bg-slate-700';
       case 'admin': return 'bg-yellow-500';
       case 'teacher': return 'bg-emerald-700';
       default: return 'bg-emerald-700';

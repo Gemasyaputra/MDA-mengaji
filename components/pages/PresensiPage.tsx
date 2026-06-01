@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 interface User {
   id: number;
   name: string;
-  role: 'teacher' | 'admin' | 'parent' | 'superadmin' | null;
+  role: 'teacher' | 'admin' | 'parent' | null;
 }
 
 interface PresensiPageProps {
@@ -80,7 +80,7 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
     const fetchGroups = async () => {
       
       try {
-        // Fetch groups for the mosque and optionally filter by teacher
+        // Fetch groups, optionally filter by teacher
         let url = `/api/study-groups`;
         if (currentUser?.role === 'teacher' && currentUser?.id) {
             url += `?teacher_id=${currentUser.id}`;

@@ -321,7 +321,7 @@ export default function KabarPage({ onNavigate, currentUser }: KabarPageProps) {
                                     </button>
 
                                     {/* Edit/Delete Only for Author/Admin */}
-                                    {(String(currentUser?.id) === String(post.author_id) || currentUser?.role === 'admin' || currentUser?.role === 'superadmin') && (
+                                    {(String(currentUser?.id) === String(post.author_id) || currentUser?.role === 'admin') && (
                                         <>
                                             <button
                                                 onClick={(e) => {

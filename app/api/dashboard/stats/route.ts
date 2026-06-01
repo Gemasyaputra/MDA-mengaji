@@ -80,8 +80,6 @@ export async function GET(req: NextRequest) {
         ? Number(totalGroupsResult.data[0].count) 
         : 0;
 
-    const mosqueName = 'MDA Masjid Nurul Huda';
-
     return NextResponse.json({
         success: true,
         data: {
@@ -89,7 +87,6 @@ export async function GET(req: NextRequest) {
             present_today: presentToday,
             total_teachers: totalTeachers,
             total_groups: totalGroups,
-            mosque_name: mosqueName
         }
     });
 
