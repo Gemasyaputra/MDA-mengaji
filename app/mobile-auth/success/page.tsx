@@ -1,6 +1,5 @@
 import { getServerSession } from "next-auth/next";
-import { redirect } from "next/navigation";
-// You might need to export authOptions from [...nextauth]/route.ts, but if not exported, we can just use getServerSession() without args in app router or we might need to recreate it. Let's see if we can just redirect to the homepage if fail.
+import RedirectClient from "./RedirectClient";
 
 export default async function MobileAuthSuccess({ searchParams }: { searchParams: { returnUrl?: string } }) {
   const session = await getServerSession();
@@ -24,7 +23,7 @@ export default async function MobileAuthSuccess({ searchParams }: { searchParams
   const { users } = await import("@/lib/schema");
   const { eq } = await import("drizzle-orm");
   
-  const dbUsers = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  const dbUsers = await db.select().from(users).where(eq(users.email, email!)).limit(1);
   const role = dbUsers.length > 0 ? dbUsers[0].role : null;
   const userId = dbUsers.length > 0 ? dbUsers[0].id : null;
 
@@ -34,9 +33,7 @@ export default async function MobileAuthSuccess({ searchParams }: { searchParams
         <h2>Akses Ditolak</h2>
         <p>Akun ini bukan akun Guru.</p>
         <p style={{ color: 'red', fontSize: 12 }}>
-          Debug: Email kamu adalah <b>{email}</b> dan jabatanmu terdeteksi sebagai <b>{role || 'KOSONG (undefined)'}</b>.
-          <br/>
-          Jika role KOSONG, coba <a href="https://mda-mengaji.vercel.app/api/auth/signout" target="_blank">Logout Disini</a> lalu login lagi.
+          Debug: Email = <b>{email}</b>, Role = <b>{role || 'KOSONG'}</b>
         </p>
         <a href={`${baseUrl}?error=not_teacher`}>Kembali ke Aplikasi</a>
       </div>
@@ -51,15 +48,12 @@ export default async function MobileAuthSuccess({ searchParams }: { searchParams
       <h2>Login Berhasil!</h2>
       <p>Membuka kembali aplikasi...</p>
       
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            setTimeout(function() {
-              window.location.href = "${redirectUrl}";
-            }, 1000);
-          `
-        }}
-      />
+      {/* Client component handles the actual redirect */}
+      <RedirectClient url={redirectUrl} />
+
+      {/* Meta refresh as fallback */}
+      <meta httpEquiv="refresh" content={`1;url=${redirectUrl}`} />
+
       <br/>
       <a href={redirectUrl} style={{ padding: '10px 20px', background: '#059669', color: 'white', borderRadius: 8, textDecoration: 'none' }}>
         Kembali ke Aplikasi Sekarang
