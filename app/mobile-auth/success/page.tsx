@@ -22,7 +22,7 @@ export default async function MobileAuthSuccess() {
   const email = session.user.email;
   const role = (session.user as any).role;
 
-  if (role !== 'guru' && role !== 'admin') {
+  if (role !== 'teacher' && role !== 'admin') {
     return (
       <div style={{ padding: 20, textAlign: 'center' }}>
         <h2>Akses Ditolak</h2>
