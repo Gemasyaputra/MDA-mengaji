@@ -27,6 +27,11 @@ export default async function MobileAuthSuccess() {
       <div style={{ padding: 20, textAlign: 'center' }}>
         <h2>Akses Ditolak</h2>
         <p>Akun ini bukan akun Guru.</p>
+        <p style={{ color: 'red', fontSize: 12 }}>
+          Debug: Email kamu adalah <b>{email}</b> dan jabatanmu terdeteksi sebagai <b>{role || 'KOSONG (undefined)'}</b>.
+          <br/>
+          Jika role KOSONG, coba <a href="https://mda-mengaji.vercel.app/api/auth/signout" target="_blank">Logout Disini</a> lalu login lagi.
+        </p>
         <a href="mdamengaji://login?error=not_teacher">Kembali ke Aplikasi</a>
       </div>
     );
