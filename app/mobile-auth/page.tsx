@@ -5,8 +5,10 @@ import { useEffect } from "react";
 
 export default function MobileAuth() {
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const returnUrl = params.get('returnUrl') || 'mdamengaji://login';
     // Automatically trigger Google sign in when this page loads
-    signIn("google", { callbackUrl: "/mobile-auth/success" });
+    signIn("google", { callbackUrl: `/mobile-auth/success?returnUrl=${encodeURIComponent(returnUrl)}` });
   }, []);
 
   return (

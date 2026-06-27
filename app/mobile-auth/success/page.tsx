@@ -2,15 +2,17 @@ import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
 // You might need to export authOptions from [...nextauth]/route.ts, but if not exported, we can just use getServerSession() without args in app router or we might need to recreate it. Let's see if we can just redirect to the homepage if fail.
 
-export default async function MobileAuthSuccess() {
+export default async function MobileAuthSuccess({ searchParams }: { searchParams: { returnUrl?: string } }) {
   const session = await getServerSession();
+
+  const baseUrl = searchParams?.returnUrl || 'mdamengaji://login';
 
   if (!session || !session.user) {
     return (
       <div style={{ padding: 20, textAlign: 'center' }}>
         <h2>Login Gagal</h2>
         <p>Silakan coba lagi.</p>
-        <a href="mdamengaji://login?error=failed">Kembali ke Aplikasi</a>
+        <a href={`${baseUrl}?error=failed`}>Kembali ke Aplikasi</a>
       </div>
     );
   }
@@ -36,12 +38,13 @@ export default async function MobileAuthSuccess() {
           <br/>
           Jika role KOSONG, coba <a href="https://mda-mengaji.vercel.app/api/auth/signout" target="_blank">Logout Disini</a> lalu login lagi.
         </p>
-        <a href="mdamengaji://login?error=not_teacher">Kembali ke Aplikasi</a>
+        <a href={`${baseUrl}?error=not_teacher`}>Kembali ke Aplikasi</a>
       </div>
     );
   }
 
   const token = Buffer.from(JSON.stringify({ userId, email, role })).toString('base64');
+  const redirectUrl = `${baseUrl}?token=${token}`;
 
   return (
     <div style={{ padding: 20, textAlign: 'center', fontFamily: 'sans-serif' }}>
@@ -52,13 +55,13 @@ export default async function MobileAuthSuccess() {
         dangerouslySetInnerHTML={{
           __html: `
             setTimeout(function() {
-              window.location.href = "mdamengaji://login?token=${token}";
+              window.location.href = "${redirectUrl}";
             }, 1000);
           `
         }}
       />
       <br/>
-      <a href={`mdamengaji://login?token=${token}`} style={{ padding: '10px 20px', background: '#059669', color: 'white', borderRadius: 8, textDecoration: 'none' }}>
+      <a href={redirectUrl} style={{ padding: '10px 20px', background: '#059669', color: 'white', borderRadius: 8, textDecoration: 'none' }}>
         Kembali ke Aplikasi Sekarang
       </a>
     </div>
