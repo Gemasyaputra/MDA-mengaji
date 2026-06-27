@@ -360,7 +360,7 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
             {[
               { value: '120+', label: 'Santri Aktif', icon: <Users size={22} /> },
               { value: '8', label: 'Pengajar', icon: <GraduationCap size={22} /> },
-              { value: '5', label: 'Kelompok Belajar', icon: <BookOpen size={22} /> },
+              { value: '5', label: 'Kelas', icon: <BookOpen size={22} /> },
               { value: '15+', label: 'Tahun Berdiri', icon: <Heart size={22} /> },
             ].map((stat, idx) => (
               <AnimateOnScroll key={idx} animation="fade-up" delay={150 + idx * 80}>
@@ -554,7 +554,7 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
               <span className="text-emerald-600 font-bold tracking-wider uppercase text-xs mb-2 block">Jadwal Kegiatan</span>
               <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Waktu Belajar Mengaji</h2>
               <p className="text-slate-600 leading-relaxed">
-                Kegiatan belajar mengaji dilaksanakan setiap hari kerja sore hari, sesuai kelompok belajar santri.
+                Kegiatan belajar mengaji dilaksanakan setiap hari kerja sore hari, sesuai Kelas santri.
               </p>
               <div className="w-16 h-1 bg-emerald-400 mx-auto rounded-full mt-6" />
             </AnimateOnScroll>
@@ -593,7 +593,7 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
               </div>
             </AnimateOnScroll>
 
-            {/* Card: Kelompok Belajar */}
+            {/* Card: Kelas */}
             <AnimateOnScroll animation="fade-left" delay={250}>
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-7 h-full">
                 <div className="flex items-center gap-3 mb-5">
@@ -601,7 +601,7 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
                     <Users size={22} />
                   </div>
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Kelompok Belajar</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Kelas</p>
                     <h3 className="text-lg font-bold text-slate-800">Berdasarkan Jenjang</h3>
                   </div>
                 </div>
@@ -837,7 +837,7 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
                   </li>
                   <li className="flex gap-3">
                     <span className="w-7 h-7 bg-emerald-100 text-emerald-700 rounded-full font-bold text-xs flex items-center justify-center shrink-0">3</span>
-                    <span>Tunggu konfirmasi dari pengurus terkait kelompok belajar dan jadwal mulai mengaji.</span>
+                    <span>Tunggu konfirmasi dari pengurus terkait Kelas dan jadwal mulai mengaji.</span>
                   </li>
                 </ol>
                 <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-5">
@@ -963,7 +963,7 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
             {[
               {
                 q: 'Berapa usia minimal anak untuk bisa mendaftar di MDA?',
-                a: 'Kami menerima santri mulai usia 5 tahun. Untuk anak yang lebih muda, silakan diskusikan dengan pengurus apakah ananda sudah siap belajar dalam kelompok.',
+                a: 'Kami menerima santri mulai usia 5 tahun. Untuk anak yang lebih muda, silakan diskusikan dengan pengurus apakah ananda sudah siap belajar dalam kelas.',
               },
               {
                 q: 'Bagaimana cara saya memantau progres mengaji anak?',
@@ -979,7 +979,7 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
               },
               {
                 q: 'Apakah pendaftaran dibuka sepanjang tahun?',
-                a: 'Ya, pendaftaran dibuka sepanjang tahun selama kuota kelompok masih tersedia. Untuk informasi terkini, hubungi sekretariat MDA.',
+                a: 'Ya, pendaftaran dibuka sepanjang tahun selama kuota kelas masih tersedia. Untuk informasi terkini, hubungi sekretariat MDA.',
               },
             ].map((faq, idx) => (
               <AnimateOnScroll key={idx} animation="fade-up" delay={150 + idx * 60}>

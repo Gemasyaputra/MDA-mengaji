@@ -250,27 +250,31 @@ export default function Home() {
     <div className="w-full h-screen bg-slate-50 relative flex flex-col md:flex-row overflow-hidden">
       {/* Sidebar for Desktop */}
       {showChrome && currentRole && (
-        <Sidebar role={currentRole} currentPage={currentPage} onNavigate={navigateTo} onLogout={() => navigateTo('login')} />
+        <div className="print:hidden h-full">
+          <Sidebar role={currentRole} currentPage={currentPage} onNavigate={navigateTo} onLogout={() => navigateTo('login')} />
+        </div>
       )}
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
         {showChrome && (
-          <Header
-            role={currentRole}
-            title={getHeaderTitle()}
-            onBack={goBack}
-            currentUser={currentUser}
-            onLogout={() => navigateTo('login')}
-            showBackButton={
-              !['dashboard', 'santri-list', 'kabar', 'manage-teachers'].includes(
-                currentPage,
-              )
-            }
-          />
+          <div className="print:hidden">
+            <Header
+              role={currentRole}
+              title={getHeaderTitle()}
+              onBack={goBack}
+              currentUser={currentUser}
+              onLogout={() => navigateTo('login')}
+              showBackButton={
+                !['dashboard', 'santri-list', 'kabar', 'manage-teachers'].includes(
+                  currentPage,
+                )
+              }
+            />
+          </div>
         )}
 
-        <main className={`flex-1 overflow-y-auto ${(showChrome && currentRole) ? 'pb-20 md:pb-6' : ''} w-full`}>
+        <main className={`flex-1 overflow-y-auto ${(showChrome && currentRole) ? 'pb-20 md:pb-6' : ''} w-full print:overflow-visible print:pb-0`}>
           {['login', 'register', 'landing'].includes(currentPage) || currentPage.startsWith('parent-view') || (currentPage.startsWith('kabar-detail') && !currentRole) ? (
             renderPage()
           ) : (
@@ -281,7 +285,9 @@ export default function Home() {
         </main>
 
         {showChrome && currentRole && (
-          <BottomNav role={currentRole} currentPage={currentPage} onNavigate={navigateTo} />
+          <div className="print:hidden w-full">
+            <BottomNav role={currentRole} currentPage={currentPage} onNavigate={navigateTo} />
+          </div>
         )}
       </div>
 

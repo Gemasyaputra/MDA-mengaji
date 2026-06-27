@@ -274,7 +274,7 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
           </button>
         )}
         <h2 className="font-bold text-lg text-slate-800">
-          {step === 1 ? 'Pilih Kelompok' : step === 2 ? 'Pilih Santri' : 'Setoran Doa'}
+          {step === 1 ? 'Pilih Kelas' : step === 2 ? 'Pilih Santri' : 'Setoran Doa'}
         </h2>
       </div>
 
@@ -282,7 +282,7 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
       {step === 1 && (
         <div className="grid gap-3">
           {studyGroups.length === 0 ? (
-            <div className="text-center p-8 text-slate-500 bg-slate-100 rounded-xl">Belum ada kelompok belajar.</div>
+            <div className="text-center p-8 text-slate-500 bg-slate-100 rounded-xl">Belum ada Kelas.</div>
           ) : (
             studyGroups.map(group => (
               <div
@@ -308,7 +308,7 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
         <div className="grid gap-3">
           <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100 mb-1 flex justify-between items-center">
             <div>
-              <span className="text-xs text-emerald-600 font-bold uppercase">Kelompok</span>
+              <span className="text-xs text-emerald-600 font-bold uppercase">Kelas</span>
               <div className="font-bold text-emerald-800">{selectedGroup.name}</div>
             </div>
             {students.length > 0 && (
@@ -320,7 +320,7 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
           </div>
 
           {students.length === 0 ? (
-            <div className="text-center p-8 text-slate-500">Belum ada santri di kelompok ini.</div>
+            <div className="text-center p-8 text-slate-500">Belum ada santri di kelas ini.</div>
           ) : (
             students.map(student => {
               const todayRecs = getStudentTodayRecords(student.id);

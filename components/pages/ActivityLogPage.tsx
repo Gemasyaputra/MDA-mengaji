@@ -150,7 +150,7 @@ export default function ActivityLogPage({ role, currentUser, onNavigate }: Activ
           <div>
             <h1 className="text-lg font-bold text-slate-800">Log Aktivitas</h1>
             <p className="text-xs text-slate-500">
-              {isTeacher ? 'Aktivitas seputar kelompok yang Anda ajar' : 'Semua aktivitas di MDA Masjid Nurul Huda'}
+              {isTeacher ? 'Aktivitas seputar kelas yang Anda ajar' : 'Semua aktivitas di MDA Masjid Nurul Huda'}
             </p>
           </div>
         </div>
@@ -163,7 +163,7 @@ export default function ActivityLogPage({ role, currentUser, onNavigate }: Activ
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Cari nama santri, kelompok, guru..."
+            placeholder="Cari nama santri, kelas, guru..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 placeholder:text-slate-400 transition"

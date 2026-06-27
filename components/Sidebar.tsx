@@ -18,7 +18,7 @@ export default function Sidebar({ role, currentPage, onNavigate, onLogout }: Sid
           { id: 'santri-list', label: 'Data Santri', icon: Users },
           { id: 'presensi', label: 'Presensi', icon: Activity },
           { id: 'input-hafalan-doa', label: 'Setoran Doa', icon: BookOpen },
-          { id: 'study-groups', label: 'Kelompok Kelas', icon: Users },
+          { id: 'study-groups', label: 'Kelas Kelas', icon: Users },
           { id: 'manage-teachers', label: 'Data Guru', icon: Users },
           { id: 'master-hafalan', label: 'Bank Materi', icon: BookOpen },
           { id: 'kabar', label: 'Kabar & Info', icon: MessageSquare },

@@ -1,8 +1,9 @@
 'use client';
 
-import { Plus, Edit2, Trash2, ChevronDown, ChevronRight, Users, BookOpen } from 'lucide-react';
+import { Plus, Edit2, Trash2, ChevronDown, ChevronRight, Users, BookOpen, Printer } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import QRCode from 'react-qr-code';
 import SearchableSelect from '@/components/SearchableSelect';
 import DeleteModal from '@/components/DeleteModal';
 import { toast } from 'sonner';
@@ -30,9 +31,10 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [printTarget, setPrintTarget] = useState<number | null>(null);
   const [formData, setFormData] = useState(emptyForm);
   
-  // Accordion state — set of expanded group IDs (null = "tanpa kelompok")
+  // Accordion state — set of expanded group IDs (null = "Tanpa Kelas")
   const [expandedGroups, setExpandedGroups] = useState<Set<number | 'none'>>(new Set());
   const toggleGroup = (id: number | 'none') => {
     setExpandedGroups(prev => {
@@ -209,12 +211,12 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
 
   // Pre-populate with known groups (preserves order)
   studyGroups.forEach(g => groupMap.set(g.id, { id: g.id, name: g.name, santris: [] }));
-  groupMap.set('none', { id: 'none', name: 'Tanpa Kelompok', santris: [] });
+  groupMap.set('none', { id: 'none', name: 'Tanpa Kelas', santris: [] });
 
   filteredSantris.forEach(s => {
     const key = s.group_id ?? 'none';
     if (!groupMap.has(key)) {
-      groupMap.set(key, { id: key, name: s.group_name || `Kelompok #${key}`, santris: [] });
+      groupMap.set(key, { id: key, name: s.group_name || `kelas #${key}`, santris: [] });
     }
     groupMap.get(key)!.santris.push(s);
   });
@@ -222,22 +224,36 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
   // Only keep groups that have at least one santri
   const groupBuckets = Array.from(groupMap.values()).filter(g => g.santris.length > 0);
 
+  const handlePrintAllQR = () => {
+    setTimeout(() => {
+      window.print();
+    }, 100);
+  };
+
   return (
-    <div className="p-4">
+    <div className="p-4 no-print">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-slate-800">Kelola Santri</h2>
-        <button
-          onClick={openAddModal}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-full text-sm font-bold flex items-center gap-1 transition-colors"
-        >
-          <Plus size={16} /> Tambah
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handlePrintAllQR}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm font-bold flex items-center gap-1 transition-colors"
+          >
+            <Printer size={16} /> Cetak QR
+          </button>
+          <button
+            onClick={openAddModal}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-full text-sm font-bold flex items-center gap-1 transition-colors"
+          >
+            <Plus size={16} /> Tambah
+          </button>
+        </div>
       </div>
 
       <div className="mb-4">
         <input
           type="text"
-          placeholder="Cari santri, kelompok, wali..."
+          placeholder="Cari santri, kelas, wali..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full px-4 py-2 bg-slate-100 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-emerald-500"
@@ -362,6 +378,19 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
                         {/* Actions */}
                         <div className="flex gap-1.5 shrink-0">
                           <button
+                            onClick={() => {
+                              setPrintTarget(santri.id);
+                              setTimeout(() => {
+                                window.print();
+                                setTimeout(() => setPrintTarget(null), 1000);
+                              }, 100);
+                            }}
+                            title="Cetak QR"
+                            className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors"
+                          >
+                            <Printer size={13} />
+                          </button>
+                          <button
                             onClick={() => openEditModal(santri)}
                             className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"
                           >
@@ -392,7 +421,7 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
               Total: <span className="font-bold text-emerald-600">{filteredSantris.length}</span>
               {isSearching && <span className="text-slate-400"> dari {santris.length}</span>} santri
             </span>
-            <span>{groupBuckets.length} kelompok</span>
+            <span>{groupBuckets.length} kelas</span>
           </div>
         </div>
       )}
@@ -408,11 +437,11 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Kelompok Belajar
+                  Kelas
                 </label>
                 <SearchableSelect
                   options={[
-                    { value: '', label: 'Pilih Kelompok' },
+                    { value: '', label: 'Pilih kelas' },
                     ...studyGroups
                       .filter(g => currentUser?.role === 'teacher' ? parseInt(String(g.teacher_id)) === parseInt(String(currentUser.id)) : true)
                       .map(g => {
@@ -424,7 +453,7 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
                   ]}
                   value={formData.group_id}
                   onChange={(val) => setFormData({ ...formData, group_id: String(val) })}
-                  placeholder="Pilih Kelompok"
+                  placeholder="Pilih kelas"
                 />
               </div>
               <div className="md:col-span-2">
@@ -559,6 +588,30 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
         }
         isLoading={deleteMutation.isPending}
       />
+
+      {/* --- PRINT ONLY LAYOUT --- */}
+      <div className="hidden print:block absolute inset-0 bg-white">
+        <div className="grid grid-cols-2 gap-8 p-8">
+          {santris.filter(s => printTarget ? s.id === printTarget : true).map(santri => (
+            <div key={santri.id} className="border-2 border-emerald-600 rounded-xl p-6 flex flex-col items-center justify-center break-inside-avoid">
+              <h2 className="text-2xl font-bold text-slate-800 mb-2">ID CARD SANTRI</h2>
+              <div className="w-full h-px bg-emerald-200 mb-6" />
+              <div className="bg-white p-4 rounded-xl border border-slate-200 mb-4">
+                {santri.slug ? (
+                  <QRCode value={santri.slug} size={150} />
+                ) : (
+                  <div className="w-[150px] h-[150px] bg-slate-100 flex items-center justify-center text-xs text-slate-400">QR Kosong</div>
+                )}
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 text-center">{santri.name}</h3>
+              <p className="text-sm text-slate-500 mt-1">{santri.group_name || 'Tanpa Kelas'}</p>
+              <p className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full mt-3">
+                {santri.current_level}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

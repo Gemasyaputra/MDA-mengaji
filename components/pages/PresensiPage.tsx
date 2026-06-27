@@ -300,7 +300,7 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
       <div className="hidden md:flex justify-between items-end mb-6 border-b border-slate-100 pb-4">
          <div>
             <h1 className="text-2xl font-black text-slate-800 tracking-tight">Manajemen Presensi</h1>
-            <p className="text-slate-500 text-sm mt-1">Catat kehadiran santri dan pantau riwayat absensi kelompok Anda.</p>
+            <p className="text-slate-500 text-sm mt-1">Catat kehadiran santri dan pantau riwayat absensi kelas Anda.</p>
          </div>
       </div>
 
@@ -391,7 +391,7 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
                 {isLoading ? (
                     <div className="p-4 text-center text-slate-500">Memuat data santri...</div>
                 ) : students.length === 0 ? (
-                    <div className="p-4 text-center text-slate-500">Belum ada santri di kelompok ini.</div>
+                    <div className="p-4 text-center text-slate-500">Belum ada santri di kelas ini.</div>
                 ) : filteredStudents.length === 0 ? (
                     <div className="p-4 text-center text-slate-400 italic">Tidak ada santri dengan nama "{searchQuery}"</div>
                 ) : (

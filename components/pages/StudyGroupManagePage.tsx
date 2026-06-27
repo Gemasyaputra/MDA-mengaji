@@ -70,7 +70,7 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
       }
     } catch (e) {
       console.error(e);
-      onSave?.('Gagal memuat data kelompok belajar');
+      onSave?.('Gagal memuat data Kelas');
     } finally {
       setLoading(false);
     }
@@ -127,7 +127,7 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      onSave?.('Nama kelompok wajib diisi');
+      onSave?.('Nama kelas wajib diisi');
       return;
     }
 
@@ -146,11 +146,11 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
         });
         const json = await res.json();
         if (json.success) {
-          onSave?.('Kelompok berhasil diubah');
+          onSave?.('Kelas berhasil diubah');
           fetchGroups();
           closeModal();
         } else {
-          onSave?.(json.error || 'Gagal mengubah kelompok');
+          onSave?.(json.error || 'Gagal mengubah kelas');
         }
       } else {
         const res = await fetch('/api/study-groups', {
@@ -160,11 +160,11 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
         });
         const json = await res.json();
         if (json.success) {
-          onSave?.('Kelompok berhasil ditambah');
+          onSave?.('Kelas berhasil ditambah');
           fetchGroups();
           closeModal();
         } else {
-          onSave?.(json.error || 'Gagal menambah kelompok');
+          onSave?.(json.error || 'Gagal menambah kelas');
         }
       }
     } catch (err) {
@@ -184,11 +184,11 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
       const res = await fetch(`/api/study-groups?id=${deleteModal.id}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
-        onSave?.('Kelompok berhasil dihapus');
+        onSave?.('Kelas berhasil dihapus');
         fetchGroups();
         setDeleteModal({ isOpen: false, id: 0, name: '' });
       } else {
-        onSave?.(json.error || 'Gagal menghapus kelompok');
+        onSave?.(json.error || 'Gagal menghapus kelas');
       }
     } catch (err) {
       console.error(err);
@@ -207,7 +207,7 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-slate-800">Kelola Kelompok Belajar</h2>
+        <h2 className="text-xl font-bold text-slate-800">Kelola Kelas</h2>
         <button
           onClick={openAddModal}
           className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-full text-sm font-bold flex items-center gap-1 transition-colors"
@@ -219,7 +219,7 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
       <div className="mb-4">
         <input
           type="text"
-          placeholder="Cari kelompok..."
+          placeholder="Cari kelas..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full px-4 py-2 bg-slate-100 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-emerald-500"
@@ -271,7 +271,7 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
       {!loading && filteredGroups.length === 0 && (
         <div className="text-center py-12">
           <p className="text-slate-500 text-sm">
-            {searchQuery ? 'Tidak ada kelompok ditemukan' : 'Belum ada data kelompok'}
+            {searchQuery ? 'Tidak ada kelas ditemukan' : 'Belum ada data kelas'}
           </p>
         </div>
       )}
@@ -280,18 +280,18 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6">
             <h3 className="font-bold text-lg mb-4 text-slate-800">
-              {editingId ? 'Edit Kelompok' : 'Tambah Kelompok'}
+              {editingId ? 'Edit Kelas' : 'Tambah Kelas'}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-3">
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Nama Kelompok *
+                  Nama Kelas *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Nama kelompok"
+                  placeholder="Nama kelas"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
@@ -316,7 +316,7 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Deskripsi</label>
                 <textarea
                   rows={3}
-                  placeholder="Deskripsi kelompok"
+                  placeholder="Deskripsi kelas"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 resize-none"
@@ -348,10 +348,10 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, id: 0, name: '' })}
         onConfirm={executeDelete}
-        title="Hapus Kelompok?"
+        title="Hapus Kelas?"
         message={
           <>
-            Anda yakin ingin menghapus kelompok <span className="font-bold text-slate-800">"{deleteModal.name}"</span>? 
+            Anda yakin ingin menghapus kelas <span className="font-bold text-slate-800">"{deleteModal.name}"</span>? 
             Data yang dihapus tidak dapat dikembalikan.
           </>
         }

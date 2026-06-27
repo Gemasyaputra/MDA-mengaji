@@ -384,7 +384,7 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
           </button>
         )}
         <h2 className="font-bold text-lg text-slate-800">
-          {step === 1 ? 'Pilih Kelompok' : step === 2 ? 'Pilih Santri' : 'Setoran Tilawah'}
+          {step === 1 ? 'Pilih Kelas' : step === 2 ? 'Pilih Santri' : 'Setoran Tilawah'}
         </h2>
       </div>
 
@@ -393,7 +393,7 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
         <div className="grid gap-3">
           {studyGroups.length === 0 ? (
             <div className="text-center p-8 text-slate-500 bg-slate-100 rounded-xl">
-              Belum ada kelompok belajar.
+              Belum ada Kelas.
             </div>
           ) : (
             studyGroups.map(group => (
@@ -420,7 +420,7 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
         <div className="grid gap-3">
           <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100 mb-1 flex justify-between items-center">
             <div>
-              <span className="text-xs text-emerald-600 font-bold uppercase">Kelompok</span>
+              <span className="text-xs text-emerald-600 font-bold uppercase">Kelas</span>
               <div className="font-bold text-emerald-800">{selectedGroup.name}</div>
             </div>
             {/* Progress indicator */}
@@ -433,7 +433,7 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
           </div>
 
           {students.length === 0 ? (
-            <div className="text-center p-8 text-slate-500">Belum ada santri di kelompok ini.</div>
+            <div className="text-center p-8 text-slate-500">Belum ada santri di kelas ini.</div>
           ) : (
             students.map(student => {
               const todayRec = getStudentTodayRecord(student.id);

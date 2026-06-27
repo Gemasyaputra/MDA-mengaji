@@ -226,7 +226,7 @@ export default function DashboardPage({ role, onNavigate, currentUser }: Dashboa
     },
     {
       icon: Users,
-      label: 'Kelompok',
+      label: 'Kelas',
       page: 'study-groups',
       color: 'bg-orange-50 text-orange-600 border-orange-100',
     },
@@ -345,7 +345,7 @@ export default function DashboardPage({ role, onNavigate, currentUser }: Dashboa
         </div>
         <div className="bg-white p-5 rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-slate-100/60 relative overflow-hidden group hover:border-amber-200 transition-colors">
           <BookOpen size={64} className="absolute -right-4 -bottom-4 text-amber-50 opacity-40 group-hover:scale-110 transition-transform" />
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Total Kelompok</p>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Total Kelas</p>
           <h3 className="text-3xl font-black text-amber-600">{stats.total_groups || 0}</h3>
         </div>
         <div className="bg-white p-5 rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-slate-100/60 relative overflow-hidden group hover:border-purple-200 transition-colors">

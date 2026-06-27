@@ -41,7 +41,7 @@ export default function PresensiDetailPage({ onNavigate, date, groupId }: Presen
         if (json.success && Array.isArray(json.data)) {
           setDetails(json.data);
           if (json.data.length > 0) {
-            setGroupName(json.data[0].group_name || 'Semua Kelompok');
+            setGroupName(json.data[0].group_name || 'Semua Kelas');
           }
         } else {
             setDetails([]);
@@ -125,7 +125,7 @@ export default function PresensiDetailPage({ onNavigate, date, groupId }: Presen
       {/* Group Info if available */}
       {groupName && (
         <div className="bg-white px-4 py-2 rounded-lg border border-slate-100 mb-4 inline-block shadow-sm">
-            <span className="text-xs text-slate-400 font-bold uppercase mr-2">Kelompok:</span>
+            <span className="text-xs text-slate-400 font-bold uppercase mr-2">Kelas:</span>
             <span className="text-sm font-bold text-slate-700">{groupName}</span>
         </div>
       )}
