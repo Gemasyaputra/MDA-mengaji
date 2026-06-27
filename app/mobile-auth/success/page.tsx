@@ -15,12 +15,16 @@ export default async function MobileAuthSuccess() {
     );
   }
 
-  // Generate a simple token or just pass the email/id back for this prototype
-  // In production, you'd generate a secure JWT here or save a session token in DB.
-  // We'll pass the email and id
-  const userId = (session.user as any).id;
   const email = session.user.email;
-  const role = (session.user as any).role;
+  
+  // Fetch role directly from database to avoid JWT caching issues
+  const { db } = await import("@/lib/db");
+  const { users } = await import("@/lib/schema");
+  const { eq } = await import("drizzle-orm");
+  
+  const dbUsers = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  const role = dbUsers.length > 0 ? dbUsers[0].role : null;
+  const userId = dbUsers.length > 0 ? dbUsers[0].id : null;
 
   if (role !== 'teacher' && role !== 'admin') {
     return (
