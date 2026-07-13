@@ -78,7 +78,7 @@ export async function GET(request: Request) {
       .where(
          and(
            eq(attendance.teacherId, teacherId),
-           eq(attendance.status, "hadir"),
+           sql`UPPER(${attendance.status}) = 'HADIR'`,
            sql`DATE(${attendance.date}) = CURRENT_DATE`
          )
       );

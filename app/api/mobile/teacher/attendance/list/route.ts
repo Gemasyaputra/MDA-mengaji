@@ -1,16 +1,29 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { studyGroups, students, attendance } from "@/lib/schema";
-import { eq, and, asc } from "drizzle-orm";
+import { eq, and, asc, inArray, sql } from "drizzle-orm";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const teacherIdParam = searchParams.get("teacherId");
+  const tokenParam = searchParams.get("token");
+  let teacherIdParam = searchParams.get("teacherId");
   const groupIdParam = searchParams.get("groupId");
   const dateParam = searchParams.get("date"); // YYYY-MM-DD
 
+  if (tokenParam) {
+    try {
+      const decoded = Buffer.from(tokenParam, 'base64').toString('utf8');
+      const payload = JSON.parse(decoded);
+      if (payload && payload.userId) {
+         teacherIdParam = payload.userId.toString();
+      }
+    } catch (e) {
+      console.error("Failed to decode token", e);
+    }
+  }
+
   if (!teacherIdParam) {
-    return NextResponse.json({ success: false, message: "Missing teacherId" }, { status: 400 });
+    return NextResponse.json({ success: false, message: "Missing teacherId or token" }, { status: 400 });
   }
 
   const teacherId = parseInt(teacherIdParam, 10);
@@ -32,7 +45,12 @@ export async function GET(request: Request) {
 
     // Fetch all students in the group
     const groupStudents = await db
-      .select({ id: students.id, name: students.name })
+      .select({ 
+          id: students.id, 
+          name: students.name,
+          readingLevel: students.readingLevel,
+          currentLevel: students.currentLevel
+      })
       .from(students)
       .where(eq(students.groupId, groupId))
       .orderBy(asc(students.name));
@@ -46,20 +64,25 @@ export async function GET(request: Request) {
     // Drizzle's `inArray` can be used if studentIds is not empty
     let existingAttendance: any[] = [];
     if (studentIds.length > 0) {
-      // In PostgreSQL, to compare dates reliably:
-      const atts = await db.execute(
-        `SELECT student_id, status, notes, id as attendance_id FROM attendance WHERE student_id = ANY($1) AND date::date = $2::date`,
-        [studentIds, dateStr]
-      );
-      existingAttendance = atts.rows || [];
+      existingAttendance = await db
+        .select()
+        .from(attendance)
+        .where(
+          and(
+            inArray(attendance.studentId, studentIds),
+            eq(sql`date::date`, sql`${dateStr}::date`)
+          )
+        );
     }
 
     // Merge students with attendance
     const mergedData = groupStudents.map(s => {
-      const evidence = existingAttendance.find((a: any) => a.student_id === s.id);
+      const evidence = existingAttendance.find((a: any) => a.studentId === s.id);
       return {
         id: s.id,
         name: s.name,
+        readingLevel: s.readingLevel,
+        currentLevel: s.currentLevel,
         status: evidence ? evidence.status : 'HADIR', // Default to HADIR
         notes: evidence ? evidence.notes : '',
       };

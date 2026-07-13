@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { students, attendance } from "@/lib/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 export async function POST(req: Request) {
   try {
@@ -14,8 +14,23 @@ export async function POST(req: Request) {
     }
 
     // Validation
-    if (!records[0].studentId || !records[0].teacherId || !records[0].status) {
-         return NextResponse.json({ success: false, message: "Format data salah, membutuhkan studentId, teacherId, status" }, { status: 400 });
+    if (!records[0].studentId || (!records[0].teacherId && !records[0].token) || !records[0].status) {
+         return NextResponse.json({ success: false, message: "Format data salah, membutuhkan studentId, teacherId/token, status" }, { status: 400 });
+    }
+
+    let resolvedTeacherId = records[0].teacherId;
+    if (!resolvedTeacherId && records[0].token) {
+        try {
+            const decoded = Buffer.from(records[0].token, 'base64').toString('utf8');
+            const payload = JSON.parse(decoded);
+            resolvedTeacherId = payload.userId;
+        } catch (e) {
+            console.error("Token decode error in attendance POST", e);
+        }
+    }
+
+    if (!resolvedTeacherId) {
+        return NextResponse.json({ success: false, message: "Gagal memvalidasi token guru" }, { status: 401 });
     }
     
     const dateStr = records[0].date || new Date().toISOString().split('T')[0];
@@ -24,14 +39,16 @@ export async function POST(req: Request) {
     // Process each record (delete existing for that date then insert)
     for (const r of records) {
       // Drizzle ORM equivalent of deleting existing attendance for student on this date
-      await db.execute(
-        `DELETE FROM attendance WHERE student_id = $1 AND date::date = $2::date`,
-        [r.studentId, dateStr]
+      await db.delete(attendance).where(
+        and(
+          eq(attendance.studentId, r.studentId),
+          eq(sql`date::date`, sql`${dateStr}::date`)
+        )
       );
       
       await db.insert(attendance).values({
         studentId: r.studentId,
-        teacherId: r.teacherId,
+        teacherId: resolvedTeacherId,
         status: r.status.toUpperCase(),
         notes: r.notes || "Diabsen via Mobile App",
         date: dateStr,
