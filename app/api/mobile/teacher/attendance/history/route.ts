@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
+import { resolveTeacherId } from "@/lib/mobile-auth";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -8,25 +9,10 @@ export async function GET(request: Request) {
   const month = searchParams.get("month"); // YYYY-MM
   const groupId = searchParams.get("groupId");
 
-  let teacherIdParam = null;
-
-  if (tokenParam) {
-    try {
-      const decoded = Buffer.from(tokenParam, 'base64').toString('utf8');
-      const payload = JSON.parse(decoded);
-      if (payload && payload.userId) {
-         teacherIdParam = payload.userId.toString();
-      }
-    } catch (e) {
-      console.error("Failed to decode token", e);
-    }
+  const teacherId = resolveTeacherId(tokenParam);
+  if (!teacherId) {
+    return NextResponse.json({ success: false, message: "Missing or invalid token" }, { status: 401 });
   }
-
-  if (!teacherIdParam) {
-    return NextResponse.json({ success: false, message: "Missing token" }, { status: 400 });
-  }
-
-  const teacherId = parseInt(teacherIdParam, 10);
 
   try {
     // We want to group by date and group_id

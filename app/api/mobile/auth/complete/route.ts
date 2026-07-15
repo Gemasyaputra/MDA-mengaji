@@ -1,8 +1,10 @@
 import { getServerSession } from "next-auth/next";
 import { NextRequest } from "next/server";
+import { authOptions } from "@/lib/auth-options";
+import { signTeacherToken } from "@/lib/mobile-auth";
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   const returnUrl = request.nextUrl.searchParams.get('returnUrl') || 'mdamengaji://login';
 
   if (!session || !session.user || !session.user.email) {
@@ -31,7 +33,14 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const token = Buffer.from(JSON.stringify({ userId, email, role })).toString('base64');
+  if (!userId) {
+    return new Response(null, {
+      status: 302,
+      headers: { Location: `${returnUrl}?error=failed` },
+    });
+  }
+
+  const token = signTeacherToken({ userId, email, role: role as string });
 
   // HTTP 302 redirect to the custom scheme URL
   // This is what openAuthSessionAsync can detect and intercept!

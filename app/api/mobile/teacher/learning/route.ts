@@ -2,14 +2,20 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { students, learningRecords } from "@/lib/schema";
 import { eq } from "drizzle-orm";
+import { resolveTeacherId } from "@/lib/mobile-auth";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { slug, teacherId, type, levelOrSurah, startPoint, endPoint, quality, notes } = body;
+    const { slug, token, type, levelOrSurah, startPoint, endPoint, quality, notes } = body;
 
-    if (!slug || !teacherId || !type || !levelOrSurah || !startPoint || !endPoint) {
+    if (!slug || !token || !type || !levelOrSurah || !startPoint || !endPoint) {
       return NextResponse.json({ success: false, message: "Data nilai ngaji tidak lengkap." }, { status: 400 });
+    }
+
+    const teacherId = resolveTeacherId(token);
+    if (!teacherId) {
+      return NextResponse.json({ success: false, message: "Sesi guru tidak valid." }, { status: 401 });
     }
 
     // 1. Cari santri berdasarkan slug

@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { users } from "@/lib/schema";
 import { eq, and } from "drizzle-orm";
-import jwt from "jsonwebtoken";
-
-const JWT_SECRET = process.env.JWT_SECRET || "rahasia-negara-mda-mengaji-123";
+import { signTeacherToken } from "@/lib/mobile-auth";
 
 export async function POST(req: Request) {
   try {
@@ -28,11 +27,8 @@ export async function POST(req: Request) {
 
     const user = userResult[0];
 
-    // TODO: Idealnya menggunakan bcrypt.compare() jika password sudah di-hash. 
-    // Untuk saat ini kita asumsikan perbandingan langsung (atau tambahkan library bcryptjs nanti).
-    // Karena di NextAuth (Web) hanya ada GoogleProvider, ini adalah gerbang khusus mobile.
-    if (user.passwordHash !== password) {
-      // Catatan: Ganti logika ini dengan bcrypt jika db menyimpan hash!
+    const passwordMatches = await bcrypt.compare(password, user.passwordHash || '');
+    if (!passwordMatches) {
       return NextResponse.json({ success: false, message: "Password salah!" }, { status: 401 });
     }
 
@@ -40,17 +36,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "Akun belum diverifikasi oleh Admin." }, { status: 403 });
     }
 
-    // Buat JWT Token
-    const token = jwt.sign(
-      { 
-        id: user.id, 
-        email: user.email, 
-        role: user.role,
-        name: user.name
-      }, 
-      JWT_SECRET, 
-      { expiresIn: "30d" } // Token berlaku 30 hari
-    );
+    // Buat token guru (JWT, berlaku 30 hari)
+    const token = signTeacherToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+    });
 
     return NextResponse.json({
       success: true,

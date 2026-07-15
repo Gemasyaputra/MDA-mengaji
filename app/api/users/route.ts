@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
 import { query, executeReturning, execute } from '@/lib/api-helpers';
+import { requireAdmin } from '@/lib/require-admin';
 
 // GET: List Users
 export async function GET(req: NextRequest) {
+  const auth = await requireAdmin();
+  if (!auth.ok) {
+    return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+  }
+
   const { searchParams } = new URL(req.url);
   const role = searchParams.get('role'); // e.g., 'admin'
 
@@ -29,6 +36,11 @@ export async function GET(req: NextRequest) {
 
 // POST: Create New User (Admin DKM)
 export async function POST(req: NextRequest) {
+  const auth = await requireAdmin();
+  if (!auth.ok) {
+    return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+  }
+
   try {
     const body = await req.json();
     const { name, email, password, role = 'admin' } = body;
@@ -37,9 +49,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
     }
 
+    const passwordHash = await bcrypt.hash(password, 10);
+
     const result = await executeReturning(
       `INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role`,
-      [name, email, password, role]
+      [name, email, passwordHash, role]
     );
 
     if (!result.success) {
@@ -58,6 +72,11 @@ export async function POST(req: NextRequest) {
 
 // PUT: Update User (Reset Password or Edit Profile)
 export async function PUT(req: NextRequest) {
+  const auth = await requireAdmin();
+  if (!auth.ok) {
+    return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+  }
+
   try {
     const body = await req.json();
     const { id, name, email, password } = body;
@@ -81,7 +100,7 @@ export async function PUT(req: NextRequest) {
     }
     if (password) {
         updates.push(`password_hash = $${idx++}`);
-        params.push(password); // Again, storing plain/simple for demo
+        params.push(await bcrypt.hash(password, 10));
     }
 
     if (updates.length === 0) {
@@ -105,6 +124,11 @@ export async function PUT(req: NextRequest) {
 
 // DELETE: Remove User
 export async function DELETE(req: NextRequest) {
+  const auth = await requireAdmin();
+  if (!auth.ok) {
+    return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+  }
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
   const caller_id = searchParams.get('caller_id'); // Optional: pass caller ID to prevent self-deletion

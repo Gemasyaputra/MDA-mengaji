@@ -2,31 +2,18 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { studyGroups, students, attendance } from "@/lib/schema";
 import { eq, and, asc, inArray, sql } from "drizzle-orm";
+import { resolveTeacherId } from "@/lib/mobile-auth";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const tokenParam = searchParams.get("token");
-  let teacherIdParam = searchParams.get("teacherId");
   const groupIdParam = searchParams.get("groupId");
   const dateParam = searchParams.get("date"); // YYYY-MM-DD
 
-  if (tokenParam) {
-    try {
-      const decoded = Buffer.from(tokenParam, 'base64').toString('utf8');
-      const payload = JSON.parse(decoded);
-      if (payload && payload.userId) {
-         teacherIdParam = payload.userId.toString();
-      }
-    } catch (e) {
-      console.error("Failed to decode token", e);
-    }
+  const teacherId = resolveTeacherId(tokenParam);
+  if (!teacherId) {
+    return NextResponse.json({ success: false, message: "Missing or invalid token" }, { status: 401 });
   }
-
-  if (!teacherIdParam) {
-    return NextResponse.json({ success: false, message: "Missing teacherId or token" }, { status: 400 });
-  }
-
-  const teacherId = parseInt(teacherIdParam, 10);
 
   try {
     // If groupId is not provided, return the list of classes for this teacher

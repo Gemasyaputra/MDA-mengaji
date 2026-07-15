@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
 import { query, execute } from '@/lib/api-helpers';
+import { requireAdmin } from '@/lib/require-admin';
 
 export async function GET(req: NextRequest) {
+  const auth = await requireAdmin();
+  if (!auth.ok) {
+    return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+  }
+
   const { searchParams } = new URL(req.url);
   let sql = `
     SELECT u.id, u.name, u.email, u.phone, u.role
@@ -21,10 +28,15 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAdmin();
+  if (!auth.ok) {
+    return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+  }
+
   try {
     const body = await req.json();
-    const { 
-      name, email, phone, password, 
+    const {
+      name, email, phone, password,
       nik, tempat_lahir, tanggal_lahir, jenis_kelamin, golongan_darah,
       alamat, rt_rw, kel_desa, kecamatan, agama, status_perkawinan,
       pekerjaan, kewarganegaraan
@@ -41,7 +53,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Default password if not provided
-    const passwordHash = password || 'teacher123'; 
+    const passwordHash = await bcrypt.hash(password || 'teacher123', 10);
 
     const result = await execute(
         `INSERT INTO users (
@@ -67,6 +79,11 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+    const auth = await requireAdmin();
+    if (!auth.ok) {
+      return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+    }
+
     try {
         const body = await req.json();
         const { 
@@ -103,6 +120,11 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+    const auth = await requireAdmin();
+    if (!auth.ok) {
+      return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
