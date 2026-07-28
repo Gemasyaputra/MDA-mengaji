@@ -4,13 +4,11 @@ import {
   students,
   attendance,
   learningRecords,
-  memorizationRecords,
   worshipRecords,
-  masterSurahs,
   masterDailyPrayers,
   masterPrayerReadings,
 } from "@/lib/schema";
-import { eq, desc, and, count, sql } from "drizzle-orm";
+import { eq, desc, and, count, sql, inArray } from "drizzle-orm";
 
 export async function GET(
   req: Request,
@@ -52,27 +50,8 @@ export async function GET(
       .orderBy(desc(learningRecords.date))
       .limit(1);
 
-    // 4. Ambil data hafalan (tahfidz) terakhir, sertakan nama surah
-    const latestMemorizationResult = await db
-      .select({
-        id: memorizationRecords.id,
-        date: memorizationRecords.date,
-        surahId: memorizationRecords.surahId,
-        surahName: masterSurahs.nameLatin,
-        verseStart: memorizationRecords.verseStart,
-        verseEnd: memorizationRecords.verseEnd,
-        status: memorizationRecords.status,
-        quality: memorizationRecords.quality,
-        notes: memorizationRecords.notes,
-      })
-      .from(memorizationRecords)
-      .leftJoin(masterSurahs, eq(memorizationRecords.surahId, masterSurahs.id))
-      .where(eq(memorizationRecords.studentId, student.id))
-      .orderBy(desc(memorizationRecords.date))
-      .limit(1);
-
-    // 5. Ambil data ibadah (doa harian / bacaan sholat) terakhir, sertakan judul
-    const latestWorshipResult = await db
+    // 4. Ambil data Hafalan (Doa Harian / Bacaan Sholat) terakhir, sertakan judul
+    const latestHafalanResult = await db
       .select({
         id: worshipRecords.id,
         date: worshipRecords.date,
@@ -85,24 +64,48 @@ export async function GET(
       .from(worshipRecords)
       .leftJoin(masterDailyPrayers, eq(worshipRecords.dailyPrayerId, masterDailyPrayers.id))
       .leftJoin(masterPrayerReadings, eq(worshipRecords.prayerReadingId, masterPrayerReadings.id))
-      .where(eq(worshipRecords.studentId, student.id))
+      .where(and(eq(worshipRecords.studentId, student.id), inArray(worshipRecords.type, ['DOA_HARIAN', 'BACAAN_SHOLAT'])))
       .orderBy(desc(worshipRecords.date))
       .limit(1);
 
-    const latestWorshipRaw = latestWorshipResult.length > 0 ? latestWorshipResult[0] : null;
-    const latestWorship = latestWorshipRaw
+    const latestHafalanRaw = latestHafalanResult.length > 0 ? latestHafalanResult[0] : null;
+    const latestHafalan = latestHafalanRaw
       ? {
-          id: latestWorshipRaw.id,
-          date: latestWorshipRaw.date,
-          type: latestWorshipRaw.type,
+          id: latestHafalanRaw.id,
+          date: latestHafalanRaw.date,
+          type: latestHafalanRaw.type,
           title:
-            latestWorshipRaw.type === "BACAAN_SHOLAT"
-              ? latestWorshipRaw.prayerReadingTitle
-              : latestWorshipRaw.dailyPrayerTitle,
-          isCompleted: latestWorshipRaw.isCompleted,
-          quality: latestWorshipRaw.quality,
+            latestHafalanRaw.type === "BACAAN_SHOLAT"
+              ? latestHafalanRaw.prayerReadingTitle
+              : latestHafalanRaw.dailyPrayerTitle,
+          isCompleted: latestHafalanRaw.isCompleted,
+          quality: latestHafalanRaw.quality,
         }
       : null;
+
+    // 5. Ambil data Ibadah (Salat Fardu / Sunah) terakhir
+    const latestIbadahResult = await db
+      .select({
+        id: worshipRecords.id,
+        date: worshipRecords.date,
+        type: worshipRecords.type,
+        prayerName: worshipRecords.prayerName,
+      })
+      .from(worshipRecords)
+      .where(and(eq(worshipRecords.studentId, student.id), inArray(worshipRecords.type, ['SALAT_FARDU', 'SALAT_SUNAH'])))
+      .orderBy(desc(worshipRecords.date))
+      .limit(1);
+
+    const latestIbadah = latestIbadahResult.length > 0 ? latestIbadahResult[0] : null;
+
+    // 5b. Cek apakah santri tertinggal (tidak ada setoran mengaji/hafalan 14 hari terakhir)
+    const behindCheck = await db.execute(sql`
+      SELECT GREATEST(
+        COALESCE((SELECT MAX(date) FROM learning_records WHERE student_id = ${student.id}), '1900-01-01'),
+        COALESCE((SELECT MAX(date) FROM memorization_records WHERE student_id = ${student.id}), '1900-01-01')
+      ) < CURRENT_DATE - INTERVAL '14 days' as is_behind
+    `);
+    const isBehind = Boolean((behindCheck.rows[0] as any)?.is_behind);
 
     // 6. Ringkasan kehadiran: sepanjang waktu & bulan berjalan
     const [attendanceTotal] = await db
@@ -143,11 +146,14 @@ export async function GET(
           parentName: student.parentName,
           readingLevel: student.readingLevel,
           currentLevel: student.currentLevel,
+          photoUrl: student.photoUrl,
+          isBehind,
+          teacherNote: student.teacherNote,
         },
         latestAttendance: latestAttendance.length > 0 ? latestAttendance[0] : null,
         latestLearning: latestLearning.length > 0 ? latestLearning[0] : null,
-        latestMemorization: latestMemorizationResult.length > 0 ? latestMemorizationResult[0] : null,
-        latestWorship,
+        latestHafalan,
+        latestIbadah,
         attendanceSummary: {
           totalSessions,
           totalHadir,

@@ -17,8 +17,9 @@ export async function GET(request: Request) {
   try {
     // We want to group by date and group_id
     let baseSql = sql`
-        SELECT 
+        SELECT
             TO_CHAR(a.date, 'YYYY-MM-DD') as date,
+            a.session,
             COUNT(a.id) as total_attendance,
             SUM(CASE WHEN a.status = 'HADIR' THEN 1 ELSE 0 END) as total_hadir,
             MAX(g.name) as group_name,
@@ -40,7 +41,7 @@ export async function GET(request: Request) {
         baseSql = sql`${baseSql} AND s.group_id = ${parseInt(groupId, 10)}`;
     }
 
-    baseSql = sql`${baseSql} GROUP BY a.date, s.group_id, a.teacher_id ORDER BY a.date DESC LIMIT 50`;
+    baseSql = sql`${baseSql} GROUP BY a.date, a.session, s.group_id, a.teacher_id ORDER BY a.date DESC, a.session ASC LIMIT 50`;
 
     const result = await db.execute(baseSql);
 

@@ -15,8 +15,9 @@ export default function BottomNav({ role, currentPage, onNavigate }: BottomNavPr
         return [
           { id: 'dashboard', label: 'Home', icon: Home },
           { id: 'santri-list', label: 'Santri', icon: Users },
+          { id: 'rekap-laporan', label: 'Rekap', icon: BarChart3 },
           { id: 'kabar', label: 'Kabar', icon: MessageSquare },
-          { id: 'login', label: 'Keluar', icon: Settings },
+          { id: 'logout', label: 'Keluar', icon: Settings },
         ];
       case 'teacher':
         return [
@@ -24,7 +25,7 @@ export default function BottomNav({ role, currentPage, onNavigate }: BottomNavPr
           { id: 'santri-list', label: 'Santri', icon: Users },
           { id: 'presensi', label: 'Presensi', icon: BarChart3 },
           { id: 'kabar', label: 'Kabar', icon: MessageSquare },
-          { id: 'login', label: 'Keluar', icon: Settings },
+          { id: 'logout', label: 'Keluar', icon: Settings },
         ];
       default:
         return [];

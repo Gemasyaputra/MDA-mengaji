@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, Mail, Phone, Trash2, Edit2, Save, X, Loader2 } from 'lucide-react';
+import { Plus, Mail, Phone, Trash2, Edit2, Save, X, Loader2, Upload, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import DeleteModal from '@/components/DeleteModal';
 import { toast } from 'sonner';
@@ -10,19 +10,9 @@ interface Teacher {
   name: string;
   email: string;
   phone: string;
-  nik?: string;
-  tempat_lahir?: string;
-  tanggal_lahir?: string;
   jenis_kelamin?: string;
-  golongan_darah?: string;
   alamat?: string;
-  rt_rw?: string;
-  kel_desa?: string;
-  kecamatan?: string;
-  agama?: string;
-  status_perkawinan?: string;
-  pekerjaan?: string;
-  kewarganegaraan?: string;
+  photo_url?: string;
 }
 
 interface ManageTeachersPageProps {
@@ -43,24 +33,37 @@ export default function ManageTeachersPage({ onNavigate, currentUser }: ManageTe
     name: '',
     email: '',
     phone: '',
-    nik: '',
-    tempat_lahir: '',
-    tanggal_lahir: '',
     jenis_kelamin: '',
-    golongan_darah: '',
     alamat: '',
-    rt_rw: '',
-    kel_desa: '',
-    kecamatan: '',
-    agama: '',
-    status_perkawinan: '',
-    pekerjaan: '',
-    kewarganegaraan: '',
+    photo_url: '',
   });
 
   // Delete Modal State
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: 0, name: '' });
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingPhoto(true);
+    try {
+      const uploadForm = new FormData();
+      uploadForm.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: uploadForm });
+      const json = await res.json();
+      if (json.success) {
+        setFormData(prev => ({ ...prev, photo_url: json.url }));
+      } else {
+        toast.error(json.error || 'Gagal mengunggah foto');
+      }
+    } catch {
+      toast.error('Terjadi kesalahan saat mengunggah foto');
+    } finally {
+      setIsUploadingPhoto(false);
+      e.target.value = '';
+    }
+  };
 
   // Fetch Teachers
   const fetchTeachers = async () => {
@@ -84,12 +87,7 @@ export default function ManageTeachersPage({ onNavigate, currentUser }: ManageTe
 
   const handleOpenAdd = () => {
       setIsEditing(false);
-      setFormData({ 
-        name: '', email: '', phone: '',
-        nik: '', tempat_lahir: '', tanggal_lahir: '', jenis_kelamin: '', golongan_darah: '',
-        alamat: '', rt_rw: '', kel_desa: '', kecamatan: '', agama: '', status_perkawinan: '',
-        pekerjaan: '', kewarganegaraan: ''
-      });
+      setFormData({ name: '', email: '', phone: '', jenis_kelamin: '', alamat: '', photo_url: '' });
       setShowModal(true);
   };
 
@@ -100,19 +98,9 @@ export default function ManageTeachersPage({ onNavigate, currentUser }: ManageTe
           name: teacher.name,
           email: teacher.email,
           phone: teacher.phone || '',
-          nik: teacher.nik || '',
-          tempat_lahir: teacher.tempat_lahir || '',
-          tanggal_lahir: teacher.tanggal_lahir ? teacher.tanggal_lahir.substring(0, 10) : '',
           jenis_kelamin: teacher.jenis_kelamin || '',
-          golongan_darah: teacher.golongan_darah || '',
           alamat: teacher.alamat || '',
-          rt_rw: teacher.rt_rw || '',
-          kel_desa: teacher.kel_desa || '',
-          kecamatan: teacher.kecamatan || '',
-          agama: teacher.agama || '',
-          status_perkawinan: teacher.status_perkawinan || '',
-          pekerjaan: teacher.pekerjaan || '',
-          kewarganegaraan: teacher.kewarganegaraan || ''
+          photo_url: teacher.photo_url || ''
       });
       setShowModal(true);
   };
@@ -203,11 +191,20 @@ export default function ManageTeachersPage({ onNavigate, currentUser }: ManageTe
             ) : (
                 teachers.map(teacher => (
                 <div key={teacher.id} className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 hover:shadow-md transition-shadow">
-                    <div className="mb-3">
-                    <h4 className="font-bold text-slate-800 text-sm mb-1">{teacher.name}</h4>
-                    <span className="inline-block px-2 py-1 bg-slate-100 text-slate-600 text-[10px] rounded font-semibold uppercase">
-                        MDA Masjid Nurul Huda
-                    </span>
+                    <div className="mb-3 flex items-center gap-3">
+                    {teacher.photo_url ? (
+                      <img src={teacher.photo_url} alt={teacher.name} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                        <User size={16} className="text-slate-400" />
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm mb-1">{teacher.name}</h4>
+                      <span className="inline-block px-2 py-1 bg-slate-100 text-slate-600 text-[10px] rounded font-semibold uppercase">
+                          MDA Masjid Nurul Huda
+                      </span>
+                    </div>
                     </div>
                     <div className="space-y-1 mb-3 text-xs text-slate-600">
                     <div className="flex items-center gap-2">
@@ -250,40 +247,28 @@ export default function ManageTeachersPage({ onNavigate, currentUser }: ManageTe
             </h3>
             <div className="space-y-4 mb-6">
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="md:col-span-2">
-                    <label className="text-xs font-bold text-slate-500 mb-1 block">NIK</label>
-                    <input
-                      type="text"
-                      value={formData.nik || ''}
-                      onChange={(e) => setFormData({ ...formData, nik: e.target.value })}
-                      className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
-                    />
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-14 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                  {formData.photo_url ? (
+                    <img src={formData.photo_url} alt="Foto" className="w-full h-full object-cover" />
+                  ) : (
+                    <User size={20} className="text-slate-300" />
+                  )}
                 </div>
+                <label className="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-semibold text-slate-600 cursor-pointer transition-colors">
+                  <Upload size={14} />
+                  {isUploadingPhoto ? 'Mengunggah...' : 'Unggah Foto'}
+                  <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={isUploadingPhoto} />
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="md:col-span-2">
                     <label className="text-xs font-bold text-slate-500 mb-1 block">Nama Lengkap</label>
                     <input
                       type="text"
                       value={formData.name || ''}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
-                    />
-                </div>
-                <div>
-                    <label className="text-xs font-bold text-slate-500 mb-1 block">Tempat Lahir</label>
-                    <input
-                      type="text"
-                      value={formData.tempat_lahir || ''}
-                      onChange={(e) => setFormData({ ...formData, tempat_lahir: e.target.value })}
-                      className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
-                    />
-                </div>
-                <div>
-                    <label className="text-xs font-bold text-slate-500 mb-1 block">Tanggal Lahir</label>
-                    <input
-                      type="date"
-                      value={formData.tanggal_lahir || ''}
-                      onChange={(e) => setFormData({ ...formData, tanggal_lahir: e.target.value })}
                       className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
                     />
                 </div>
@@ -300,105 +285,28 @@ export default function ManageTeachersPage({ onNavigate, currentUser }: ManageTe
                     </select>
                 </div>
                 <div>
-                    <label className="text-xs font-bold text-slate-500 mb-1 block">Gol. Darah</label>
+                    <label className="text-xs font-bold text-slate-500 mb-1 block">Nomor Telepon / WA</label>
                     <input
-                      type="text"
-                      value={formData.golongan_darah || ''}
-                      onChange={(e) => setFormData({ ...formData, golongan_darah: e.target.value })}
+                      type="tel"
+                      value={formData.phone || ''}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
                     />
                 </div>
                 <div className="md:col-span-2">
-                    <label className="text-xs font-bold text-slate-500 mb-1 block">Alamat Lengkap</label>
+                    <label className="text-xs font-bold text-slate-500 mb-1 block">Alamat</label>
                     <textarea
                       value={formData.alamat || ''}
                       onChange={(e) => setFormData({ ...formData, alamat: e.target.value })}
                       className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 h-16 resize-none"
                     />
                 </div>
-                <div>
-                    <label className="text-xs font-bold text-slate-500 mb-1 block">RT / RW</label>
-                    <input
-                      type="text"
-                      value={formData.rt_rw || ''}
-                      onChange={(e) => setFormData({ ...formData, rt_rw: e.target.value })}
-                      className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
-                    />
-                </div>
-                <div>
-                    <label className="text-xs font-bold text-slate-500 mb-1 block">Kel / Desa</label>
-                    <input
-                      type="text"
-                      value={formData.kel_desa || ''}
-                      onChange={(e) => setFormData({ ...formData, kel_desa: e.target.value })}
-                      className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
-                    />
-                </div>
-                <div>
-                    <label className="text-xs font-bold text-slate-500 mb-1 block">Kecamatan</label>
-                    <input
-                      type="text"
-                      value={formData.kecamatan || ''}
-                      onChange={(e) => setFormData({ ...formData, kecamatan: e.target.value })}
-                      className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
-                    />
-                </div>
-                <div>
-                    <label className="text-xs font-bold text-slate-500 mb-1 block">Agama</label>
-                    <input
-                      type="text"
-                      value={formData.agama || ''}
-                      onChange={(e) => setFormData({ ...formData, agama: e.target.value })}
-                      className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
-                    />
-                </div>
-                <div>
-                    <label className="text-xs font-bold text-slate-500 mb-1 block">Status Perkawinan</label>
-                    <input
-                      type="text"
-                      value={formData.status_perkawinan || ''}
-                      onChange={(e) => setFormData({ ...formData, status_perkawinan: e.target.value })}
-                      className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
-                    />
-                </div>
-                <div>
-                    <label className="text-xs font-bold text-slate-500 mb-1 block">Pekerjaan</label>
-                    <input
-                      type="text"
-                      value={formData.pekerjaan || ''}
-                      onChange={(e) => setFormData({ ...formData, pekerjaan: e.target.value })}
-                      className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
-                    />
-                </div>
-                <div className="md:col-span-2">
-                    <label className="text-xs font-bold text-slate-500 mb-1 block">Kewarganegaraan</label>
-                    <input
-                      type="text"
-                      value={formData.kewarganegaraan || ''}
-                      onChange={(e) => setFormData({ ...formData, kewarganegaraan: e.target.value })}
-                      className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
-                    />
-                </div>
-                
-                <div className="pt-2 pb-1 border-b border-slate-100 md:col-span-2">
-                   <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Akses Login</p>
-                </div>
-                
                 <div className="md:col-span-2">
                     <label className="text-xs font-bold text-slate-500 mb-1 block">Email (Wajib untuk Login)</label>
                     <input
                       type="email"
                       value={formData.email || ''}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
-                    />
-                </div>
-                <div className="md:col-span-2">
-                    <label className="text-xs font-bold text-slate-500 mb-1 block">Nomor Telepon / WA</label>
-                    <input
-                      type="tel"
-                      value={formData.phone || ''}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
                     />
                 </div>

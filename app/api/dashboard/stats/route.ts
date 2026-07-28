@@ -49,11 +49,38 @@ export async function GET(req: NextRequest) {
        groupParams.push(teacherId);
     }
 
+    // Count students behind target (no learning/memorization record in last 14 days)
+    let behindQuery = `
+      SELECT COUNT(*) as count FROM students s
+      LEFT JOIN LATERAL (
+        SELECT GREATEST(
+          COALESCE((SELECT MAX(date) FROM learning_records WHERE student_id = s.id), '1900-01-01'),
+          COALESCE((SELECT MAX(date) FROM memorization_records WHERE student_id = s.id), '1900-01-01')
+        ) as last_activity_date
+      ) la ON true
+      WHERE la.last_activity_date < CURRENT_DATE - INTERVAL '14 days'
+    `;
+    let behindParams: any[] = [];
+    if (teacherId) {
+      behindQuery = `
+        SELECT COUNT(*) as count FROM students s
+        JOIN study_groups g ON s.group_id = g.id
+        LEFT JOIN LATERAL (
+          SELECT GREATEST(
+            COALESCE((SELECT MAX(date) FROM learning_records WHERE student_id = s.id), '1900-01-01'),
+            COALESCE((SELECT MAX(date) FROM memorization_records WHERE student_id = s.id), '1900-01-01')
+          ) as last_activity_date
+        ) la ON true
+        WHERE g.teacher_id = $1 AND la.last_activity_date < CURRENT_DATE - INTERVAL '14 days'
+      `;
+      behindParams.push(teacherId);
+    }
+
     // Run all queries in parallel using Promise.all to improve loading speed
-    const [totalSantriResult, presentTodayResult, totalTeachersResult, totalGroupsResult] = await Promise.all([
+    const [totalSantriResult, presentTodayResult, totalTeachersResult, totalGroupsResult, studentsBehindResult] = await Promise.all([
       // Count Total Santri
       query(santriQuery, santriParams),
-      
+
       // Count Present Today
       query(presentQuery, presentParams),
 
@@ -61,7 +88,10 @@ export async function GET(req: NextRequest) {
       query(teacherQuery, ['teacher']),
 
       // Count Groups
-      query(groupQuery, groupParams)
+      query(groupQuery, groupParams),
+
+      // Count students behind target
+      query(behindQuery, behindParams)
     ]);
 
     const totalSantri = totalSantriResult.success && totalSantriResult.data && totalSantriResult.data.length > 0 
@@ -76,8 +106,16 @@ export async function GET(req: NextRequest) {
         ? Number(totalTeachersResult.data[0].count) 
         : 0;
 
-    const totalGroups = totalGroupsResult.success && totalGroupsResult.data && totalGroupsResult.data.length > 0 
-        ? Number(totalGroupsResult.data[0].count) 
+    const totalGroups = totalGroupsResult.success && totalGroupsResult.data && totalGroupsResult.data.length > 0
+        ? Number(totalGroupsResult.data[0].count)
+        : 0;
+
+    const studentsBehind = studentsBehindResult.success && studentsBehindResult.data && studentsBehindResult.data.length > 0
+        ? Number(studentsBehindResult.data[0].count)
+        : 0;
+
+    const attendancePercentToday = totalSantri > 0
+        ? Math.round((presentToday / totalSantri) * 100)
         : 0;
 
     return NextResponse.json({
@@ -85,8 +123,10 @@ export async function GET(req: NextRequest) {
         data: {
             total_santri: totalSantri,
             present_today: presentToday,
+            attendance_percent_today: attendancePercentToday,
             total_teachers: totalTeachers,
             total_groups: totalGroups,
+            students_behind: studentsBehind,
         }
     });
 

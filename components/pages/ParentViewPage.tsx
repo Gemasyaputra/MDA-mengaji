@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, User, MapPin, BookOpen, Activity, Calendar, MessageCircle, Image as ImageIcon, X, Share2, Check } from 'lucide-react';
+import { ArrowLeft, User, MapPin, BookOpen, Activity, Calendar, MessageCircle, Image as ImageIcon, X, Share2, Check, AlertCircle } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 
@@ -339,6 +339,21 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
       </div>
 
       <div className="px-4 pb-20 max-w-5xl mx-auto">
+        {selectedStudent.is_behind && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4 -mt-4 relative z-10 flex items-start gap-3">
+            <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={20} />
+            <div>
+              <p className="text-sm font-bold text-red-700">Ananda tertinggal dari target hafalan/ngaji</p>
+              <p className="text-xs text-red-600 mt-0.5">Belum ada setoran mengaji/hafalan dalam 14 hari terakhir. Mohon dampingi putra/putri Anda untuk mengaji di rumah.</p>
+            </div>
+          </div>
+        )}
+        {selectedStudent.teacher_note && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 relative z-10">
+            <p className="text-xs font-bold text-amber-700 mb-1">CATATAN GURU</p>
+            <p className="text-sm text-amber-800 whitespace-pre-wrap">{selectedStudent.teacher_note}</p>
+          </div>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* ====== KOLOM KIRI ====== */}
           <div className="lg:col-span-4 space-y-6">

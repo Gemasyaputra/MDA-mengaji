@@ -33,6 +33,7 @@ interface StudyGroup {
 
 interface HistorySummary {
     date: string;
+    session?: 'PAGI' | 'SIANG';
     total_attendance: string;
     total_hadir: string;
     group_name: string;
@@ -51,6 +52,11 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
   // Form State
   const [selectedGroupId, setSelectedGroupId] = useState<string>('');
   const [attendanceDate, setAttendanceDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [session, setSession] = useState<'PAGI' | 'SIANG'>('PAGI');
+  const [attendanceTime, setAttendanceTime] = useState<string>(() => {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  });
   const [isLoading, setIsLoading] = useState(false);
 
   // History Detail State
@@ -69,6 +75,7 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
 
   // History Filter State
   const [filterGroup, setFilterGroup] = useState<string>('');
+  const [filterSession, setFilterSession] = useState<string>('');
   const [filterMonth, setFilterMonth] = useState<string>(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -143,8 +150,8 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
             const studentsWrapper = await studentsRes.json();
             const allStudents = studentsWrapper.success && Array.isArray(studentsWrapper.data) ? studentsWrapper.data : [];
 
-            // 2. Fetch existing attendance for this date/group
-            const attRes = await fetch(`/api/attendance?date=${attendanceDate}&group_id=${selectedGroupId}`);
+            // 2. Fetch existing attendance for this date/group/session
+            const attRes = await fetch(`/api/attendance?date=${attendanceDate}&group_id=${selectedGroupId}&session=${session}`);
             const attDataWrapper = await attRes.json();
             const existingAttendance = attDataWrapper.success && Array.isArray(attDataWrapper.data) ? attDataWrapper.data : [];
             
@@ -168,12 +175,18 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
         }
     };
     fetchStudents();
-  }, [selectedGroupId, attendanceDate]);
+  }, [selectedGroupId, attendanceDate, session]);
 
 
   const updateStatus = (id: number, status: 'HADIR' | 'ALFA' | 'SAKIT' | 'IZIN') => {
     setStudents(students.map(student =>
-      student.id === id ? { ...student, status } : student
+      student.id === id ? { ...student, status, notes: status === 'HADIR' ? '' : student.notes } : student
+    ));
+  };
+
+  const updateNotes = (id: number, notes: string) => {
+    setStudents(students.map(student =>
+      student.id === id ? { ...student, notes } : student
     ));
   };
 
@@ -228,6 +241,8 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
             teacher_id: currentUser.id,
             attendance_date: attendanceDate, // API expects 'attendance_date' in body, maps to 'date' col
             date: attendanceDate,
+            session,
+            time: attendanceTime,
             status: s.status,
             notes: s.notes
         }));
@@ -250,13 +265,14 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
     }
   };
 
-  const openHistoryDetail = async (date: string, groupId?: number) => { 
+  const openHistoryDetail = async (date: string, groupId?: number, sessionVal?: string) => {
       // Ensure we send YYYY-MM-DD
       const dateOnly = typeof date === 'string' ? date.split('T')[0] : new Date(date).toISOString().split('T')[0];
-      
+
       let url = `presensi-detail?date=${dateOnly}`;
       if (groupId) url += `&group_id=${groupId}`;
-      
+      if (sessionVal) url += `&session=${sessionVal}`;
+
       onNavigate(url);
   };
 
@@ -279,7 +295,8 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
     const itemMonth = item.date ? item.date.substring(0, 7) : '';
     const matchMonth = filterMonth ? itemMonth === filterMonth : true;
     const matchGroup = filterGroup ? String(item.group_id) === filterGroup : true;
-    return matchMonth && matchGroup;
+    const matchSession = filterSession ? item.session === filterSession : true;
+    return matchMonth && matchGroup && matchSession;
   });
 
   // Stats from filtered history
@@ -332,15 +349,47 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
       {mode === 'input' && (
         <>
           {/* Controls */}
-          <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-100 mb-4 md:mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-100 mb-4 md:mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                   <label className="text-xs font-bold text-slate-500 uppercase block mb-1.5">Tanggal</label>
-                  <input 
-                    type="date" 
+                  <input
+                    type="date"
                     value={attendanceDate}
                     onChange={(e) => setAttendanceDate(e.target.value)}
                     className="w-full p-2 border border-slate-200 rounded-lg text-sm"
                   />
+              </div>
+              <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase block mb-1.5">Jam</label>
+                  <input
+                    type="time"
+                    value={attendanceTime}
+                    onChange={(e) => setAttendanceTime(e.target.value)}
+                    className="w-full p-2 border border-slate-200 rounded-lg text-sm"
+                  />
+              </div>
+              <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase block mb-1.5">Sesi</label>
+                  <div className="flex bg-slate-100 p-1 rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => setSession('PAGI')}
+                      className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
+                        session === 'PAGI' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'
+                      }`}
+                    >
+                      Pagi
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSession('SIANG')}
+                      className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
+                        session === 'SIANG' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'
+                      }`}
+                    >
+                      Siang
+                    </button>
+                  </div>
               </div>
               <div>
                   <label className="text-xs font-bold text-slate-500 uppercase block mb-1.5">Pilih Kelas</label>
@@ -397,7 +446,8 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
                 ) : (
                     <div className="divide-y divide-slate-100">
                     {filteredStudents.map(student => (
-                        <div key={student.id} className="p-3 md:p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                        <div key={student.id} className="p-3 md:p-4 hover:bg-slate-50 transition-colors">
+                        <div className="flex items-center justify-between">
                         <span className="text-sm font-semibold text-slate-800 w-1/3 md:w-1/2 truncate">{student.name}</span>
                         <div className="flex gap-1 md:gap-2 flex-1 justify-end">
                             <button
@@ -442,6 +492,18 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
                             </button>
                         </div>
                         </div>
+                        {student.status !== 'HADIR' && (
+                          <div className="mt-2">
+                            <input
+                              type="text"
+                              value={student.notes || ''}
+                              onChange={(e) => updateNotes(student.id, e.target.value)}
+                              placeholder={`Keterangan (${student.status.toLowerCase()})...`}
+                              className="w-full p-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-400 bg-slate-50"
+                            />
+                          </div>
+                        )}
+                        </div>
                     ))}
                     </div>
                 )}
@@ -471,7 +533,7 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
       {mode === 'history' && (
         <div className="space-y-4">
           {/* Filter Bar */}
-          <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase mb-1.5 block">Bulan</label>
               <input
@@ -491,6 +553,19 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
                 value={filterGroup}
                 onChange={(val) => setFilterGroup(String(val))}
                 placeholder="Semua Kelas"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase mb-1.5 block">Sesi</label>
+              <SearchableSelect
+                options={[
+                  { value: '', label: 'Semua Sesi' },
+                  { value: 'PAGI', label: 'Pagi' },
+                  { value: 'SIANG', label: 'Siang' },
+                ]}
+                value={filterSession}
+                onChange={(val) => setFilterSession(String(val))}
+                placeholder="Semua Sesi"
               />
             </div>
           </div>
@@ -526,12 +601,21 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
               return (
                 <div
                   key={idx}
-                  onClick={() => openHistoryDetail(item.date, item.group_id)}
+                  onClick={() => openHistoryDetail(item.date, item.group_id, item.session)}
                   className="bg-white p-4 md:p-5 rounded-xl border border-slate-100 shadow-sm cursor-pointer hover:shadow-md hover:border-emerald-200 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
                 >
                   <div className="flex justify-between items-start md:items-center w-full md:w-auto flex-1">
                     <div>
-                      <h4 className="font-bold text-slate-700 text-sm md:text-base">{formatDate(item.date)}</h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-slate-700 text-sm md:text-base">{formatDate(item.date)}</h4>
+                        {item.session && (
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            item.session === 'SIANG' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                          }`}>
+                            {item.session === 'SIANG' ? 'Siang' : 'Pagi'}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-slate-500 flex gap-2 mt-0.5">
                         <span className="font-semibold text-slate-600">{item.group_name || 'Tanpa Kelas'}</span>
                         <span className="hidden md:inline">•</span>

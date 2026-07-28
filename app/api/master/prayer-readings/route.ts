@@ -13,15 +13,15 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { title, category, arabic_text, translation, step_order } = body;
+    const { title, category, arabic_text, translation, step_order, pdf_url, external_link } = body;
 
     if (!title) {
         return NextResponse.json({ success: false, error: "Title is required" }, { status: 400 });
     }
 
     const result = await executeReturning(
-        `INSERT INTO master_prayer_readings (title, category, arabic_text, translation, step_order) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-        [title, category || null, arabic_text || null, translation || null, step_order || 0]
+        `INSERT INTO master_prayer_readings (title, category, arabic_text, translation, step_order, pdf_url, external_link) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [title, category || null, arabic_text || null, translation || null, step_order || 0, pdf_url || null, external_link || null]
     );
 
     if (!result.success) {
@@ -37,15 +37,15 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, title, category, arabic_text, translation, step_order } = body;
+    const { id, title, category, arabic_text, translation, step_order, pdf_url, external_link } = body;
 
     if (!id || !title) {
         return NextResponse.json({ success: false, error: "ID and Title are required" }, { status: 400 });
     }
 
     const result = await executeReturning(
-        `UPDATE master_prayer_readings SET title = $1, category = $2, arabic_text = $3, translation = $4, step_order = $5 WHERE id = $6 RETURNING *`,
-        [title, category || null, arabic_text || null, translation || null, step_order || 0, id]
+        `UPDATE master_prayer_readings SET title = $1, category = $2, arabic_text = $3, translation = $4, step_order = $5, pdf_url = $6, external_link = $7 WHERE id = $8 RETURNING *`,
+        [title, category || null, arabic_text || null, translation || null, step_order || 0, pdf_url || null, external_link || null, id]
     );
 
     if (!result.success) {

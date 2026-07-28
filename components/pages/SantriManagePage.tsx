@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, Edit2, Trash2, ChevronDown, ChevronRight, Users, BookOpen, Printer } from 'lucide-react';
+import { Plus, Edit2, Trash2, ChevronDown, ChevronRight, Users, BookOpen, Printer, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import QRCode from 'react-qr-code';
@@ -8,6 +8,8 @@ import SearchableSelect from '@/components/SearchableSelect';
 import DeleteModal from '@/components/DeleteModal';
 import { toast } from 'sonner';
 import { StudyGroup, Santri, User } from '@/types';
+
+const LEVEL_OPTIONS = ['Iqra 1', 'Iqra 2', 'Iqra 3', 'Iqra 4', 'Iqra 5', 'Iqra 6', "Al-Qur'an"];
 
 interface SantriManagePageProps {
   onNavigate: (page: string) => void;
@@ -24,15 +26,42 @@ const emptyForm = {
   birth_date: '',
   gender: '',
   address: '',
-  current_level: 'Iqro',
+  current_level: 'Iqra 1',
+  photo_url: '',
+  teacher_note: '',
 };
 
 export default function SantriManagePage({ onNavigate, onSave, currentUser }: SantriManagePageProps) {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [levelFilter, setLevelFilter] = useState('');
   const [printTarget, setPrintTarget] = useState<number | null>(null);
+  const [printGroupTarget, setPrintGroupTarget] = useState<number | 'none' | null>(null);
   const [formData, setFormData] = useState(emptyForm);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingPhoto(true);
+    try {
+      const uploadForm = new FormData();
+      uploadForm.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: uploadForm });
+      const json = await res.json();
+      if (json.success) {
+        setFormData(prev => ({ ...prev, photo_url: json.url }));
+      } else {
+        toast.error(json.error || 'Gagal mengunggah foto');
+      }
+    } catch {
+      toast.error('Terjadi kesalahan saat mengunggah foto');
+    } finally {
+      setIsUploadingPhoto(false);
+      e.target.value = '';
+    }
+  };
   
   // Accordion state — set of expanded group IDs (null = "Tanpa Kelas")
   const [expandedGroups, setExpandedGroups] = useState<Set<number | 'none'>>(new Set());
@@ -112,6 +141,8 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
       gender: s.gender || '',
       address: s.address || '',
       current_level: s.current_level || '',
+      photo_url: s.photo_url || '',
+      teacher_note: s.teacher_note || '',
     });
     setShowModal(true);
   };
@@ -165,11 +196,61 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
     }
   });
 
+  const MIN_SANTRI_AGE = 5;
+
+  const calculateAge = (birthDate: string) => {
+    const birth = new Date(birthDate);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.group_id) {
+      toast.error('Kelas wajib dipilih');
+      return;
+    }
     if (!formData.name.trim()) {
       toast.error('Nama wajib diisi');
       return;
+    }
+    if (!formData.parent_name.trim()) {
+      toast.error('Nama orang tua wajib diisi');
+      return;
+    }
+    if (!formData.parent_phone.trim()) {
+      toast.error('No. HP orang tua wajib diisi');
+      return;
+    }
+    if (!formData.birth_date) {
+      toast.error('Tanggal lahir wajib diisi');
+      return;
+    }
+    if (!formData.gender) {
+      toast.error('Jenis kelamin wajib dipilih');
+      return;
+    }
+    if (!formData.address.trim()) {
+      toast.error('Alamat wajib diisi');
+      return;
+    }
+    if (!formData.current_level) {
+      toast.error('Level saat ini wajib dipilih');
+      return;
+    }
+    if (formData.birth_date) {
+      const age = calculateAge(formData.birth_date);
+      if (age < MIN_SANTRI_AGE) {
+        const confirmed = window.confirm(
+          `Usia santri saat ini ${age} tahun, di bawah usia minimal ${MIN_SANTRI_AGE} tahun. Tetap lanjutkan pendaftaran?`
+        );
+        if (!confirmed) return;
+      }
     }
     const payload = {
         group_id: formData.group_id ? parseInt(formData.group_id) : null,
@@ -180,6 +261,8 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
         gender: formData.gender || null,
         address: formData.address.trim() || null,
         current_level: formData.current_level.trim() || null,
+        photo_url: formData.photo_url || null,
+        teacher_note: formData.teacher_note.trim() || null,
     };
 
     saveMutation.mutate(payload);
@@ -198,10 +281,13 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
   const q = searchQuery.toLowerCase();
   const filteredSantris = santris.filter(
     (s) =>
-      s.name.toLowerCase().includes(q) ||
-      (s.current_level && s.current_level.toLowerCase().includes(q)) ||
-      (s.parent_name && s.parent_name.toLowerCase().includes(q)) ||
-      (s.group_name && s.group_name.toLowerCase().includes(q))
+      (
+        s.name.toLowerCase().includes(q) ||
+        (s.current_level && s.current_level.toLowerCase().includes(q)) ||
+        (s.parent_name && s.parent_name.toLowerCase().includes(q)) ||
+        (s.group_name && s.group_name.toLowerCase().includes(q))
+      ) &&
+      (levelFilter ? s.current_level === levelFilter : true)
   );
   const isSearching = searchQuery.trim().length > 0;
 
@@ -225,13 +311,31 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
   const groupBuckets = Array.from(groupMap.values()).filter(g => g.santris.length > 0);
 
   const handlePrintAllQR = () => {
+    setPrintTarget(null);
+    setPrintGroupTarget(null);
     setTimeout(() => {
       window.print();
     }, 100);
   };
 
+  const handlePrintGroupQR = (groupId: number | 'none') => {
+    setPrintTarget(null);
+    setPrintGroupTarget(groupId);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setPrintGroupTarget(null), 1000);
+    }, 100);
+  };
+
+  const printList = santris.filter(s => {
+    if (printTarget) return s.id === printTarget;
+    if (printGroupTarget !== null) return (s.group_id ?? 'none') === printGroupTarget;
+    return true;
+  });
+
   return (
-    <div className="p-4 no-print">
+    <div>
+    <div className="p-4 print:hidden">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-slate-800">Kelola Santri</h2>
         <div className="flex gap-2">
@@ -250,14 +354,25 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
         </div>
       </div>
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-col md:flex-row gap-2">
         <input
           type="text"
           placeholder="Cari santri, kelas, wali..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-4 py-2 bg-slate-100 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-emerald-500"
+          className="flex-1 px-4 py-2 bg-slate-100 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-emerald-500"
         />
+        <div className="md:w-56">
+          <SearchableSelect
+            options={[
+              { value: '', label: 'Semua Level' },
+              ...LEVEL_OPTIONS.map(l => ({ value: l, label: l })),
+            ]}
+            value={levelFilter}
+            onChange={(val) => setLevelFilter(String(val))}
+            placeholder="Filter level"
+          />
+        </div>
       </div>
 
       {loading ? (
@@ -288,54 +403,65 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
                 className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all"
               >
                 {/* ── Group Header (click to expand) ── */}
-                <button
-                  onClick={() => toggleGroup(group.id)}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-slate-50 transition-colors text-left group"
-                >
-                  {/* Expand icon */}
-                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors shrink-0 ${isExpanded ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
-                    {isExpanded
-                      ? <ChevronDown size={14} strokeWidth={2.5} />
-                      : <ChevronRight size={14} strokeWidth={2.5} />}
-                  </div>
-
-                  {/* Group icon */}
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${group.id === 'none' ? 'bg-slate-100 text-slate-400' : 'bg-emerald-50 text-emerald-600'}`}>
-                    <Users size={16} strokeWidth={2} />
-                  </div>
-
-                  {/* Group name + stats */}
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-bold text-sm ${group.id === 'none' ? 'text-slate-500 italic' : 'text-slate-800'}`}>
-                      {group.name}
-                    </p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[11px] text-slate-500">
-                        {group.santris.length} santri
-                      </span>
-                      {(maleCount > 0 || femaleCount > 0) && (
-                        <>
-                          <span className="text-slate-300">·</span>
-                          {maleCount > 0 && (
-                            <span className="text-[10px] font-semibold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-full">
-                              {maleCount}L
-                            </span>
-                          )}
-                          {femaleCount > 0 && (
-                            <span className="text-[10px] font-semibold text-pink-500 bg-pink-50 px-1.5 py-0.5 rounded-full">
-                              {femaleCount}P
-                            </span>
-                          )}
-                        </>
-                      )}
+                <div className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-slate-50 transition-colors group">
+                  <button
+                    onClick={() => toggleGroup(group.id)}
+                    className="flex-1 min-w-0 flex items-center gap-3 text-left"
+                  >
+                    {/* Expand icon */}
+                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors shrink-0 ${isExpanded ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                      {isExpanded
+                        ? <ChevronDown size={14} strokeWidth={2.5} />
+                        : <ChevronRight size={14} strokeWidth={2.5} />}
                     </div>
-                  </div>
+
+                    {/* Group icon */}
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${group.id === 'none' ? 'bg-slate-100 text-slate-400' : 'bg-emerald-50 text-emerald-600'}`}>
+                      <Users size={16} strokeWidth={2} />
+                    </div>
+
+                    {/* Group name + stats */}
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-bold text-sm ${group.id === 'none' ? 'text-slate-500 italic' : 'text-slate-800'}`}>
+                        {group.name}
+                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[11px] text-slate-500">
+                          {group.santris.length} santri
+                        </span>
+                        {(maleCount > 0 || femaleCount > 0) && (
+                          <>
+                            <span className="text-slate-300">·</span>
+                            {maleCount > 0 && (
+                              <span className="text-[10px] font-semibold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-full">
+                                {maleCount}L
+                              </span>
+                            )}
+                            {femaleCount > 0 && (
+                              <span className="text-[10px] font-semibold text-pink-500 bg-pink-50 px-1.5 py-0.5 rounded-full">
+                                {femaleCount}P
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Cetak QR sekelompok */}
+                  <button
+                    onClick={() => handlePrintGroupQR(group.id)}
+                    title="Cetak QR Sekelompok"
+                    className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors shrink-0"
+                  >
+                    <Printer size={14} />
+                  </button>
 
                   {/* Student count badge */}
                   <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 shrink-0">
                     {group.santris.length}
                   </span>
-                </button>
+                </div>
 
                 {/* ── Students list (collapsible) ── */}
                 {isExpanded && (
@@ -350,23 +476,38 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
                           {idx + 1}
                         </span>
 
-                        {/* Avatar initial */}
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                          santri.gender === 'P'
-                            ? 'bg-pink-100 text-pink-600'
-                            : 'bg-blue-100 text-blue-600'
-                        }`}>
-                          {santri.name.charAt(0).toUpperCase()}
-                        </div>
+                        {/* Avatar photo or initial */}
+                        {santri.photo_url ? (
+                          <img
+                            src={santri.photo_url}
+                            alt={santri.name}
+                            className="w-8 h-8 rounded-full object-cover shrink-0"
+                          />
+                        ) : (
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                            santri.gender === 'P'
+                              ? 'bg-pink-100 text-pink-600'
+                              : 'bg-blue-100 text-blue-600'
+                          }`}>
+                            {santri.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
 
                         {/* Name + level */}
                         <div
                           className="flex-1 min-w-0 cursor-pointer"
                           onClick={() => onNavigate(`santri-detail?id=${santri.id}`)}
                         >
-                          <p className="font-semibold text-slate-800 text-sm leading-tight truncate">
-                            {santri.name}
-                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-semibold text-slate-800 text-sm leading-tight truncate">
+                              {santri.name}
+                            </p>
+                            {santri.is_behind && (
+                              <span className="text-[9px] font-bold bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full shrink-0">
+                                Tertinggal
+                              </span>
+                            )}
+                          </div>
                           {santri.current_level && (
                             <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
                               <BookOpen size={10} strokeWidth={2} />
@@ -379,6 +520,7 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
                         <div className="flex gap-1.5 shrink-0">
                           <button
                             onClick={() => {
+                              setPrintGroupTarget(null);
                               setPrintTarget(santri.id);
                               setTimeout(() => {
                                 window.print();
@@ -435,9 +577,23 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
             </h3>
             <form onSubmit={handleSubmit} className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-4">
 
+              <div className="md:col-span-2 flex items-center gap-3">
+                <div className="w-14 h-14 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                  {formData.photo_url ? (
+                    <img src={formData.photo_url} alt="Foto" className="w-full h-full object-cover" />
+                  ) : (
+                    <Users size={20} className="text-slate-300" />
+                  )}
+                </div>
+                <label className="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-semibold text-slate-600 cursor-pointer transition-colors">
+                  <Upload size={14} />
+                  {isUploadingPhoto ? 'Mengunggah...' : 'Unggah Foto'}
+                  <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={isUploadingPhoto} />
+                </label>
+              </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Kelas
+                  Kelas *
                 </label>
                 <SearchableSelect
                   options={[
@@ -469,10 +625,11 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Nama Orang Tua
+                  Nama Orang Tua *
                 </label>
                 <input
                   type="text"
+                  required
                   placeholder="Nama wali"
                   value={formData.parent_name}
                   onChange={(e) => setFormData({ ...formData, parent_name: e.target.value })}
@@ -481,10 +638,11 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  No. HP Orang Tua
+                  No. HP Orang Tua *
                 </label>
                 <input
                   type="tel"
+                  required
                   placeholder="08xxxxxxxxxx"
                   value={formData.parent_phone}
                   onChange={(e) => setFormData({ ...formData, parent_phone: e.target.value })}
@@ -493,17 +651,18 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Tanggal Lahir
+                  Tanggal Lahir *
                 </label>
                 <input
                   type="date"
+                  required
                   value={formData.birth_date}
                   onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
                   className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Jenis Kelamin</label>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Jenis Kelamin *</label>
                 <SearchableSelect
                   options={[
                     { value: 'L', label: 'Laki-laki' },
@@ -515,43 +674,40 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Alamat</label>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Alamat *</label>
                 <textarea
                   rows={2}
+                  required
                   placeholder="Alamat lengkap"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 resize-none"
                 />
               </div>
+              {editingId && (
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    Catatan Guru (target/kendala hafalan-ngaji)
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Contoh: perlu perhatian ekstra, target khatam Iqra 3 akhir bulan ini, dll."
+                    value={formData.teacher_note}
+                    onChange={(e) => setFormData({ ...formData, teacher_note: e.target.value })}
+                    className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 resize-none"
+                  />
+                </div>
+              )}
               <div className="md:col-span-2">
                 <label className="block text-xs font-semibold text-slate-600 mb-2">
-                  Level Saat Ini
+                  Level Saat Ini *
                 </label>
-                <div className="flex bg-slate-100 p-1 rounded-lg w-full border border-slate-200">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, current_level: 'Iqro' })}
-                    className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${
-                      formData.current_level === 'Iqro' 
-                        ? 'bg-white text-emerald-600 shadow-sm' 
-                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
-                    }`}
-                  >
-                    Iqro
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, current_level: "Al-Qur'an" })}
-                    className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${
-                      formData.current_level === "Al-Qur'an" 
-                        ? 'bg-white text-emerald-600 shadow-sm' 
-                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
-                    }`}
-                  >
-                    Al-Qur'an
-                  </button>
-                </div>
+                <SearchableSelect
+                  options={LEVEL_OPTIONS.map(l => ({ value: l, label: l }))}
+                  value={formData.current_level}
+                  onChange={(val) => setFormData({ ...formData, current_level: String(val) })}
+                  placeholder="Pilih level"
+                />
               </div>
               <div className="flex gap-2 pt-2 md:col-span-2">
                 <button
@@ -588,30 +744,38 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
         }
         isLoading={deleteMutation.isPending}
       />
+    </div>
 
-      {/* --- PRINT ONLY LAYOUT --- */}
-      <div className="hidden print:block absolute inset-0 bg-white">
-        <div className="grid grid-cols-2 gap-8 p-8">
-          {santris.filter(s => printTarget ? s.id === printTarget : true).map(santri => (
-            <div key={santri.id} className="border-2 border-emerald-600 rounded-xl p-6 flex flex-col items-center justify-center break-inside-avoid">
-              <h2 className="text-2xl font-bold text-slate-800 mb-2">ID CARD SANTRI</h2>
-              <div className="w-full h-px bg-emerald-200 mb-6" />
-              <div className="bg-white p-4 rounded-xl border border-slate-200 mb-4">
-                {santri.slug ? (
-                  <QRCode value={santri.slug} size={150} />
-                ) : (
-                  <div className="w-[150px] h-[150px] bg-slate-100 flex items-center justify-center text-xs text-slate-400">QR Kosong</div>
-                )}
-              </div>
-              <h3 className="text-xl font-bold text-slate-800 text-center">{santri.name}</h3>
-              <p className="text-sm text-slate-500 mt-1">{santri.group_name || 'Tanpa Kelas'}</p>
-              <p className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full mt-3">
-                {santri.current_level}
-              </p>
+    {/* --- PRINT ONLY LAYOUT --- */}
+    <div className="hidden print:block bg-white">
+      <div className="grid grid-cols-2 gap-[6mm]">
+        {printList.map(santri => (
+          <div
+            key={santri.id}
+            className="w-[85.6mm] h-[54mm] flex border border-emerald-600 rounded-md overflow-hidden break-inside-avoid"
+          >
+            <div className="w-[30mm] shrink-0 flex items-center justify-center p-[3mm] border-r border-emerald-100">
+              {santri.slug ? (
+                <QRCode value={santri.slug} size={256} style={{ width: '100%', height: '100%' }} />
+              ) : (
+                <div className="w-full h-full bg-slate-100 flex items-center justify-center text-[2mm] text-slate-400 text-center">QR Kosong</div>
+              )}
             </div>
-          ))}
-        </div>
+            <div className="flex-1 min-w-0 flex flex-col justify-center px-[3mm]">
+              <p className="text-[2.2mm] font-bold uppercase tracking-wide text-emerald-700 truncate">
+                MDA Masjid Nurul Huda
+              </p>
+              <div className="h-px bg-emerald-100 my-[1mm]" />
+              <p className="text-[3.2mm] font-bold text-slate-800 leading-tight truncate">{santri.name}</p>
+              <p className="text-[2.4mm] text-slate-500 truncate">{santri.group_name || 'Tanpa Kelas'}</p>
+              <span className="text-[2mm] font-semibold text-emerald-600 mt-[1mm]">
+                {santri.current_level}
+              </span>
+            </div>
+          </div>
+        ))}
       </div>
+    </div>
     </div>
   );
 }

@@ -18,11 +18,22 @@ export async function GET(req: NextRequest) {
   const search = searchParams.get('search');
   const teacherId = searchParams.get('teacher_id');
 
+  const behindActivitySubquery = `
+    LEFT JOIN LATERAL (
+      SELECT GREATEST(
+        COALESCE((SELECT MAX(date) FROM learning_records WHERE student_id = s.id), '1900-01-01'),
+        COALESCE((SELECT MAX(date) FROM memorization_records WHERE student_id = s.id), '1900-01-01')
+      ) as last_activity_date
+    ) la ON true
+  `;
+
   if (id) {
     const result = await queryOne(
-      `SELECT s.*, g.name as group_name 
-       FROM students s 
-       LEFT JOIN study_groups g ON s.group_id = g.id 
+      `SELECT s.*, g.name as group_name, la.last_activity_date,
+              (la.last_activity_date < CURRENT_DATE - INTERVAL '14 days') as is_behind
+       FROM students s
+       LEFT JOIN study_groups g ON s.group_id = g.id
+       ${behindActivitySubquery}
        WHERE s.id = $1`,
       [id]
     );
@@ -30,9 +41,11 @@ export async function GET(req: NextRequest) {
   }
 
   let sql = `
-    SELECT s.*, g.name as group_name 
-    FROM students s 
-    LEFT JOIN study_groups g ON s.group_id = g.id 
+    SELECT s.*, g.name as group_name, la.last_activity_date,
+           (la.last_activity_date < CURRENT_DATE - INTERVAL '14 days') as is_behind
+    FROM students s
+    LEFT JOIN study_groups g ON s.group_id = g.id
+    ${behindActivitySubquery}
     WHERE 1=1
   `;
   const params: (string | number)[] = [];
@@ -74,6 +87,7 @@ export async function POST(req: NextRequest) {
     gender,
     address,
     current_level,
+    photo_url,
   } = body;
 
   if (!name) {
@@ -87,8 +101,8 @@ export async function POST(req: NextRequest) {
   const validGender = gender === 'L' || gender === 'P' ? gender : null;
 
   const result = await executeReturning(
-    `INSERT INTO students (group_id, name, slug, parent_name, parent_phone, birth_date, gender, address, current_level)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `INSERT INTO students (group_id, name, slug, parent_name, parent_phone, birth_date, gender, address, current_level, photo_url)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING *`,
     [
       group_id || null,
@@ -100,6 +114,7 @@ export async function POST(req: NextRequest) {
       validGender,
       address || null,
       current_level || null,
+      photo_url || null,
     ]
   );
 
@@ -127,6 +142,8 @@ export async function PUT(req: NextRequest) {
     gender,
     address,
     current_level,
+    photo_url,
+    teacher_note,
   } = body;
 
   if (!id || !name) {
@@ -139,11 +156,11 @@ export async function PUT(req: NextRequest) {
   const validGender = gender === 'L' || gender === 'P' ? gender : null;
 
   const result = await executeReturning(
-    `UPDATE students SET 
+    `UPDATE students SET
       group_id = $1, name = $2, slug = COALESCE($3, slug),
       parent_name = $4, parent_phone = $5, birth_date = $6, gender = $7,
-      address = $8, current_level = $9
-     WHERE id = $10
+      address = $8, current_level = $9, photo_url = $10, teacher_note = $11
+     WHERE id = $12
      RETURNING *`,
     [
       group_id || null,
@@ -155,6 +172,8 @@ export async function PUT(req: NextRequest) {
       validGender,
       address || null,
       current_level || null,
+      photo_url || null,
+      teacher_note || null,
       id,
     ]
   );

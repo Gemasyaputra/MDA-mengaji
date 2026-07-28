@@ -9,6 +9,7 @@ import {
   pgTable,
   bigint,
   check,
+  time,
 } from "drizzle-orm/pg-core";
 
 // ==================== MASTER DATA ====================
@@ -29,6 +30,8 @@ export const masterDailyPrayers = pgTable("master_daily_prayers", {
   arabicText: text("arabic_text"),
   latinText: text("latin_text"),
   translation: text("translation"),
+  pdfUrl: text("pdf_url"),
+  externalLink: text("external_link"),
 });
 
 export const masterPrayerReadings = pgTable("master_prayer_readings", {
@@ -38,6 +41,8 @@ export const masterPrayerReadings = pgTable("master_prayer_readings", {
   category: varchar("category", { length: 50 }),
   arabicText: text("arabic_text"),
   translation: text("translation"),
+  pdfUrl: text("pdf_url"),
+  externalLink: text("external_link"),
 });
 
 // ==================== CORE TABLES ====================
@@ -52,6 +57,7 @@ export const users = pgTable("users", {
   role: varchar("role", { length: 20 }).notNull(),
   isVerified: boolean("is_verified").default(false),
   verificationToken: varchar("verification_token", { length: 255 }),
+  photoUrl: text("photo_url"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -82,6 +88,8 @@ export const students = pgTable("students", {
   currentLevel: varchar("current_level", { length: 50 }),
   readingLevel: varchar("reading_level", { length: 20, enum: ['IQRO', 'ALQURAN'] }).default('IQRO'),
   iqroGraduatedAt: timestamp("iqro_graduated_at"),
+  photoUrl: text("photo_url"),
+  teacherNote: text("teacher_note"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -95,6 +103,8 @@ export const attendance = pgTable("attendance", {
     .references(() => users.id),
   date: date("date").defaultNow(),
   status: varchar("status", { length: 10 }).notNull(),
+  session: varchar("session", { length: 10, enum: ['PAGI', 'SIANG'] }).notNull().default('PAGI'),
+  time: time("time"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -157,6 +167,8 @@ export const worshipRecords = pgTable("worship_records", {
   ),
   isCompleted: boolean("is_completed").default(false),
   quality: varchar("quality", { length: 1 }),
+  prayerName: varchar("prayer_name", { length: 50 }),
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

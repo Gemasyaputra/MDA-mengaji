@@ -7,6 +7,7 @@ interface PresensiDetailPageProps {
   onNavigate: (page: string) => void;
   date?: string | null;
   groupId?: string | null;
+  session?: string | null;
 }
 
 interface AttendanceDetail {
@@ -14,11 +15,12 @@ interface AttendanceDetail {
   student_id: number;
   student_name: string;
   status: string;
+  time?: string;
   notes?: string;
   group_name?: string;
 }
 
-export default function PresensiDetailPage({ onNavigate, date, groupId }: PresensiDetailPageProps) {
+export default function PresensiDetailPage({ onNavigate, date, groupId, session }: PresensiDetailPageProps) {
   const [details, setDetails] = useState<AttendanceDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [groupName, setGroupName] = useState<string>('');
@@ -34,6 +36,7 @@ export default function PresensiDetailPage({ onNavigate, date, groupId }: Presen
         const dateOnly = date.split('T')[0];
         let url = `/api/attendance?date=${dateOnly}`;
         if (groupId) url += `&group_id=${groupId}`;
+        if (session) url += `&session=${session}`;
 
         const res = await fetch(url);
         const json = await res.json();
@@ -54,7 +57,7 @@ export default function PresensiDetailPage({ onNavigate, date, groupId }: Presen
     };
 
     fetchDetails();
-  }, [date, groupId]);
+  }, [date, groupId, session]);
 
   const formatDate = (d: string) => {
     try {
@@ -98,7 +101,10 @@ export default function PresensiDetailPage({ onNavigate, date, groupId }: Presen
         </button>
         <div>
           <h1 className="font-bold text-lg text-slate-800">Detail Kehadiran</h1>
-          <p className="text-xs text-slate-500">{date ? formatDate(date) : '-'}</p>
+          <p className="text-xs text-slate-500">
+            {date ? formatDate(date) : '-'}
+            {session && <span className="font-semibold"> · Sesi {session === 'SIANG' ? 'Siang' : 'Pagi'}</span>}
+          </p>
         </div>
       </div>
 
@@ -147,7 +153,12 @@ export default function PresensiDetailPage({ onNavigate, date, groupId }: Presen
                             }`}>
                                 {h.student_name.charAt(0)}
                             </div>
-                            <span className="text-sm font-bold text-slate-700">{h.student_name}</span>
+                            <div>
+                              <span className="text-sm font-bold text-slate-700 block">{h.student_name}</span>
+                              {h.time && (
+                                <span className="text-[10px] text-slate-400">Jam {h.time}</span>
+                              )}
+                            </div>
                         </div>
                         <span className={`text-xs font-bold px-3 py-1 rounded-full ${
                             h.status?.toUpperCase().trim() === 'HADIR' ? 'bg-emerald-100 text-emerald-700' :

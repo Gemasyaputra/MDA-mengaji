@@ -26,6 +26,9 @@ export interface Santri {
   address: string | null;
   current_level: string | null;
   group_name?: string | null;
+  photo_url?: string | null;
+  teacher_note?: string | null;
+  is_behind?: boolean;
 }
 
 export interface Post {

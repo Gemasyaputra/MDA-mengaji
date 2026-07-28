@@ -206,7 +206,7 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
 
   return (
     <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-1">
         <h2 className="text-xl font-bold text-slate-800">Kelola Kelas</h2>
         <button
           onClick={openAddModal}
@@ -215,6 +215,9 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
           <Plus size={16} /> Tambah
         </button>
       </div>
+      <p className="text-xs text-slate-500 mb-4">
+        Setiap kelas dipegang oleh satu <span className="font-semibold">Wali Kelas</span> (seperti guru kelas di SD), bukan guru per mata pelajaran. Satu guru boleh menjadi wali kelas untuk lebih dari satu kelas.
+      </p>
 
       <div className="mb-4">
         <input
@@ -241,11 +244,10 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
                   {group.description && (
                     <p className="text-xs text-slate-500 mb-1">{group.description}</p>
                   )}
-                  <div className="flex gap-2 mt-1">
-                    <span className="inline-block px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded font-semibold">
-                      ID: {group.id}
+                  <div className="flex gap-2 mt-1 flex-wrap">
+                    <span className="inline-block px-2 py-1 bg-emerald-50 text-emerald-700 text-xs rounded font-semibold">
+                      Wali Kelas: {group.teacher_name || '-'}
                     </span>
-                    {/* Ideally calculate member count here if API returned it */}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -298,13 +300,13 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Pengajar</label>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Wali Kelas</label>
                 <select
                   value={formData.teacher_id}
                   onChange={(e) => setFormData({ ...formData, teacher_id: e.target.value })}
                   className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
                 >
-                  <option value="">Pilih Pengajar (opsional)</option>
+                  <option value="">Pilih Wali Kelas (opsional)</option>
                   {teachers.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.name}

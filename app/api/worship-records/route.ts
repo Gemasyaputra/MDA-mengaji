@@ -5,18 +5,22 @@ import { createNotification } from '@/app/api/notifications/route';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { 
-        student_id, 
-        teacher_id, 
-        date, 
-        type, 
-        daily_prayer_id, 
-        prayer_reading_id, 
-        is_completed, 
-        quality 
+    const {
+        student_id,
+        teacher_id,
+        date,
+        type,
+        daily_prayer_id,
+        prayer_reading_id,
+        is_completed,
+        quality,
+        prayer_name,
+        notes
     } = body;
 
-    if (!student_id || !teacher_id || !type || !quality) {
+    const isSalatType = type === 'SALAT_FARDU' || type === 'SALAT_SUNAH';
+
+    if (!student_id || !teacher_id || !type || (!isSalatType && !quality)) {
         return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -26,23 +30,28 @@ export async function POST(req: NextRequest) {
     if (type === 'BACAAN_SHOLAT' && !prayer_reading_id) {
          return NextResponse.json({ success: false, error: 'prayer_reading_id required for BACAAN_SHOLAT' }, { status: 400 });
     }
+    if (isSalatType && !prayer_name) {
+         return NextResponse.json({ success: false, error: 'prayer_name required for SALAT_FARDU/SALAT_SUNAH' }, { status: 400 });
+    }
 
     const result = await execute(
       `INSERT INTO worship_records (
-          student_id, teacher_id, date, type, 
-          daily_prayer_id, prayer_reading_id, 
-          is_completed, quality
+          student_id, teacher_id, date, type,
+          daily_prayer_id, prayer_reading_id,
+          is_completed, quality, prayer_name, notes
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
-          student_id, 
-          teacher_id, 
-          date || new Date().toLocaleDateString('en-CA'), 
-          type, 
-          daily_prayer_id || null, 
-          prayer_reading_id || null, 
-          is_completed || false, 
-          quality
+          student_id,
+          teacher_id,
+          date || new Date().toLocaleDateString('en-CA'),
+          type,
+          daily_prayer_id || null,
+          prayer_reading_id || null,
+          is_completed || false,
+          quality || null,
+          prayer_name || null,
+          notes || null
       ]
     );
 
@@ -60,11 +69,13 @@ export async function POST(req: NextRequest) {
 
         if (infoResult.data && infoResult.data.length > 0) {
           const { student_name, teacher_name, prayer_title, reading_title } = infoResult.data[0];
-          const itemName = type === 'DOA_HARIAN' ? (prayer_title || 'Doa Harian') : (reading_title || 'Bacaan Sholat');
+          let itemName = type === 'DOA_HARIAN' ? (prayer_title || 'Doa Harian') : (reading_title || 'Bacaan Sholat');
+          if (isSalatType) itemName = prayer_name || (type === 'SALAT_FARDU' ? 'Salat Fardu' : 'Salat Sunah');
           const status = is_completed ? 'Lulus' : 'Belum Lulus';
+          const nilaiText = quality ? ` (Nilai ${quality})` : '';
           await createNotification({
             type: 'worship',
-            message: `Hafalan ${student_name}: ${itemName} — ${status} (Nilai ${quality}) oleh ${teacher_name}`
+            message: `Hafalan ${student_name}: ${itemName} — ${status}${nilaiText} oleh ${teacher_name}`
           });
         }
       } catch (e) { console.error('notif error:', e); }
@@ -82,6 +93,25 @@ export async function GET(req: NextRequest) {
     const limit = searchParams.get('limit') || '20';
     const groupStudentIds = searchParams.get('group_student_ids');
     const date = searchParams.get('date');
+    const chart = searchParams.get('chart'); // true/false
+    const chartType = searchParams.get('type') || 'SALAT_FARDU';
+
+    if (chart === 'true' && studentId) {
+        const result = await query(
+            `SELECT
+                TO_CHAR(date::DATE, 'YYYY-MM') as month,
+                TO_CHAR(date::DATE, 'Mon') as month_label,
+                COUNT(DISTINCT date::DATE) * 5 as total_sessions,
+                COUNT(*) as total_present
+             FROM worship_records
+             WHERE student_id = $1 AND type = $2
+             AND date::DATE >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '5 months')
+             GROUP BY TO_CHAR(date::DATE, 'YYYY-MM'), TO_CHAR(date::DATE, 'Mon')
+             ORDER BY month ASC`,
+            [studentId, chartType]
+        );
+        return NextResponse.json({ success: result.success, data: result.data ?? [] });
+    }
 
     let sql = `
       SELECT wr.*, 
@@ -132,10 +162,10 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, quality, is_completed, daily_prayer_id, prayer_reading_id } = body;
+    const { id, quality, is_completed, daily_prayer_id, prayer_reading_id, prayer_name, notes } = body;
 
-    if (!id || !quality) {
-      return NextResponse.json({ success: false, error: 'Missing id or quality' }, { status: 400 });
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'Missing id' }, { status: 400 });
     }
 
     const result = await execute(
@@ -143,9 +173,11 @@ export async function PUT(req: NextRequest) {
        SET quality = $1,
            is_completed = $2,
            daily_prayer_id = $3,
-           prayer_reading_id = $4
-       WHERE id = $5`,
-      [quality, is_completed ?? false, daily_prayer_id ?? null, prayer_reading_id ?? null, id]
+           prayer_reading_id = $4,
+           prayer_name = $5,
+           notes = $6
+       WHERE id = $7`,
+      [quality ?? null, is_completed ?? false, daily_prayer_id ?? null, prayer_reading_id ?? null, prayer_name ?? null, notes ?? null, id]
     );
 
     return NextResponse.json(result);

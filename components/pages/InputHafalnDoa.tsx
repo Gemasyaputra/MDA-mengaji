@@ -39,6 +39,7 @@ interface TodayRecord {
   type: string;
   daily_prayer_title?: string;
   prayer_reading_title?: string;
+  prayer_name?: string;
   quality: string;
   is_completed: boolean;
 }
@@ -49,9 +50,13 @@ interface RecentRecord {
   type: string;
   daily_prayer_title?: string;
   prayer_reading_title?: string;
+  prayer_name?: string;
   quality: string;
   is_completed: boolean;
 }
+
+const SALAT_FARDU_OPTIONS = ['Subuh', 'Dzuhur', 'Ashar', 'Maghrib', 'Isya'];
+const SALAT_SUNAH_OPTIONS = ['Salat Jumat', 'Salat Duha', 'Salat Tahajud', 'Salat Rawatib'];
 
 const TODAY = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
 
@@ -78,10 +83,13 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
     type: 'DOA_HARIAN',
     daily_prayer_id: '',
     prayer_reading_id: '',
+    prayer_name: '',
     is_completed: false,
     quality: 'A',
     notes: ''
   });
+
+  const isSalatType = formData.type === 'SALAT_FARDU' || formData.type === 'SALAT_SUNAH';
 
   // Fetch Groups
   useEffect(() => {
@@ -177,14 +185,15 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
 
   const handleStudentSelect = (student: Student) => {
     setSelectedStudent(student);
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData(prev => ({
+      ...prev,
       date: selectedDate, // Sync form date with selected date
-      daily_prayer_id: '', 
-      prayer_reading_id: '', 
-      notes: '', 
-      is_completed: false, 
-      quality: 'A' 
+      daily_prayer_id: '',
+      prayer_reading_id: '',
+      prayer_name: '',
+      notes: '',
+      is_completed: false,
+      quality: 'A'
     }));
     fetchRecentRecords(student.id);
     setStep(3);
@@ -199,6 +208,7 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
     if (!selectedStudent || !currentUser) return;
     if (formData.type === 'DOA_HARIAN' && !formData.daily_prayer_id) { toast.error('Pilih Doa Harian terlebih dahulu'); return; }
     if (formData.type === 'BACAAN_SHOLAT' && !formData.prayer_reading_id) { toast.error('Pilih Bacaan Sholat terlebih dahulu'); return; }
+    if (isSalatType && !formData.prayer_name) { toast.error('Pilih jenis Salat terlebih dahulu'); return; }
 
     try {
       const payload = {
@@ -208,8 +218,9 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
         type: formData.type,
         daily_prayer_id: formData.type === 'DOA_HARIAN' ? formData.daily_prayer_id : null,
         prayer_reading_id: formData.type === 'BACAAN_SHOLAT' ? formData.prayer_reading_id : null,
+        prayer_name: isSalatType ? formData.prayer_name : null,
         is_completed: formData.is_completed,
-        quality: formData.quality,
+        quality: isSalatType ? null : formData.quality,
         notes: formData.notes
       };
 
@@ -251,7 +262,10 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
 
   const getRecordLabel = (rec: RecentRecord | TodayRecord) => {
     if (rec.type === 'DOA_HARIAN') return rec.daily_prayer_title || 'Doa Harian';
-    return rec.prayer_reading_title || 'Bacaan Sholat';
+    if (rec.type === 'BACAAN_SHOLAT') return rec.prayer_reading_title || 'Bacaan Sholat';
+    if (rec.type === 'SALAT_FARDU') return rec.prayer_name || 'Salat Fardu';
+    if (rec.type === 'SALAT_SUNAH') return rec.prayer_name || 'Salat Sunah';
+    return rec.prayer_name || rec.type;
   };
 
   return (
@@ -329,6 +343,7 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
               // Group by type
               const doaHarian = todayRecs.filter(r => r.type === 'DOA_HARIAN');
               const bacaanSholat = todayRecs.filter(r => r.type === 'BACAAN_SHOLAT');
+              const salat = todayRecs.filter(r => r.type === 'SALAT_FARDU' || r.type === 'SALAT_SUNAH');
 
               return (
                 <div
@@ -372,6 +387,15 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
                             <span className="font-medium">Bacaan Sholat:</span>{' '}
                             {bacaanSholat.length} disetor{' '}
                             <span className="text-purple-400">(Nilai: {bacaanSholat.map(r => r.quality).join(', ')})</span>
+                          </span>
+                        )}
+                        {(doaHarian.length > 0 || bacaanSholat.length > 0) && salat.length > 0 && (
+                          <span className="text-purple-300">&bull;</span>
+                        )}
+                        {salat.length > 0 && (
+                          <span>
+                            <span className="font-medium">Salat:</span>{' '}
+                            {salat.map(r => r.prayer_name).filter(Boolean).join(', ')}
                           </span>
                         )}
                       </div>
@@ -418,46 +442,73 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
             {/* Type Selection */}
             <div>
               <label className="block text-xs font-bold text-slate-500 mb-2">KATEGORI</label>
-              <div className="flex bg-slate-100 p-1 rounded-lg">
+              <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-lg">
                 <button
-                  onClick={() => setFormData(prev => ({ ...prev, type: 'DOA_HARIAN', daily_prayer_id: '', prayer_reading_id: '' }))}
-                  className={`flex-1 py-2 text-xs font-bold rounded ${formData.type === 'DOA_HARIAN' ? 'bg-white shadow text-emerald-600' : 'text-slate-500'}`}
+                  onClick={() => setFormData(prev => ({ ...prev, type: 'DOA_HARIAN', daily_prayer_id: '', prayer_reading_id: '', prayer_name: '' }))}
+                  className={`py-2 text-xs font-bold rounded ${formData.type === 'DOA_HARIAN' ? 'bg-white shadow text-emerald-600' : 'text-slate-500'}`}
                 >
                   Doa Harian
                 </button>
                 <button
-                  onClick={() => setFormData(prev => ({ ...prev, type: 'BACAAN_SHOLAT', daily_prayer_id: '', prayer_reading_id: '' }))}
-                  className={`flex-1 py-2 text-xs font-bold rounded ${formData.type === 'BACAAN_SHOLAT' ? 'bg-white shadow text-blue-600' : 'text-slate-500'}`}
+                  onClick={() => setFormData(prev => ({ ...prev, type: 'BACAAN_SHOLAT', daily_prayer_id: '', prayer_reading_id: '', prayer_name: '' }))}
+                  className={`py-2 text-xs font-bold rounded ${formData.type === 'BACAAN_SHOLAT' ? 'bg-white shadow text-blue-600' : 'text-slate-500'}`}
                 >
                   Bacaan Sholat
+                </button>
+                <button
+                  onClick={() => setFormData(prev => ({ ...prev, type: 'SALAT_FARDU', daily_prayer_id: '', prayer_reading_id: '', prayer_name: '' }))}
+                  className={`py-2 text-xs font-bold rounded ${formData.type === 'SALAT_FARDU' ? 'bg-white shadow text-purple-600' : 'text-slate-500'}`}
+                >
+                  Salat Fardu
+                </button>
+                <button
+                  onClick={() => setFormData(prev => ({ ...prev, type: 'SALAT_SUNAH', daily_prayer_id: '', prayer_reading_id: '', prayer_name: '' }))}
+                  className={`py-2 text-xs font-bold rounded ${formData.type === 'SALAT_SUNAH' ? 'bg-white shadow text-amber-600' : 'text-slate-500'}`}
+                >
+                  Salat Sunah
                 </button>
               </div>
             </div>
 
             {/* Dynamic Dropdown */}
-            <div>
-              <label className="block text-xs font-bold text-slate-500 mb-2">
-                {formData.type === 'DOA_HARIAN' ? 'PILIH DOA' : 'PILIH BACAAN'}
-              </label>
-              <SearchableSelect
-                options={
-                  formData.type === 'DOA_HARIAN'
-                    ? dailyPrayers.map(d => ({ value: d.id, label: d.title }))
-                    : prayerReadings.map(d => ({ value: d.id, label: d.title }))
-                }
-                value={formData.type === 'DOA_HARIAN' ? formData.daily_prayer_id : formData.prayer_reading_id}
-                onChange={(val) => {
-                  const name = formData.type === 'DOA_HARIAN' ? 'daily_prayer_id' : 'prayer_reading_id';
-                  setFormData(prev => ({ ...prev, [name]: String(val) }));
-                }}
-                placeholder={formData.type === 'DOA_HARIAN' ? 'Pilih Doa...' : 'Pilih Bacaan...'}
-                searchPlaceholder="Cari..."
-              />
-            </div>
+            {isSalatType ? (
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-2">PILIH SALAT</label>
+                <SearchableSelect
+                  options={(formData.type === 'SALAT_FARDU' ? SALAT_FARDU_OPTIONS : SALAT_SUNAH_OPTIONS).map(p => ({ value: p, label: p }))}
+                  value={formData.prayer_name}
+                  onChange={(val) => setFormData(prev => ({ ...prev, prayer_name: String(val) }))}
+                  placeholder="Pilih jenis Salat..."
+                  searchPlaceholder="Cari..."
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-2">
+                  {formData.type === 'DOA_HARIAN' ? 'PILIH DOA' : 'PILIH BACAAN'}
+                </label>
+                <SearchableSelect
+                  options={
+                    formData.type === 'DOA_HARIAN'
+                      ? dailyPrayers.map(d => ({ value: d.id, label: d.title }))
+                      : prayerReadings.map(d => ({ value: d.id, label: d.title }))
+                  }
+                  value={formData.type === 'DOA_HARIAN' ? formData.daily_prayer_id : formData.prayer_reading_id}
+                  onChange={(val) => {
+                    const name = formData.type === 'DOA_HARIAN' ? 'daily_prayer_id' : 'prayer_reading_id';
+                    setFormData(prev => ({ ...prev, [name]: String(val) }));
+                  }}
+                  placeholder={formData.type === 'DOA_HARIAN' ? 'Pilih Doa...' : 'Pilih Bacaan...'}
+                  searchPlaceholder="Cari..."
+                />
+              </div>
+            )}
 
             {/* Status Lulus/Belum */}
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-2">STATUS</label>
+              <label className="block text-xs font-bold text-slate-500 mb-2">
+                {isSalatType ? 'STATUS' : 'STATUS'}
+              </label>
               <div className="flex gap-2">
                 <button
                   onClick={() => setFormData(prev => ({ ...prev, is_completed: true }))}
@@ -466,7 +517,7 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
                   }`}
                 >
                   <CheckCircle size={16} />
-                  <span className="font-bold text-sm">Lulus</span>
+                  <span className="font-bold text-sm">{isSalatType ? 'Sudah' : 'Lulus'}</span>
                 </button>
                 <button
                   onClick={() => setFormData(prev => ({ ...prev, is_completed: false }))}
@@ -481,24 +532,26 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
             </div>
 
             {/* Quality */}
-            <div>
-              <label className="block text-xs font-bold text-slate-500 mb-2">KUALITAS</label>
-              <div className="flex gap-2">
-                {['A', 'B', 'C'].map(q => (
-                  <button
-                    key={q}
-                    onClick={() => setFormData(prev => ({ ...prev, quality: q }))}
-                    className={`flex-1 py-3 rounded-lg font-bold border transition ${
-                      formData.quality === q
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
-                        : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    {q}
-                  </button>
-                ))}
+            {!isSalatType && (
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-2">KUALITAS</label>
+                <div className="flex gap-2">
+                  {['A', 'B', 'C'].map(q => (
+                    <button
+                      key={q}
+                      onClick={() => setFormData(prev => ({ ...prev, quality: q }))}
+                      className={`flex-1 py-3 rounded-lg font-bold border transition ${
+                        formData.quality === q
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                          : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Notes */}
             <div>
@@ -543,9 +596,11 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
                           {new Date(rec.date + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' })}
                         </p>
                       </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${qualityColor(rec.quality)}`}>
-                        {rec.quality}
-                      </span>
+                      {rec.quality && (
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${qualityColor(rec.quality)}`}>
+                          {rec.quality}
+                        </span>
+                      )}
                     </div>
                   ))}
 

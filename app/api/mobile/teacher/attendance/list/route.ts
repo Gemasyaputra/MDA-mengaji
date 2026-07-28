@@ -9,6 +9,7 @@ export async function GET(request: Request) {
   const tokenParam = searchParams.get("token");
   const groupIdParam = searchParams.get("groupId");
   const dateParam = searchParams.get("date"); // YYYY-MM-DD
+  const sessionParam = searchParams.get("session") === "SIANG" ? "SIANG" : "PAGI";
 
   const teacherId = resolveTeacherId(tokenParam);
   if (!teacherId) {
@@ -57,7 +58,8 @@ export async function GET(request: Request) {
         .where(
           and(
             inArray(attendance.studentId, studentIds),
-            eq(sql`date::date`, sql`${dateStr}::date`)
+            eq(sql`date::date`, sql`${dateStr}::date`),
+            eq(attendance.session, sessionParam)
           )
         );
     }
@@ -72,6 +74,7 @@ export async function GET(request: Request) {
         currentLevel: s.currentLevel,
         status: evidence ? evidence.status : 'HADIR', // Default to HADIR
         notes: evidence ? evidence.notes : '',
+        time: evidence ? evidence.time : '',
       };
     });
 

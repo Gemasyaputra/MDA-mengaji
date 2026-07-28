@@ -28,20 +28,25 @@ export async function POST(req: Request) {
     const dateStr = records[0].date || new Date().toISOString().split('T')[0];
     let successCount = 0;
     
-    // Process each record (delete existing for that date then insert)
+    // Process each record (delete existing for that date+session then insert)
     for (const r of records) {
-      // Drizzle ORM equivalent of deleting existing attendance for student on this date
+      const session = r.session === 'SIANG' ? 'SIANG' : 'PAGI';
+
+      // Drizzle ORM equivalent of deleting existing attendance for student on this date+session
       await db.delete(attendance).where(
         and(
           eq(attendance.studentId, r.studentId),
-          eq(sql`date::date`, sql`${dateStr}::date`)
+          eq(sql`date::date`, sql`${dateStr}::date`),
+          eq(attendance.session, session)
         )
       );
-      
+
       await db.insert(attendance).values({
         studentId: r.studentId,
         teacherId: resolvedTeacherId,
         status: r.status.toUpperCase(),
+        session,
+        time: r.time || null,
         notes: r.notes || "Diabsen via Mobile App",
         date: dateStr,
       });

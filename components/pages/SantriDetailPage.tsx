@@ -21,6 +21,8 @@ interface SantriData {
   reading_level?: string | null;
   iqro_graduated_at?: string | null;
   created_at?: string;
+  teacher_note?: string | null;
+  is_behind?: boolean;
 }
 
 export default function SantriDetailPage({ onNavigate, santriId }: SantriDetailPageProps) {
@@ -222,6 +224,25 @@ export default function SantriDetailPage({ onNavigate, santriId }: SantriDetailP
           <p className="text-xs text-slate-500">Bergabung: {formatDate(santri.created_at)}</p>
         )}
       </div>
+
+      {/* Target/Warning Banner */}
+      {santri.is_behind && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+          <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={20} />
+          <div>
+            <p className="text-sm font-bold text-red-700">Santri tertinggal dari target hafalan/ngaji</p>
+            <p className="text-xs text-red-600 mt-0.5">Belum ada setoran mengaji/hafalan dalam 14 hari terakhir.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Catatan Guru */}
+      {santri.teacher_note && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+          <p className="text-xs font-bold text-amber-700 mb-1">CATATAN GURU</p>
+          <p className="text-sm text-amber-800 whitespace-pre-wrap">{santri.teacher_note}</p>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3 mb-6">

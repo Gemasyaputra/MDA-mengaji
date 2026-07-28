@@ -21,6 +21,7 @@ import MasterHafalanPage from '@/components/pages/MasterHafalanPage';
 import SantriHistoryPage from '@/components/pages/SantriHistoryPage';
 import LandingPage from '@/components/pages/LandingPage';
 import ActivityLogPage from '@/components/pages/ActivityLogPage';
+import RekapLaporanPage from '@/components/pages/RekapLaporanPage';
 /* import Toast from '@/components/Toast'; // REMOVED */
 import { toast } from 'sonner';
 import { User, UserRole } from '@/types';
@@ -102,7 +103,7 @@ export default function Home() {
   };
 
   const navigateTo = (pageId: string) => {
-    if (pageId === 'login' && currentRole !== null) {
+    if (pageId === 'logout') {
       setShowLogoutConfirm(true);
       return;
     }
@@ -184,13 +185,16 @@ export default function Home() {
         return <MasterHafalanPage onNavigate={navigateTo} currentUser={currentUser} />;
       case 'activity-log':
         return <ActivityLogPage role={currentRole} currentUser={currentUser} onNavigate={navigateTo} />;
+      case 'rekap-laporan':
+        return <RekapLaporanPage />;
       default:
         if (currentPage?.startsWith('presensi-detail')) {
             const queryString = currentPage.split('?')[1] || '';
             const params = new URLSearchParams(queryString);
             const date = params.get('date');
             const groupId = params.get('group_id');
-            return <PresensiDetailPage onNavigate={navigateTo} date={date} groupId={groupId} />;
+            const session = params.get('session');
+            return <PresensiDetailPage onNavigate={navigateTo} date={date} groupId={groupId} session={session} />;
         }
         if (currentPage?.startsWith('santri-detail')) {
             const params = new URLSearchParams(currentPage.split('?')[1]);
@@ -232,6 +236,7 @@ export default function Home() {
     if (currentPage?.startsWith('santri-history')) return 'Riwayat Santri';
     if (currentPage === 'input-iqro') return 'Setoran Bacaan';
     if (currentPage === 'activity-log') return 'Log Aktivitas';
+    if (currentPage === 'rekap-laporan') return 'Rekapitulasi & Laporan';
     if (currentPage.startsWith('input-')) return 'Input Data';
     return 'Dashboard';
   };
@@ -247,16 +252,16 @@ export default function Home() {
   }
 
   return (
-    <div className="w-full h-screen bg-slate-50 relative flex flex-col md:flex-row overflow-hidden">
+    <div className="w-full h-screen bg-slate-50 relative flex flex-col md:flex-row overflow-hidden print:h-auto print:overflow-visible">
       {/* Sidebar for Desktop */}
       {showChrome && currentRole && (
         <div className="print:hidden h-full">
-          <Sidebar role={currentRole} currentPage={currentPage} onNavigate={navigateTo} onLogout={() => navigateTo('login')} />
+          <Sidebar role={currentRole} currentPage={currentPage} onNavigate={navigateTo} onLogout={() => navigateTo('logout')} />
         </div>
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 h-full relative">
+      <div className="flex-1 flex flex-col min-w-0 h-full relative print:h-auto">
         {showChrome && (
           <div className="print:hidden">
             <Header
@@ -264,7 +269,7 @@ export default function Home() {
               title={getHeaderTitle()}
               onBack={goBack}
               currentUser={currentUser}
-              onLogout={() => navigateTo('login')}
+              onLogout={() => navigateTo('logout')}
               showBackButton={
                 !['dashboard', 'santri-list', 'kabar', 'manage-teachers'].includes(
                   currentPage,

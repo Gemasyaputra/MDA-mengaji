@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
   const studentId = searchParams.get('student_id');
   const date = searchParams.get('date');
   const groupId = searchParams.get('group_id');
+  const session = searchParams.get('session'); // PAGI/SIANG
   const month = searchParams.get('month'); // YYYY-MM
   const history = searchParams.get('history'); // true/false
   const chart = searchParams.get('chart'); // true/false
@@ -38,8 +39,9 @@ export async function GET(req: NextRequest) {
         const teacherId = searchParams.get('teacher_id');
         
         let sql = `
-            SELECT 
+            SELECT
                 TO_CHAR(a.date, 'YYYY-MM-DD') as date,
+                a.session,
                 COUNT(a.id) as total_attendance,
                 SUM(CASE WHEN a.status = 'HADIR' THEN 1 ELSE 0 END) as total_hadir,
                 MAX(g.name) as group_name,
@@ -60,8 +62,8 @@ export async function GET(req: NextRequest) {
             params.push(teacherId);
             idx++;
         }
-        
-        sql += ` GROUP BY a.date, s.group_id, a.teacher_id ORDER BY a.date DESC LIMIT 30`;
+
+        sql += ` GROUP BY a.date, a.session, s.group_id, a.teacher_id ORDER BY a.date DESC, a.session ASC LIMIT 30`;
         
         const result = await query(sql, params);
         return NextResponse.json({ success: result.success, data: result.data ?? [] });
@@ -70,10 +72,10 @@ export async function GET(req: NextRequest) {
     // 2. Get Detail for specific date and group (or just date)
     if (date) {
          let sql = `
-            SELECT 
+            SELECT
                 a.id, a.student_id, a.teacher_id,
                 TO_CHAR(a.date, 'YYYY-MM-DD') as date,
-                a.status, a.notes, a.created_at,
+                a.status, a.session, TO_CHAR(a.time, 'HH24:MI') as time, a.notes, a.created_at,
                 s.name as student_name,
                 s.group_id,
                 g.name as group_name
@@ -83,12 +85,19 @@ export async function GET(req: NextRequest) {
             WHERE a.date::date = $1::date
         `;
         const params: (string | number)[] = [date];
-        
+        let idx = 2;
+
         if (groupId) {
-             sql += ` AND s.group_id = $2`;
+             sql += ` AND s.group_id = $${idx}`;
              params.push(groupId);
+             idx++;
         }
-        
+        if (session) {
+             sql += ` AND a.session = $${idx}`;
+             params.push(session);
+             idx++;
+        }
+
         sql += ` ORDER BY s.name ASC`;
         const result = await query(sql, params);
         return NextResponse.json({ success: result.success, data: result.data ?? [] });
@@ -97,10 +106,10 @@ export async function GET(req: NextRequest) {
     // 3. Filter by Student ID (e.g. for Profile History)
     if (studentId) {
         let sql = `
-            SELECT 
+            SELECT
                 a.id, a.student_id, a.teacher_id,
                 TO_CHAR(a.date, 'YYYY-MM-DD') as date,
-                a.status, a.notes, a.created_at,
+                a.status, a.session, TO_CHAR(a.time, 'HH24:MI') as time, a.notes, a.created_at,
                 s.name as student_name,
                 g.name as group_name
             FROM attendance a
@@ -162,11 +171,12 @@ export async function POST(req: NextRequest) {
       let successCount = 0;
       
       for (const r of records) {
-        await execute('DELETE FROM attendance WHERE student_id = $1 AND date::date = $2::date', [r.student_id, r.date]);
+        const session = r.session === 'SIANG' ? 'SIANG' : 'PAGI';
+        await execute('DELETE FROM attendance WHERE student_id = $1 AND date::date = $2::date AND session = $3', [r.student_id, r.date, session]);
         await execute(
-            `INSERT INTO attendance (student_id, teacher_id, date, status, notes)
-             VALUES ($1, $2, $3, $4, $5)`,
-            [r.student_id, r.teacher_id, r.date, r.status, r.notes || null]
+            `INSERT INTO attendance (student_id, teacher_id, date, status, session, time, notes)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [r.student_id, r.teacher_id, r.date, r.status, session, r.time || null, r.notes || null]
         );
         successCount++;
       }

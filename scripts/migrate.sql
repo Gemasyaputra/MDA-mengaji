@@ -176,3 +176,31 @@ ALTER TABLE master_surahs ADD COLUMN IF NOT EXISTS juz VARCHAR(50);
 -- ADD READING LEVEL COLUMNS
 ALTER TABLE students ADD COLUMN IF NOT EXISTS reading_level VARCHAR(20) DEFAULT 'IQRO' CHECK (reading_level IN ('IQRO', 'ALQURAN'));
 ALTER TABLE students ADD COLUMN IF NOT EXISTS iqro_graduated_at TIMESTAMP;
+
+-- ADD PROFILE PHOTO COLUMNS (Guru & Santri)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS photo_url TEXT;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS photo_url TEXT;
+
+-- ADD MATERI PDF/LINK COLUMNS (arabic_text tetap ada, jadi opsional di UI)
+ALTER TABLE master_daily_prayers ADD COLUMN IF NOT EXISTS pdf_url TEXT;
+ALTER TABLE master_daily_prayers ADD COLUMN IF NOT EXISTS external_link TEXT;
+ALTER TABLE master_prayer_readings ADD COLUMN IF NOT EXISTS pdf_url TEXT;
+ALTER TABLE master_prayer_readings ADD COLUMN IF NOT EXISTS external_link TEXT;
+
+-- ADD SALAT FARDU/SUNAH TRACKING (worship_records)
+ALTER TABLE worship_records DROP CONSTRAINT IF EXISTS worship_records_type_check;
+ALTER TABLE worship_records ADD CONSTRAINT worship_records_type_check
+  CHECK (type IN ('DOA_HARIAN', 'BACAAN_SHOLAT', 'SALAT_FARDU', 'SALAT_SUNAH'));
+ALTER TABLE worship_records ADD COLUMN IF NOT EXISTS prayer_name VARCHAR(50);
+
+-- ADD TEACHER NOTE FOR TARGET/WARNING TRACKING
+ALTER TABLE students ADD COLUMN IF NOT EXISTS teacher_note TEXT;
+
+-- ADD SESSION (PAGI/SIANG) TO ATTENDANCE
+ALTER TABLE attendance ADD COLUMN IF NOT EXISTS session VARCHAR(10) NOT NULL DEFAULT 'PAGI' CHECK (session IN ('PAGI', 'SIANG'));
+
+-- ADD TIME (JAM PRESENSI) TO ATTENDANCE
+ALTER TABLE attendance ADD COLUMN IF NOT EXISTS time TIME;
+
+-- ADD NOTES (CATATAN GURU) TO WORSHIP_RECORDS — form sudah mengirim field ini tapi belum pernah tersimpan
+ALTER TABLE worship_records ADD COLUMN IF NOT EXISTS notes TEXT;

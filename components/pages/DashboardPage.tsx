@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Activity, BookOpen, Clock, Home, MapPin, Users } from 'lucide-react';
+import { Activity, AlertTriangle, BarChart3, BookOpen, Clock, Home, MapPin, Users } from 'lucide-react';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
 
 interface DashboardPageProps {
@@ -60,7 +60,7 @@ export default function DashboardPage({ role, onNavigate, currentUser }: Dashboa
   const [nextPrayerName, setNextPrayerName] = useState<string>('...');
   const [nextPrayerTime, setNextPrayerTime] = useState<Date | null>(null);
   const [countdown, setCountdown] = useState<string>('--:--:--');
-  const [stats, setStats] = useState({ total_santri: 0, present_today: 0, total_teachers: 0, total_groups: 0 });
+  const [stats, setStats] = useState({ total_santri: 0, present_today: 0, attendance_percent_today: 0, total_teachers: 0, total_groups: 0, students_behind: 0 });
 
   // Fetch Dashboard Stats
   useEffect(() => {
@@ -239,6 +239,12 @@ export default function DashboardPage({ role, onNavigate, currentUser }: Dashboa
           page: 'manage-teachers',
           color: 'bg-teal-50 text-teal-600 border-teal-100',
       });
+      dashboardMenu.push({
+          icon: BarChart3,
+          label: 'Laporan',
+          page: 'rekap-laporan',
+          color: 'bg-rose-50 text-rose-600 border-rose-100',
+      });
   }
 
   if (role === 'teacher') {
@@ -326,6 +332,19 @@ export default function DashboardPage({ role, onNavigate, currentUser }: Dashboa
         </div>
       </div>
 
+      {/* Peringatan santri tertinggal */}
+      {stats.students_behind > 0 && (
+        <button
+          onClick={() => onNavigate('santri-list')}
+          className="w-full flex items-center gap-3 bg-red-50 border border-red-200 hover:bg-red-100 rounded-2xl p-4 mb-6 text-left transition-colors"
+        >
+          <AlertTriangle className="text-red-500 shrink-0" size={20} />
+          <p className="text-sm text-red-700">
+            <span className="font-bold">{stats.students_behind} santri</span> tertinggal dari target hafalan/ngaji (belum ada setoran 14 hari terakhir).
+          </p>
+        </button>
+      )}
+
       {/* Statistik ringkas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 mb-8">
         <div className="bg-white p-5 rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-slate-100/60 relative overflow-hidden group hover:border-emerald-200 transition-colors">
@@ -339,7 +358,7 @@ export default function DashboardPage({ role, onNavigate, currentUser }: Dashboa
           <div className="flex items-baseline gap-2">
             <h3 className="text-3xl font-black text-blue-600">{stats.present_today}</h3>
             <span className="text-xs font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md">
-              {stats.total_santri > 0 ? Math.round((stats.present_today / stats.total_santri) * 100) : 0}%
+              {stats.attendance_percent_today}%
             </span>
           </div>
         </div>
