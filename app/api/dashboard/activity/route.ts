@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/api-helpers';
+import { applyTeacherNameFormatting } from '@/lib/teacherName';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -19,6 +20,7 @@ export async function GET(req: NextRequest) {
             'attendance' AS type,
             a.created_at AS ts,
             u.name AS actor_name,
+            u.jenis_kelamin AS actor_jenis_kelamin,
             g.name AS group_name,
             NULL::text AS student_name,
             NULL::text AS detail,
@@ -27,7 +29,7 @@ export async function GET(req: NextRequest) {
           JOIN users u ON a.teacher_id = u.id
           JOIN students s ON a.student_id = s.id
           JOIN study_groups g ON s.group_id = g.id
-          GROUP BY a.date, a.created_at, u.name, g.name, a.id
+          GROUP BY a.date, a.created_at, u.name, u.jenis_kelamin, g.name, a.id
 
           UNION ALL
 
@@ -36,6 +38,7 @@ export async function GET(req: NextRequest) {
             'learning' AS type,
             lr.created_at AS ts,
             u.name AS actor_name,
+            u.jenis_kelamin AS actor_jenis_kelamin,
             g.name AS group_name,
             s.name AS student_name,
             lr.level_or_surah AS detail,
@@ -52,6 +55,7 @@ export async function GET(req: NextRequest) {
             'new_student' AS type,
             s.created_at AS ts,
             'Admin' AS actor_name,
+            NULL::varchar AS actor_jenis_kelamin,
             g.name AS group_name,
             s.name AS student_name,
             NULL::text AS detail,
@@ -66,6 +70,7 @@ export async function GET(req: NextRequest) {
             'milestone' AS type,
             s.iqro_graduated_at AS ts,
             u.name AS actor_name,
+            u.jenis_kelamin AS actor_jenis_kelamin,
             g.name AS group_name,
             s.name AS student_name,
             'Khatam Iqro ke Al-Quran' AS detail,
@@ -81,7 +86,7 @@ export async function GET(req: NextRequest) {
       `);
 
       if (result.success && result.data) {
-        activities = result.data;
+        activities = applyTeacherNameFormatting(result.data, 'actor_name', 'actor_jenis_kelamin');
       }
 
     } else if (role === 'teacher' && teacherId) {
@@ -95,6 +100,7 @@ export async function GET(req: NextRequest) {
             'attendance' AS type,
             MAX(a.created_at) OVER (PARTITION BY a.date, g.id) AS ts,
             u.name AS actor_name,
+            u.jenis_kelamin AS actor_jenis_kelamin,
             g.name AS group_name,
             NULL::text AS student_name,
             NULL::text AS detail,
@@ -112,6 +118,7 @@ export async function GET(req: NextRequest) {
             'learning' AS type,
             lr.created_at AS ts,
             u.name AS actor_name,
+            u.jenis_kelamin AS actor_jenis_kelamin,
             g.name AS group_name,
             s.name AS student_name,
             lr.level_or_surah AS detail,
@@ -129,6 +136,7 @@ export async function GET(req: NextRequest) {
             'new_student' AS type,
             s.created_at AS ts,
             'Admin' AS actor_name,
+            NULL::varchar AS actor_jenis_kelamin,
             g.name AS group_name,
             s.name AS student_name,
             NULL::text AS detail,
@@ -144,6 +152,7 @@ export async function GET(req: NextRequest) {
             'milestone' AS type,
             s.iqro_graduated_at AS ts,
             u.name AS actor_name,
+            u.jenis_kelamin AS actor_jenis_kelamin,
             g.name AS group_name,
             s.name AS student_name,
             'Khatam Iqro ke Al-Quran' AS detail,
@@ -160,7 +169,7 @@ export async function GET(req: NextRequest) {
       `, [teacherId]);
 
       if (result.success && result.data) {
-        activities = result.data;
+        activities = applyTeacherNameFormatting(result.data, 'actor_name', 'actor_jenis_kelamin');
       }
     }
 

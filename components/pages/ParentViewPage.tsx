@@ -263,7 +263,7 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
                 ...worshipRecords.map((r: any) => {
                     const typeLabel = r.type === 'DOA_HARIAN' ? 'Hafalan Doa' : r.type === 'BACAAN_SHOLAT' ? 'Bacaan Sholat' : r.type;
                     const detail = r.daily_prayer_title || r.prayer_reading_title || r.title || '';
-                    return { type: 'worship', date: r.date, title: typeLabel, detail, quality: r.quality, teacher: r.teacher_name, notes: null };
+                    return { type: 'worship', date: r.date, title: typeLabel, detail, quality: r.quality, teacher: r.teacher_name, recordedBy: r.recorded_by, notes: null };
                 })
             ].sort((a, b) => new Date(b.date + 'T00:00:00').getTime() - new Date(a.date + 'T00:00:00').getTime()).slice(0, 12);
 
@@ -553,12 +553,14 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
                     <div className="bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
                     <div className="flex justify-between items-start gap-2">
                         <h4 className="font-bold text-sm text-slate-800 leading-tight flex-1">{activity.title}</h4>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                            activity.quality === 'A' || activity.quality === 'LANCAR' ? 'bg-emerald-100 text-emerald-700' :
-                            activity.quality === 'B' ? 'bg-blue-100 text-blue-700' :
-                            activity.quality === 'C' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-orange-100 text-orange-700'
-                        }`}>{activity.quality || 'N/A'}</span>
+                        {activity.quality != null && (
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                              Number(activity.quality) >= 9 ? 'bg-emerald-100 text-emerald-700' :
+                              Number(activity.quality) >= 7 ? 'bg-blue-100 text-blue-700' :
+                              Number(activity.quality) >= 5 ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-orange-100 text-orange-700'
+                          }`}>Nilai {activity.quality}</span>
+                        )}
                     </div>
                     {activity.detail && (
                         <p className="text-xs text-slate-500 mt-1">{activity.detail}</p>
@@ -567,7 +569,9 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
                         <p className="text-xs text-slate-400 italic mt-1">📝 {activity.notes}</p>
                     )}
                     <div className="flex justify-between items-center mt-2">
-                        <span className="text-[10px] text-slate-400 truncate">{activity.teacher ? `👤 ${activity.teacher}` : ''}</span>
+                        <span className="text-[10px] text-slate-400 truncate">
+                          {activity.recordedBy === 'PARENT' ? '👪 Diinput Orang Tua' : activity.teacher ? `👤 ${activity.teacher}` : ''}
+                        </span>
                         <div className="flex items-center gap-1 text-xs text-slate-400 shrink-0">
                             <Calendar size={10} />
                             {new Date(activity.date + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}

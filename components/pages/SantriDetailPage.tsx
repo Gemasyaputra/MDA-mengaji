@@ -137,7 +137,7 @@ export default function SantriDetailPage({ onNavigate, santriId }: SantriDetailP
             const res = await fetch(`/api/worship-records?student_id=${santriId}`);
             const json = await res.json();
              if (json.success && Array.isArray(json.data)) {
-                 setWorshipHistory(json.data);
+                 setWorshipHistory(json.data.filter((r: any) => r.type === 'DOA_HARIAN' || r.type === 'BACAAN_SHOLAT'));
             } else {
                 setWorshipHistory([]);
             }
@@ -330,9 +330,9 @@ export default function SantriDetailPage({ onNavigate, santriId }: SantriDetailP
                               </div>
                               <div className="flex flex-col items-end gap-1">
                                   <span className={`px-2 py-1 rounded text-xs font-bold ${
-                                      record.quality === 'A' ? 'bg-emerald-100 text-emerald-700' :
-                                      record.quality === 'B' ? 'bg-blue-100 text-blue-700' :
-                                      record.quality === 'C' ? 'bg-yellow-100 text-yellow-700' :
+                                      Number(record.quality) >= 9 ? 'bg-emerald-100 text-emerald-700' :
+                                      Number(record.quality) >= 7 ? 'bg-blue-100 text-blue-700' :
+                                      Number(record.quality) >= 5 ? 'bg-yellow-100 text-yellow-700' :
                                       'bg-red-100 text-red-700'
                                   }`}>
                                       Nilai: {record.quality}
@@ -413,9 +413,9 @@ export default function SantriDetailPage({ onNavigate, santriId }: SantriDetailP
                               </div>
                               <div className="flex flex-col items-end gap-1">
                                   <span className={`px-2 py-1 rounded text-xs font-bold ${
-                                      record.quality === 'A' ? 'bg-emerald-100 text-emerald-700' :
-                                      record.quality === 'B' ? 'bg-blue-100 text-blue-700' :
-                                      record.quality === 'C' ? 'bg-yellow-100 text-yellow-700' :
+                                      Number(record.quality) >= 9 ? 'bg-emerald-100 text-emerald-700' :
+                                      Number(record.quality) >= 7 ? 'bg-blue-100 text-blue-700' :
+                                      Number(record.quality) >= 5 ? 'bg-yellow-100 text-yellow-700' :
                                       'bg-red-100 text-red-700'
                                   }`}>
                                       Nilai: {record.quality}

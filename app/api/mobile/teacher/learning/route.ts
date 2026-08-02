@@ -39,7 +39,7 @@ export async function POST(req: Request) {
       levelOrSurah: levelOrSurah,
       startPoint: startPoint,
       endPoint: endPoint,
-      quality: quality || "B",
+      quality: Number(quality) || 8,
       notes: notes || "",
       date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
     }).returning();

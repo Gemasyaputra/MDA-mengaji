@@ -9,7 +9,8 @@ export async function GET(request: Request) {
   const tokenParam = searchParams.get("token");
   const groupIdParam = searchParams.get("groupId");
   const dateParam = searchParams.get("date"); // YYYY-MM-DD
-  const sessionParam = searchParams.get("session") === "SIANG" ? "SIANG" : "PAGI";
+  const sessionParamRaw = searchParams.get("session");
+  const sessionParam = sessionParamRaw === "SIANG" ? "SIANG" : sessionParamRaw === "SORE" ? "SORE" : "PAGI";
 
   const teacherId = resolveTeacherId(tokenParam);
   if (!teacherId) {
@@ -33,48 +34,52 @@ export async function GET(request: Request) {
 
     // Fetch all students in the group
     const groupStudents = await db
-      .select({ 
-          id: students.id, 
+      .select({
+          id: students.id,
           name: students.name,
           readingLevel: students.readingLevel,
-          currentLevel: students.currentLevel
+          currentLevel: students.currentLevel,
+          photoUrl: students.photoUrl
       })
       .from(students)
       .where(eq(students.groupId, groupId))
       .orderBy(asc(students.name));
 
-    // Fetch existing attendance for this group and date
+    // Fetch existing attendance for this group and date, across ALL sessions (not just the
+    // active one) so we can also tell the teacher a student was already recorded in another
+    // session today.
     // Note: Drizzle might return Date objects or strings for date field, we'll cast to string if needed
     const studentIds = groupStudents.map(s => s.id);
-    
-    // We can fetch attendance for all these students on this date
-    // A simple way is to fetch all attendance for the teacher on this date and filter, or just query by studentIds.
-    // Drizzle's `inArray` can be used if studentIds is not empty
-    let existingAttendance: any[] = [];
+
+    let allAttendanceToday: any[] = [];
     if (studentIds.length > 0) {
-      existingAttendance = await db
+      allAttendanceToday = await db
         .select()
         .from(attendance)
         .where(
           and(
             inArray(attendance.studentId, studentIds),
-            eq(sql`date::date`, sql`${dateStr}::date`),
-            eq(attendance.session, sessionParam)
+            eq(sql`date::date`, sql`${dateStr}::date`)
           )
         );
     }
 
     // Merge students with attendance
     const mergedData = groupStudents.map(s => {
-      const evidence = existingAttendance.find((a: any) => a.studentId === s.id);
+      const evidence = allAttendanceToday.find((a: any) => a.studentId === s.id && a.session === sessionParam);
+      const otherSessions = allAttendanceToday
+        .filter((a: any) => a.studentId === s.id && a.session !== sessionParam)
+        .map((a: any) => ({ session: a.session, status: a.status }));
       return {
         id: s.id,
         name: s.name,
         readingLevel: s.readingLevel,
         currentLevel: s.currentLevel,
-        status: evidence ? evidence.status : 'HADIR', // Default to HADIR
+        photoUrl: s.photoUrl,
+        status: evidence ? evidence.status : null, // Belum ditandai sampai guru memilih status
         notes: evidence ? evidence.notes : '',
         time: evidence ? evidence.time : '',
+        otherSessions,
       };
     });
 

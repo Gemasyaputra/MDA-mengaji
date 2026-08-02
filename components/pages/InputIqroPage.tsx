@@ -36,7 +36,8 @@ interface TodayRecord {
   level_or_surah: string;
   start_point: string;
   end_point: string;
-  quality: string;
+  quality: number;
+  reading_status?: 'LANCAR' | 'MENGULANG';
   date: string;
 }
 
@@ -47,7 +48,8 @@ interface RecentRecord {
   level_or_surah: string;
   start_point: string;
   end_point: string;
-  quality: string;
+  quality: number;
+  reading_status?: 'LANCAR' | 'MENGULANG';
   type: string;
 }
 
@@ -82,7 +84,8 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
     level_or_surah: '',
     start_point: '',
     end_point: '',
-    quality: 'A',
+    quality: 8,
+    reading_status: 'LANCAR' as 'LANCAR' | 'MENGULANG',
     notes: '',
   });
 
@@ -230,7 +233,8 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
       level_or_surah: defaultLevel,
       start_point: '',
       end_point: '',
-      quality: 'A',
+      quality: 8,
+      reading_status: 'LANCAR',
       notes: ''
     }));
 
@@ -281,6 +285,7 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
         start_point: formData.start_point,
         end_point: formData.end_point,
         quality: formData.quality,
+        reading_status: formData.reading_status,
         notes: formData.notes
       };
 
@@ -354,10 +359,10 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
   const getStudentTodayRecord = (studentId: number) =>
     todayRecords.find(r => Number(r.student_id) === Number(studentId));
 
-  const qualityColor = (q: string) => {
-    if (q === 'A') return 'bg-emerald-100 text-emerald-700';
-    if (q === 'B') return 'bg-blue-100 text-blue-700';
-    if (q === 'C') return 'bg-yellow-100 text-yellow-700';
+  const qualityColor = (q: number) => {
+    if (q >= 9) return 'bg-emerald-100 text-emerald-700';
+    if (q >= 7) return 'bg-blue-100 text-blue-700';
+    if (q >= 5) return 'bg-yellow-100 text-yellow-700';
     return 'bg-red-100 text-red-700';
   };
 
@@ -471,7 +476,10 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
                           ? ` · Hal ${todayRec.start_point}–${todayRec.end_point}`
                           : ''}
                         {' · '}
-                        <span className="font-bold">{todayRec.quality}</span>
+                        <span className="font-bold">Nilai {todayRec.quality}</span>
+                        {todayRec.reading_status === 'MENGULANG' && (
+                          <span className="ml-1 text-amber-600 font-bold">· Ulangi Besok</span>
+                        )}
                       </p>
                     ) : (
                       <p className="text-xs text-slate-400 mt-0.5">
@@ -663,13 +671,13 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
 
             {/* Quality */}
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-2">KUALITAS BACAAN</label>
-              <div className="flex gap-2">
-                {['A', 'B', 'C', 'D'].map(q => (
+              <label className="block text-xs font-bold text-slate-500 mb-2">NILAI (1-10)</label>
+              <div className="flex gap-2 flex-wrap">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(q => (
                   <button
                     key={q}
                     onClick={() => setFormData(prev => ({ ...prev, quality: q }))}
-                    className={`flex-1 py-3 rounded-lg font-bold border transition ${
+                    className={`w-10 h-10 rounded-lg font-bold border transition ${
                       formData.quality === q
                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
                         : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
@@ -678,6 +686,33 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
                     {q}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Reading Status */}
+            <div>
+              <label className="block text-xs font-bold text-slate-500 mb-2">PERLU DIULANG BESOK?</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setFormData(prev => ({ ...prev, reading_status: 'LANCAR' }))}
+                  className={`flex-1 py-3 rounded-lg font-bold border transition ${
+                    formData.reading_status === 'LANCAR'
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                      : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  ✓ Sudah Lancar
+                </button>
+                <button
+                  onClick={() => setFormData(prev => ({ ...prev, reading_status: 'MENGULANG' }))}
+                  className={`flex-1 py-3 rounded-lg font-bold border transition ${
+                    formData.reading_status === 'MENGULANG'
+                      ? 'bg-amber-500 text-white border-amber-500 shadow-md'
+                      : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  ↻ Ulangi Besok
+                </button>
               </div>
             </div>
 
@@ -720,6 +755,7 @@ export default function InputIqroPage({ onSave, currentUser, onNavigate }: Input
                         </p>
                         <p className="text-[10px] text-slate-400">
                           {new Date(rec.date + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' })}
+                          {rec.reading_status === 'MENGULANG' ? ' · Ulangi Besok' : ''}
                         </p>
                       </div>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${qualityColor(rec.quality)}`}>

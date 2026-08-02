@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, execute } from '@/lib/api-helpers';
 import { createNotification } from '@/app/api/notifications/route';
+import { applyTeacherNameFormatting, formatTeacherName } from '@/lib/teacherName';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
   const beforeDate = searchParams.get('before_date'); // YYYY-MM-DD — fetch latest record before this date
 
   let sql = `
-    SELECT lr.*, u.name as teacher_name 
+    SELECT lr.*, u.name as teacher_name, u.jenis_kelamin as teacher_jenis_kelamin
     FROM learning_records lr
     LEFT JOIN users u ON lr.teacher_id = u.id
     WHERE 1=1
@@ -57,10 +58,10 @@ export async function GET(req: NextRequest) {
   try {
     const result = await query(sql, params);
     // Re-format dates to plain string to avoid timezone shift
-    const data = (result.data ?? []).map((r: any) => ({
+    const data = applyTeacherNameFormatting((result.data ?? []).map((r: any) => ({
       ...r,
       date: r.date ? (typeof r.date === 'string' ? r.date.split('T')[0] : new Date(r.date).toLocaleDateString('en-CA')) : null
-    }));
+    })));
     return NextResponse.json({ success: result.success, data });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -70,38 +71,45 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { 
-        student_id, 
-        teacher_id, 
-        date, 
-        type, 
-        level_or_surah, 
-        start_point, 
-        end_point, 
-        quality, 
-        notes 
+    const {
+        student_id,
+        teacher_id,
+        date,
+        type,
+        level_or_surah,
+        start_point,
+        end_point,
+        quality,
+        reading_status,
+        notes
     } = body;
 
     if (!student_id || !teacher_id || !type || !level_or_surah || !quality) {
         return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
     }
 
+    const qualityNum = Number(quality);
+    if (!Number.isInteger(qualityNum) || qualityNum < 1 || qualityNum > 10) {
+        return NextResponse.json({ success: false, error: 'Nilai harus berupa angka 1-10' }, { status: 400 });
+    }
+
     const result = await execute(
       `INSERT INTO learning_records (
-          student_id, teacher_id, date, type, 
-          level_or_surah, start_point, end_point, 
-          quality, notes
+          student_id, teacher_id, date, type,
+          level_or_surah, start_point, end_point,
+          quality, reading_status, notes
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
-          student_id, 
-          teacher_id, 
-          date || new Date().toLocaleDateString('en-CA'), 
-          type, 
-          level_or_surah, 
-          start_point, 
-          end_point, 
-          quality, 
+          student_id,
+          teacher_id,
+          date || new Date().toLocaleDateString('en-CA'),
+          type,
+          level_or_surah,
+          start_point,
+          end_point,
+          qualityNum,
+          reading_status === 'MENGULANG' ? 'MENGULANG' : 'LANCAR',
           notes || null
       ]
     );
@@ -110,18 +118,18 @@ export async function POST(req: NextRequest) {
       // Fire notification (non-fatal)
       try {
         const infoResult = await query(`
-          SELECT st.name as student_name, u.name as teacher_name
+          SELECT st.name as student_name, u.name as teacher_name, u.jenis_kelamin as teacher_jenis_kelamin
           FROM students st
           JOIN users u ON u.id = $2
           WHERE st.id = $1 LIMIT 1
         `, [student_id, teacher_id]);
 
         if (infoResult.data && infoResult.data.length > 0) {
-          const { student_name, teacher_name } = infoResult.data[0];
+          const { student_name, teacher_name, teacher_jenis_kelamin } = infoResult.data[0];
           const halStr = start_point && end_point ? ` · Hal ${start_point}–${end_point}` : '';
           await createNotification({
             type: 'learning',
-            message: `Setoran ${student_name}: ${level_or_surah}${halStr} (Nilai ${quality}) — oleh ${teacher_name}`
+            message: `Setoran ${student_name}: ${level_or_surah}${halStr} (Nilai ${qualityNum}) — oleh ${formatTeacherName(teacher_name, teacher_jenis_kelamin)}`
           });
         }
       } catch (e) { console.error('notif error:', e); }
@@ -136,19 +144,25 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
     try {
         const body = await req.json();
-        const { id, level_or_surah, start_point, end_point, quality, notes } = body;
-        
+        const { id, level_or_surah, start_point, end_point, quality, reading_status, notes } = body;
+
         if (!id) return NextResponse.json({ success: false, error: "ID required" }, { status: 400 });
 
+        const qualityNum = quality !== undefined && quality !== null ? Number(quality) : null;
+        if (qualityNum !== null && (!Number.isInteger(qualityNum) || qualityNum < 1 || qualityNum > 10)) {
+            return NextResponse.json({ success: false, error: 'Nilai harus berupa angka 1-10' }, { status: 400 });
+        }
+
         const result = await execute(
-            `UPDATE learning_records SET 
+            `UPDATE learning_records SET
                 level_or_surah = COALESCE($1, level_or_surah),
                 start_point = COALESCE($2, start_point),
                 end_point = COALESCE($3, end_point),
                 quality = COALESCE($4, quality),
-                notes = COALESCE($5, notes)
-             WHERE id = $6`,
-            [level_or_surah, start_point, end_point, quality, notes, id]
+                reading_status = COALESCE($5, reading_status),
+                notes = COALESCE($6, notes)
+             WHERE id = $7`,
+            [level_or_surah, start_point, end_point, qualityNum, reading_status || null, notes, id]
         );
         
         return NextResponse.json(result);

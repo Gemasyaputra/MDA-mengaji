@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   let sql = `
-    SELECT u.id, u.name, u.email, u.phone, u.role, u.photo_url
+    SELECT u.id, u.name, u.email, u.phone, u.role, u.photo_url, u.jenis_kelamin
     FROM users u
     WHERE u.role = 'teacher'
   `;

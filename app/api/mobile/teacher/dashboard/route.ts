@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { users, studyGroups, students, attendance } from "@/lib/schema";
-import { eq, count, inArray, and, sql } from "drizzle-orm";
+import { eq, count, countDistinct, inArray, and, sql } from "drizzle-orm";
 import { resolveTeacherId } from "@/lib/mobile-auth";
+import { formatTeacherName } from "@/lib/teacherName";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const tokenParam = searchParams.get("token");
+  const dateParam = searchParams.get("date"); // YYYY-MM-DD, client's local "today"
 
   const teacherId = resolveTeacherId(tokenParam);
   if (!teacherId) {
@@ -15,12 +17,12 @@ export async function GET(request: Request) {
 
   try {
     // Get teacher info
-    const teacherResult = await db.select({ name: users.name }).from(users).where(eq(users.id, teacherId)).limit(1);
+    const teacherResult = await db.select({ name: users.name, jenisKelamin: users.jenisKelamin }).from(users).where(eq(users.id, teacherId)).limit(1);
     if (teacherResult.length === 0) {
       return NextResponse.json({ success: false, message: "Teacher not found" }, { status: 404 });
     }
-    
-    const teacherName = teacherResult[0].name;
+
+    const teacherName = formatTeacherName(teacherResult[0].name, teacherResult[0].jenisKelamin);
 
     // Get classes handled by this teacher
     const classes = await db
@@ -37,7 +39,10 @@ export async function GET(request: Request) {
            teacherName,
            totalClasses: 0,
            totalStudents: 0,
-           presentToday: 0
+           presentToday: 0,
+           presentPagi: 0,
+           presentSiang: 0,
+           presentSore: 0
          }
        });
     }
@@ -51,24 +56,49 @@ export async function GET(request: Request) {
       .where(inArray(students.groupId, classIds));
     const totalStudents = studentCountResult[0].count;
 
-    // Get present today in those classes
-    // date in DB is stored as 'YYYY-MM-DD' or timestamp depending on how drizzle maps date(). 
-    // Usually it's YYYY-MM-DD. We can use SQL to match today.
-    const today = new Date().toISOString().split('T')[0];
-    
-    // We only want attendance for students in those classes, but since attendance has teacherId, 
+    // Get present today in those classes. The client sends its own local calendar date
+    // (device timezone) since relying on the DB server's CURRENT_DATE causes a mismatch
+    // for WIB/WITA/WIT users when the UTC day hasn't rolled over yet.
+    const dateFilter = dateParam
+      ? sql`DATE(${attendance.date}) = ${dateParam}::date`
+      : sql`DATE(${attendance.date}) = CURRENT_DATE`;
+
+    // We only want attendance for students in those classes, but since attendance has teacherId,
     // we can just query by teacherId and date and status='hadir'
+    // Distinct students present in at least one session (not sum of session records,
+    // which would double count a student who attended more than one session in a day).
     const presentCountResult = await db
-      .select({ count: count() })
+      .select({ count: countDistinct(attendance.studentId) })
       .from(attendance)
       .where(
          and(
            eq(attendance.teacherId, teacherId),
            sql`UPPER(${attendance.status}) = 'HADIR'`,
-           sql`DATE(${attendance.date}) = CURRENT_DATE`
+           dateFilter
          )
       );
     const presentToday = presentCountResult[0].count;
+
+    // Present today broken down by session (PAGI/SIANG/SORE)
+    const presentBySessionResult = await db
+      .select({ session: attendance.session, count: count() })
+      .from(attendance)
+      .where(
+         and(
+           eq(attendance.teacherId, teacherId),
+           sql`UPPER(${attendance.status}) = 'HADIR'`,
+           dateFilter
+         )
+      )
+      .groupBy(attendance.session);
+
+    const presentBySession = { PAGI: 0, SIANG: 0, SORE: 0 };
+    for (const row of presentBySessionResult) {
+      const key = String(row.session || '').toUpperCase();
+      if (key in presentBySession) {
+        presentBySession[key as keyof typeof presentBySession] = Number(row.count);
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -76,7 +106,10 @@ export async function GET(request: Request) {
         teacherName,
         totalClasses,
         totalStudents,
-        presentToday
+        presentToday,
+        presentPagi: presentBySession.PAGI,
+        presentSiang: presentBySession.SIANG,
+        presentSore: presentBySession.SORE,
       }
     });
 

@@ -58,6 +58,7 @@ export const users = pgTable("users", {
   isVerified: boolean("is_verified").default(false),
   verificationToken: varchar("verification_token", { length: 255 }),
   photoUrl: text("photo_url"),
+  jenisKelamin: varchar("jenis_kelamin", { length: 20 }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -103,7 +104,7 @@ export const attendance = pgTable("attendance", {
     .references(() => users.id),
   date: date("date").defaultNow(),
   status: varchar("status", { length: 10 }).notNull(),
-  session: varchar("session", { length: 10, enum: ['PAGI', 'SIANG'] }).notNull().default('PAGI'),
+  session: varchar("session", { length: 10, enum: ['PAGI', 'SIANG', 'SORE'] }).notNull().default('PAGI'),
   time: time("time"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -124,7 +125,8 @@ export const learningRecords = pgTable("learning_records", {
   levelOrSurah: varchar("level_or_surah", { length: 50 }).notNull(),
   startPoint: varchar("start_point", { length: 20 }).notNull(),
   endPoint: varchar("end_point", { length: 20 }).notNull(),
-  quality: varchar("quality", { length: 1 }).notNull(),
+  quality: integer("quality").notNull(), // nilai 1-10
+  readingStatus: varchar("reading_status", { length: 20, enum: ['LANCAR', 'MENGULANG'] }).notNull().default('LANCAR'),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -144,7 +146,7 @@ export const memorizationRecords = pgTable("memorization_records", {
   verseStart: integer("verse_start").notNull(),
   verseEnd: integer("verse_end").notNull(),
   status: varchar("status", { length: 20 }).notNull(),
-  quality: varchar("quality", { length: 20 }).notNull(),
+  quality: integer("quality").notNull(), // nilai 1-10
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -154,9 +156,9 @@ export const worshipRecords = pgTable("worship_records", {
   studentId: bigint("student_id", { mode: "number" })
     .notNull()
     .references(() => students.id),
-  teacherId: bigint("teacher_id", { mode: "number" })
-    .notNull()
-    .references(() => users.id),
+  teacherId: bigint("teacher_id", { mode: "number" }).references(
+    () => users.id,
+  ), // null jika recordedBy = PARENT
   date: date("date").defaultNow(),
   type: varchar("type", { length: 20 }).notNull(),
   dailyPrayerId: bigint("daily_prayer_id", { mode: "number" }).references(
@@ -166,8 +168,9 @@ export const worshipRecords = pgTable("worship_records", {
     () => masterPrayerReadings.id,
   ),
   isCompleted: boolean("is_completed").default(false),
-  quality: varchar("quality", { length: 1 }),
+  quality: integer("quality"), // nilai 1-10 (nullable: tipe SALAT_FARDU tidak memakai nilai)
   prayerName: varchar("prayer_name", { length: 50 }),
+  recordedBy: varchar("recorded_by", { length: 20, enum: ['TEACHER', 'PARENT'] }).notNull().default('TEACHER'),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
 });

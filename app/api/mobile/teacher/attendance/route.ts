@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     
     // Process each record (delete existing for that date+session then insert)
     for (const r of records) {
-      const session = r.session === 'SIANG' ? 'SIANG' : 'PAGI';
+      const session = r.session === 'SIANG' ? 'SIANG' : r.session === 'SORE' ? 'SORE' : 'PAGI';
 
       // Drizzle ORM equivalent of deleting existing attendance for student on this date+session
       await db.delete(attendance).where(

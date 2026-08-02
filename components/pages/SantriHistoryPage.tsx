@@ -25,7 +25,8 @@ interface LearningRecord {
   level_or_surah?: string;
   start_point?: string;
   end_point?: string;
-  quality: string;
+  quality: number | null;
+  reading_status?: 'LANCAR' | 'MENGULANG';
   teacher_name?: string;
   notes?: string;
   daily_prayer_id?: number;
@@ -33,6 +34,7 @@ interface LearningRecord {
   daily_prayer_title?: string;
   prayer_reading_title?: string;
   is_completed?: boolean;
+  recorded_by?: 'TEACHER' | 'PARENT';
 }
 
 interface SurahMaster {
@@ -56,11 +58,11 @@ export default function SantriHistoryPage({ onNavigate, santriId, mode = 'learni
 
   // Edit state (learning)
   const [editRecord, setEditRecord] = useState<LearningRecord | null>(null);
-  const [editForm, setEditForm] = useState({ level_or_surah: '', start_point: '', end_point: '', quality: 'A', notes: '' });
+  const [editForm, setEditForm] = useState({ level_or_surah: '', start_point: '', end_point: '', quality: 8, reading_status: 'LANCAR' as 'LANCAR' | 'MENGULANG', notes: '' });
   const [editMaxVerse, setEditMaxVerse] = useState<number | null>(null);
   // Edit state (worship)
   const [editWorshipRecord, setEditWorshipRecord] = useState<LearningRecord | null>(null);
-  const [editWorshipForm, setEditWorshipForm] = useState({ daily_prayer_id: '', prayer_reading_id: '', quality: 'A', is_completed: false });
+  const [editWorshipForm, setEditWorshipForm] = useState({ daily_prayer_id: '', prayer_reading_id: '', quality: 8, is_completed: false });
   const [saving, setSaving] = useState(false);
 
   // Delete state
@@ -125,7 +127,8 @@ export default function SantriHistoryPage({ onNavigate, santriId, mode = 'learni
       level_or_surah: rec.level_or_surah || '',
       start_point: rec.start_point || '',
       end_point: rec.end_point || '',
-      quality: rec.quality || 'A',
+      quality: rec.quality ?? 8,
+      reading_status: rec.reading_status || 'LANCAR',
       notes: rec.notes || '',
     });
     // Set maxVerse for QURAN records
@@ -170,7 +173,7 @@ export default function SantriHistoryPage({ onNavigate, santriId, mode = 'learni
     setEditWorshipForm({
       daily_prayer_id: String(rec.daily_prayer_id ?? ''),
       prayer_reading_id: String(rec.prayer_reading_id ?? ''),
-      quality: rec.quality || 'A',
+      quality: rec.quality ?? 8,
       is_completed: rec.is_completed ?? false,
     });
   };
@@ -223,10 +226,11 @@ export default function SantriHistoryPage({ onNavigate, santriId, mode = 'learni
     catch { return d; }
   };
 
-  const qualityColor = (q: string) => {
-    if (q === 'A') return 'bg-emerald-100 text-emerald-700';
-    if (q === 'B') return 'bg-blue-100 text-blue-700';
-    if (q === 'C') return 'bg-yellow-100 text-yellow-700';
+  const qualityColor = (q: number | null) => {
+    const n = Number(q);
+    if (n >= 9) return 'bg-emerald-100 text-emerald-700';
+    if (n >= 7) return 'bg-blue-100 text-blue-700';
+    if (n >= 5) return 'bg-yellow-100 text-yellow-700';
     return 'bg-red-100 text-red-700';
   };
 
@@ -372,6 +376,9 @@ export default function SantriHistoryPage({ onNavigate, santriId, mode = 'learni
                             : `Ayat ${record.start_point} – ${record.end_point}`
                           : ''}
                       </p>
+                      {record.reading_status === 'MENGULANG' && (
+                        <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-bold">↻ Ulangi Besok</span>
+                      )}
                     </>
                   )}
                 </div>
@@ -383,7 +390,11 @@ export default function SantriHistoryPage({ onNavigate, santriId, mode = 'learni
                 )}
 
                 <div className="mt-2 pt-2 border-t border-slate-50 flex justify-end">
-                  <span className="text-[10px] text-slate-400">Pengajar: {record.teacher_name || 'Admin'}</span>
+                  {record.recorded_by === 'PARENT' ? (
+                    <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Diinput oleh Orang Tua</span>
+                  ) : (
+                    <span className="text-[10px] text-slate-400">Pengajar: {record.teacher_name || 'Admin'}</span>
+                  )}
                 </div>
               </div>
             ))}
@@ -477,19 +488,42 @@ export default function SantriHistoryPage({ onNavigate, santriId, mode = 'learni
 
               {/* Quality */}
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-2 uppercase">Kualitas Bacaan</label>
-                <div className="flex gap-2">
-                  {['A','B','C','D'].map(q => (
+                <label className="block text-xs font-bold text-slate-500 mb-2 uppercase">Nilai (1-10)</label>
+                <div className="flex gap-2 flex-wrap">
+                  {[1,2,3,4,5,6,7,8,9,10].map(q => (
                     <button
                       key={q}
                       onClick={() => setEditForm(prev => ({ ...prev, quality: q }))}
-                      className={`flex-1 py-3 rounded-lg font-bold border transition ${
+                      className={`w-10 h-10 rounded-lg font-bold border transition ${
                         editForm.quality === q
                           ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
                           : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
                       }`}
                     >{q}</button>
                   ))}
+                </div>
+              </div>
+
+              {/* Reading Status */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-2 uppercase">Perlu Diulang Besok?</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setEditForm(prev => ({ ...prev, reading_status: 'LANCAR' }))}
+                    className={`flex-1 py-3 rounded-lg font-bold border transition ${
+                      editForm.reading_status === 'LANCAR'
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                        : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >✓ Sudah Lancar</button>
+                  <button
+                    onClick={() => setEditForm(prev => ({ ...prev, reading_status: 'MENGULANG' }))}
+                    className={`flex-1 py-3 rounded-lg font-bold border transition ${
+                      editForm.reading_status === 'MENGULANG'
+                        ? 'bg-amber-500 text-white border-amber-500 shadow-md'
+                        : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >↻ Ulangi Besok</button>
                 </div>
               </div>
 
@@ -580,12 +614,12 @@ export default function SantriHistoryPage({ onNavigate, santriId, mode = 'learni
               </div>
               {/* Kualitas */}
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-2 uppercase">Kualitas</label>
-                <div className="flex gap-2">
-                  {['A','B','C','D'].map(q => (
+                <label className="block text-xs font-bold text-slate-500 mb-2 uppercase">Nilai (1-10)</label>
+                <div className="flex gap-2 flex-wrap">
+                  {[1,2,3,4,5,6,7,8,9,10].map(q => (
                     <button key={q}
                       onClick={() => setEditWorshipForm(p => ({ ...p, quality: q }))}
-                      className={`flex-1 py-3 rounded-lg font-bold border transition ${
+                      className={`w-10 h-10 rounded-lg font-bold border transition ${
                         editWorshipForm.quality === q
                           ? 'bg-purple-600 text-white border-purple-600 shadow-md'
                           : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'

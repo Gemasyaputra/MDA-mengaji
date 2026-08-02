@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, execute } from '@/lib/api-helpers';
 import { createNotification } from '@/app/api/notifications/route';
+import { applyTeacherNameFormatting, formatTeacherName } from '@/lib/teacherName';
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,6 +35,14 @@ export async function POST(req: NextRequest) {
          return NextResponse.json({ success: false, error: 'prayer_name required for SALAT_FARDU/SALAT_SUNAH' }, { status: 400 });
     }
 
+    let qualityNum: number | null = null;
+    if (!isSalatType) {
+        qualityNum = Number(quality);
+        if (!Number.isInteger(qualityNum) || qualityNum < 1 || qualityNum > 10) {
+            return NextResponse.json({ success: false, error: 'Nilai harus berupa angka 1-10' }, { status: 400 });
+        }
+    }
+
     const result = await execute(
       `INSERT INTO worship_records (
           student_id, teacher_id, date, type,
@@ -49,7 +58,7 @@ export async function POST(req: NextRequest) {
           daily_prayer_id || null,
           prayer_reading_id || null,
           is_completed || false,
-          quality || null,
+          qualityNum,
           prayer_name || null,
           notes || null
       ]
@@ -58,7 +67,7 @@ export async function POST(req: NextRequest) {
     if (result.success) {
       try {
         const infoResult = await query(`
-          SELECT st.name as student_name, u.name as teacher_name,
+          SELECT st.name as student_name, u.name as teacher_name, u.jenis_kelamin as teacher_jenis_kelamin,
                  mdp.title as prayer_title, mpr.title as reading_title
           FROM students st
           JOIN users u ON u.id = $2
@@ -68,14 +77,14 @@ export async function POST(req: NextRequest) {
         `, [student_id, teacher_id, daily_prayer_id || null, prayer_reading_id || null]);
 
         if (infoResult.data && infoResult.data.length > 0) {
-          const { student_name, teacher_name, prayer_title, reading_title } = infoResult.data[0];
+          const { student_name, teacher_name, teacher_jenis_kelamin, prayer_title, reading_title } = infoResult.data[0];
           let itemName = type === 'DOA_HARIAN' ? (prayer_title || 'Doa Harian') : (reading_title || 'Bacaan Sholat');
           if (isSalatType) itemName = prayer_name || (type === 'SALAT_FARDU' ? 'Salat Fardu' : 'Salat Sunah');
           const status = is_completed ? 'Lulus' : 'Belum Lulus';
-          const nilaiText = quality ? ` (Nilai ${quality})` : '';
+          const nilaiText = qualityNum ? ` (Nilai ${qualityNum})` : '';
           await createNotification({
             type: 'worship',
-            message: `Hafalan ${student_name}: ${itemName} — ${status}${nilaiText} oleh ${teacher_name}`
+            message: `Hafalan ${student_name}: ${itemName} — ${status}${nilaiText} oleh ${formatTeacherName(teacher_name, teacher_jenis_kelamin)}`
           });
         }
       } catch (e) { console.error('notif error:', e); }
@@ -114,8 +123,9 @@ export async function GET(req: NextRequest) {
     }
 
     let sql = `
-      SELECT wr.*, 
+      SELECT wr.*,
              u.name as teacher_name,
+             u.jenis_kelamin as teacher_jenis_kelamin,
              mdp.title as daily_prayer_title,
              mpr.title as prayer_reading_title
       FROM worship_records wr
@@ -149,10 +159,10 @@ export async function GET(req: NextRequest) {
   
     try {
       const result = await query(sql, params);
-      const data = (result.data ?? []).map((r: any) => ({
+      const data = applyTeacherNameFormatting((result.data ?? []).map((r: any) => ({
         ...r,
         date: r.date ? (typeof r.date === 'string' ? r.date.split('T')[0] : new Date(r.date).toLocaleDateString('en-CA')) : null
-      }));
+      })));
       return NextResponse.json({ success: result.success, data });
     } catch (error: any) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -168,6 +178,14 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing id' }, { status: 400 });
     }
 
+    let qualityNum: number | null = null;
+    if (quality !== undefined && quality !== null) {
+        qualityNum = Number(quality);
+        if (!Number.isInteger(qualityNum) || qualityNum < 1 || qualityNum > 10) {
+            return NextResponse.json({ success: false, error: 'Nilai harus berupa angka 1-10' }, { status: 400 });
+        }
+    }
+
     const result = await execute(
       `UPDATE worship_records
        SET quality = $1,
@@ -177,7 +195,7 @@ export async function PUT(req: NextRequest) {
            prayer_name = $5,
            notes = $6
        WHERE id = $7`,
-      [quality ?? null, is_completed ?? false, daily_prayer_id ?? null, prayer_reading_id ?? null, prayer_name ?? null, notes ?? null, id]
+      [qualityNum, is_completed ?? false, daily_prayer_id ?? null, prayer_reading_id ?? null, prayer_name ?? null, notes ?? null, id]
     );
 
     return NextResponse.json(result);

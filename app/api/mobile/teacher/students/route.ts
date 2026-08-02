@@ -40,6 +40,7 @@ export async function GET(request: Request) {
         readingLevel: students.readingLevel,
         currentLevel: students.currentLevel,
         parentPhone: students.parentPhone,
+        photoUrl: students.photoUrl,
       })
       .from(students)
       .where(whereClause)

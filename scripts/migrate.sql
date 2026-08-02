@@ -202,5 +202,76 @@ ALTER TABLE attendance ADD COLUMN IF NOT EXISTS session VARCHAR(10) NOT NULL DEF
 -- ADD TIME (JAM PRESENSI) TO ATTENDANCE
 ALTER TABLE attendance ADD COLUMN IF NOT EXISTS time TIME;
 
+-- ADD SORE AS A THIRD ATTENDANCE SESSION (PAGI/SIANG/SORE)
+ALTER TABLE attendance DROP CONSTRAINT IF EXISTS attendance_session_check;
+ALTER TABLE attendance ADD CONSTRAINT attendance_session_check
+  CHECK (session IN ('PAGI', 'SIANG', 'SORE'));
+
+-- CHANGE NILAI (QUALITY) FROM LETTER TO ANGKA (1-10) ON SETORAN TILAWAH (learning_records)
+-- AND CATAT HAFALAN / SETORAN DOA (worship_records). Mapping existing letters: A=10, B=8, C=6, D=4.
+-- Dibungkus DO block + cek tipe kolom supaya aman dijalankan berkali-kali (idempotent) —
+-- ALTER COLUMN TYPE ke INTEGER hanya jalan sekali saat kolom masih varchar.
+DO $$
+BEGIN
+  IF (SELECT data_type FROM information_schema.columns WHERE table_name = 'learning_records' AND column_name = 'quality') <> 'integer' THEN
+    ALTER TABLE learning_records DROP CONSTRAINT IF EXISTS learning_records_quality_check;
+    ALTER TABLE learning_records ALTER COLUMN quality TYPE INTEGER USING (
+      CASE quality WHEN 'A' THEN 10 WHEN 'B' THEN 8 WHEN 'C' THEN 6 WHEN 'D' THEN 4 ELSE quality::INTEGER END
+    );
+  END IF;
+END $$;
+ALTER TABLE learning_records DROP CONSTRAINT IF EXISTS learning_records_quality_check;
+ALTER TABLE learning_records ADD CONSTRAINT learning_records_quality_check CHECK (quality BETWEEN 1 AND 10);
+
+-- ADD READING STATUS (LANCAR/MENGULANG) TO SETORAN TILAWAH
+ALTER TABLE learning_records ADD COLUMN IF NOT EXISTS reading_status VARCHAR(20) NOT NULL DEFAULT 'LANCAR';
+ALTER TABLE learning_records DROP CONSTRAINT IF EXISTS learning_records_reading_status_check;
+ALTER TABLE learning_records ADD CONSTRAINT learning_records_reading_status_check
+  CHECK (reading_status IN ('LANCAR', 'MENGULANG'));
+
+DO $$
+BEGIN
+  IF (SELECT data_type FROM information_schema.columns WHERE table_name = 'worship_records' AND column_name = 'quality') <> 'integer' THEN
+    ALTER TABLE worship_records DROP CONSTRAINT IF EXISTS worship_records_quality_check;
+    ALTER TABLE worship_records ALTER COLUMN quality TYPE INTEGER USING (
+      CASE quality WHEN 'A' THEN 10 WHEN 'B' THEN 8 WHEN 'C' THEN 6 ELSE quality::INTEGER END
+    );
+  END IF;
+END $$;
+ALTER TABLE worship_records DROP CONSTRAINT IF EXISTS worship_records_quality_check;
+ALTER TABLE worship_records ADD CONSTRAINT worship_records_quality_check CHECK (quality IS NULL OR quality BETWEEN 1 AND 10);
+
 -- ADD NOTES (CATATAN GURU) TO WORSHIP_RECORDS — form sudah mengirim field ini tapi belum pernah tersimpan
 ALTER TABLE worship_records ADD COLUMN IF NOT EXISTS notes TEXT;
+
+-- ALLOW PARENTS TO INPUT SHOLAT FARDU/SUNAH (worship_records)
+-- teacher_id jadi nullable karena orang tua yang input tidak punya akun guru.
+ALTER TABLE worship_records ALTER COLUMN teacher_id DROP NOT NULL;
+ALTER TABLE worship_records ADD COLUMN IF NOT EXISTS recorded_by VARCHAR(20) NOT NULL DEFAULT 'TEACHER';
+ALTER TABLE worship_records DROP CONSTRAINT IF EXISTS worship_records_recorded_by_check;
+ALTER TABLE worship_records ADD CONSTRAINT worship_records_recorded_by_check
+  CHECK (recorded_by IN ('TEACHER', 'PARENT'));
+ALTER TABLE worship_records DROP CONSTRAINT IF EXISTS worship_records_recorded_by_teacher_consistency;
+ALTER TABLE worship_records ADD CONSTRAINT worship_records_recorded_by_teacher_consistency
+  CHECK (
+    (recorded_by = 'TEACHER' AND teacher_id IS NOT NULL) OR
+    (recorded_by = 'PARENT' AND teacher_id IS NULL)
+  );
+
+-- PREFIX USTADZ/USTADZAH: pastikan kolom jenis_kelamin ada, lalu bersihkan data guru yang
+-- sudah mengetik prefix manual di kolom nama tapi belum punya data jenis_kelamin.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS jenis_kelamin VARCHAR(20);
+
+UPDATE users SET
+  jenis_kelamin = 'PEREMPUAN',
+  name = trim(regexp_replace(name, '^Ustadzah\s+', '', 'i'))
+WHERE role = 'teacher' AND jenis_kelamin IS NULL AND name ~* '^Ustadzah\s';
+
+UPDATE users SET
+  jenis_kelamin = 'LAKI-LAKI',
+  name = trim(regexp_replace(name, '^Ustadz\s+', '', 'i'))
+WHERE role = 'teacher' AND jenis_kelamin IS NULL AND name ~* '^Ustadz\s' AND name !~* '^Ustadzah\s';
+
+-- (Reverted) is_verified column on Bank Materi was added then removed per user request.
+ALTER TABLE master_daily_prayers DROP COLUMN IF EXISTS is_verified;
+ALTER TABLE master_prayer_readings DROP COLUMN IF EXISTS is_verified;

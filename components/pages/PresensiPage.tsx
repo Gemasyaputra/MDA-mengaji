@@ -20,9 +20,10 @@ interface PresensiPageProps {
 interface Student {
   id: number;
   name: string;
-  status: 'HADIR' | 'ALFA' | 'SAKIT' | 'IZIN';
+  status: 'HADIR' | 'ALFA' | 'SAKIT' | 'IZIN' | null; // null = belum ditandai untuk sesi ini
   notes?: string;
   attendance_id?: number; // If editing existing
+  otherSessions?: { session: 'PAGI' | 'SIANG' | 'SORE'; status: string }[]; // sudah diisi di sesi lain hari ini
 }
 
 interface StudyGroup {
@@ -33,13 +34,21 @@ interface StudyGroup {
 
 interface HistorySummary {
     date: string;
-    session?: 'PAGI' | 'SIANG';
+    session?: 'PAGI' | 'SIANG' | 'SORE';
     total_attendance: string;
     total_hadir: string;
     group_name: string;
     teacher_name: string;
     group_id?: number;
 }
+
+const SESSION_LABEL: Record<string, string> = { PAGI: 'Pagi', SIANG: 'Siang', SORE: 'Sore' };
+const SESSION_BADGE_CLASS: Record<string, string> = {
+  PAGI: 'bg-blue-100 text-blue-700',
+  SIANG: 'bg-amber-100 text-amber-700',
+  SORE: 'bg-purple-100 text-purple-700',
+};
+const STATUS_LABEL: Record<string, string> = { HADIR: 'Hadir', ALFA: 'Alfa', SAKIT: 'Sakit', IZIN: 'Izin' };
 
 export default function PresensiPage({ onSave, currentUser, onNavigate }: PresensiPageProps) {
   const [mode, setMode] = useState<'input' | 'history'>('input');
@@ -52,7 +61,7 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
   // Form State
   const [selectedGroupId, setSelectedGroupId] = useState<string>('');
   const [attendanceDate, setAttendanceDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [session, setSession] = useState<'PAGI' | 'SIANG'>('PAGI');
+  const [session, setSession] = useState<'PAGI' | 'SIANG' | 'SORE'>('PAGI');
   const [attendanceTime, setAttendanceTime] = useState<string>(() => {
     const now = new Date();
     return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -150,20 +159,26 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
             const studentsWrapper = await studentsRes.json();
             const allStudents = studentsWrapper.success && Array.isArray(studentsWrapper.data) ? studentsWrapper.data : [];
 
-            // 2. Fetch existing attendance for this date/group/session
-            const attRes = await fetch(`/api/attendance?date=${attendanceDate}&group_id=${selectedGroupId}&session=${session}`);
+            // 2. Fetch existing attendance for this date/group across ALL sessions, so we can
+            // both fill the current session's status and flag students already recorded in
+            // another session today.
+            const attRes = await fetch(`/api/attendance?date=${attendanceDate}&group_id=${selectedGroupId}`);
             const attDataWrapper = await attRes.json();
-            const existingAttendance = attDataWrapper.success && Array.isArray(attDataWrapper.data) ? attDataWrapper.data : [];
-            
+            const allAttendanceToday = attDataWrapper.success && Array.isArray(attDataWrapper.data) ? attDataWrapper.data : [];
+
             // 3. Merge data
             const mergedStudents = allStudents.map((s: any) => {
-                const evidence = existingAttendance.find((a: any) => a.student_id === s.id);
+                const evidence = allAttendanceToday.find((a: any) => a.student_id === s.id && a.session === session);
+                const otherSessions = allAttendanceToday
+                    .filter((a: any) => a.student_id === s.id && a.session !== session)
+                    .map((a: any) => ({ session: a.session, status: a.status }));
                 return {
                     id: s.id,
                     name: s.name,
-                    status: evidence ? evidence.status : 'HADIR', // Default to HADIR if no record
+                    status: evidence ? evidence.status : null, // Belum ditandai sampai guru memilih status
                     notes: evidence ? evidence.notes : '',
-                    attendance_id: evidence ? evidence.id : undefined
+                    attendance_id: evidence ? evidence.id : undefined,
+                    otherSessions,
                 };
             });
             
@@ -222,7 +237,7 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
             // Trigger refresh by artificially updating attendanceDate
             setAttendanceDate(prev => prev);
             // Alternatively, manually append to students:
-            setStudents(prev => [...prev, { id: json.data.id, name: json.data.name, status: 'HADIR' }]);
+            setStudents(prev => [...prev, { id: json.data.id, name: json.data.name, status: null }]);
         } else {
             toast.error(json.error || 'Gagal menambahkan santri');
         }
@@ -235,8 +250,24 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
 
   const handleSave = async () => {
     if (!currentUser || !selectedGroupId) return;
+
+    const markedStudents = students.filter(s => s.status);
+    const unmarkedCount = students.length - markedStudents.length;
+
+    if (markedStudents.length === 0) {
+        toast.error('Belum ada santri yang ditandai statusnya.');
+        return;
+    }
+
+    if (unmarkedCount > 0) {
+        const proceed = window.confirm(
+            `${unmarkedCount} santri belum ditandai statusnya untuk sesi ${SESSION_LABEL[session]} dan tidak akan disimpan. Lanjutkan simpan untuk ${markedStudents.length} santri yang sudah ditandai?`
+        );
+        if (!proceed) return;
+    }
+
     try {
-        const payload = students.map(s => ({
+        const payload = markedStudents.map(s => ({
             student_id: s.id,
             teacher_id: currentUser.id,
             attendance_date: attendanceDate, // API expects 'attendance_date' in body, maps to 'date' col
@@ -246,7 +277,7 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
             status: s.status,
             notes: s.notes
         }));
-        
+
         const res = await fetch('/api/attendance', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -286,6 +317,7 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
   });
 
   const hadirCount = students.filter(s => s.status === 'HADIR').length;
+  const unmarkedCount = students.filter(s => !s.status).length;
   const filteredStudents = students.filter(s =>
     s.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -389,6 +421,15 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
                     >
                       Siang
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setSession('SORE')}
+                      className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
+                        session === 'SORE' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'
+                      }`}
+                    >
+                      Sore
+                    </button>
                   </div>
               </div>
               <div>
@@ -432,6 +473,12 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
                   </button>
                 </div>
 
+                {students.some(s => s.otherSessions && s.otherSessions.length > 0) && (
+                  <div className="px-3 md:px-4 py-2 bg-emerald-50 border-b border-emerald-100 text-xs text-emerald-700">
+                    ℹ {students.filter(s => s.otherSessions && s.otherSessions.length > 0).length} santri sudah tercatat di sesi lain hari ini (lihat badge di bawah nama).
+                  </div>
+                )}
+
                 <div className="grid grid-cols-12 gap-2 p-3 md:p-4 bg-slate-50 text-xs font-bold text-slate-500 border-b">
                 <div className="col-span-4 md:col-span-6">NAMA SANTRI</div>
                 <div className="col-span-8 md:col-span-6 text-center md:text-right md:pr-4">STATUS KEHADIRAN</div>
@@ -448,7 +495,26 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
                     {filteredStudents.map(student => (
                         <div key={student.id} className="p-3 md:p-4 hover:bg-slate-50 transition-colors">
                         <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-slate-800 w-1/3 md:w-1/2 truncate">{student.name}</span>
+                        <span className="text-sm font-semibold text-slate-800 w-1/3 md:w-1/2 truncate flex flex-col items-start gap-1">
+                          <span className="flex items-center gap-1.5 truncate w-full">
+                            {student.name}
+                            {!student.status && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-500 whitespace-nowrap">Belum ditandai</span>
+                            )}
+                          </span>
+                          {student.otherSessions && student.otherSessions.length > 0 && (
+                            <span className="flex flex-wrap gap-1">
+                              {student.otherSessions.map((o, i) => (
+                                <span
+                                  key={i}
+                                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap ${SESSION_BADGE_CLASS[o.session] || SESSION_BADGE_CLASS.PAGI}`}
+                                >
+                                  ✓ {SESSION_LABEL[o.session] || o.session}: {STATUS_LABEL[o.status] || o.status}
+                                </span>
+                              ))}
+                            </span>
+                          )}
+                        </span>
                         <div className="flex gap-1 md:gap-2 flex-1 justify-end">
                             <button
                             onClick={() => updateStatus(student.id, 'HADIR')}
@@ -492,7 +558,7 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
                             </button>
                         </div>
                         </div>
-                        {student.status !== 'HADIR' && (
+                        {student.status && student.status !== 'HADIR' && (
                           <div className="mt-2">
                             <input
                               type="text"
@@ -516,6 +582,11 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
                     <p className="text-sm text-slate-600">
                     Hadir: <span className="font-bold text-emerald-600">{hadirCount}</span> dari {students.length}
                     </p>
+                    {unmarkedCount > 0 && (
+                        <p className="text-xs text-amber-600 font-semibold mt-1">
+                            ⚠ {unmarkedCount} santri belum ditandai statusnya
+                        </p>
+                    )}
                 </div>
 
                 <button
@@ -562,6 +633,7 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
                   { value: '', label: 'Semua Sesi' },
                   { value: 'PAGI', label: 'Pagi' },
                   { value: 'SIANG', label: 'Siang' },
+                  { value: 'SORE', label: 'Sore' },
                 ]}
                 value={filterSession}
                 onChange={(val) => setFilterSession(String(val))}
@@ -609,10 +681,8 @@ export default function PresensiPage({ onSave, currentUser, onNavigate }: Presen
                       <div className="flex items-center gap-2">
                         <h4 className="font-bold text-slate-700 text-sm md:text-base">{formatDate(item.date)}</h4>
                         {item.session && (
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            item.session === 'SIANG' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
-                          }`}>
-                            {item.session === 'SIANG' ? 'Siang' : 'Pagi'}
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${SESSION_BADGE_CLASS[item.session] || SESSION_BADGE_CLASS.PAGI}`}>
+                            {SESSION_LABEL[item.session] || item.session}
                           </span>
                         )}
                       </div>

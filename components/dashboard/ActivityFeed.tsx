@@ -146,7 +146,7 @@ export const ICON_CONFIG: Record<
   ActivityItem['type'],
   { icon: React.ElementType; bg: string; text: string }
 > = {
-  attendance: { icon: CheckSquare, bg: 'bg-blue-50', text: 'text-blue-500' },
+  attendance: { icon: CheckSquare, bg: 'bg-emerald-50', text: 'text-emerald-500' },
   learning:   { icon: BookOpen,    bg: 'bg-purple-50', text: 'text-purple-500' },
   new_student:{ icon: UserPlus,    bg: 'bg-emerald-50', text: 'text-emerald-500' },
   milestone:  { icon: Trophy,      bg: 'bg-amber-50', text: 'text-amber-500' },
@@ -206,11 +206,11 @@ export default function ActivityFeed({ role, teacherId, teacherName, onNavigate 
       {/* Section Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-bold text-slate-800 text-xs uppercase tracking-widest flex items-center gap-2">
-          <div className="w-1.5 h-4 bg-blue-500 rounded-full" />
+          <div className="w-1.5 h-4 bg-emerald-500 rounded-full" />
           Aktivitas Terakhir
         </h3>
         {isTeacher && (
-          <span className="text-[10px] font-semibold text-blue-500 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
+          <span className="text-[10px] font-semibold text-emerald-500 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
             Kelompok Anda
           </span>
         )}
@@ -268,7 +268,7 @@ export default function ActivityFeed({ role, teacherId, teacherName, onNavigate 
             {/* Footer — Lihat Semua */}
             <button
               onClick={() => onNavigate('activity-log')}
-              className="w-full flex items-center justify-center gap-2 py-3.5 text-[12px] font-semibold text-blue-600 hover:bg-blue-50 transition-colors border-t border-slate-100 group"
+              className="w-full flex items-center justify-center gap-2 py-3.5 text-[12px] font-semibold text-emerald-600 hover:bg-emerald-50 transition-colors border-t border-slate-100 group"
             >
               Lihat Semua Aktivitas
               <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />

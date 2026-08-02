@@ -103,7 +103,7 @@ export default function PresensiDetailPage({ onNavigate, date, groupId, session 
           <h1 className="font-bold text-lg text-slate-800">Detail Kehadiran</h1>
           <p className="text-xs text-slate-500">
             {date ? formatDate(date) : '-'}
-            {session && <span className="font-semibold"> · Sesi {session === 'SIANG' ? 'Siang' : 'Pagi'}</span>}
+            {session && <span className="font-semibold"> · Sesi {session === 'SIANG' ? 'Siang' : session === 'SORE' ? 'Sore' : 'Pagi'}</span>}
           </p>
         </div>
       </div>

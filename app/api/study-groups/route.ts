@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, executeReturning, execute } from '@/lib/api-helpers';
+import { applyTeacherNameFormatting } from '@/lib/teacherName';
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,7 +36,7 @@ export async function GET(req: NextRequest) {
   const teacherId = searchParams.get('teacher_id');
 
   let sql = `
-    SELECT sg.id, sg.teacher_id, sg.name, sg.description, u.name as teacher_name
+    SELECT sg.id, sg.teacher_id, sg.name, sg.description, u.name as teacher_name, u.jenis_kelamin as teacher_jenis_kelamin
     FROM study_groups sg
     LEFT JOIN users u ON sg.teacher_id = u.id
     WHERE 1=1
@@ -53,6 +54,7 @@ export async function GET(req: NextRequest) {
   sql += ' ORDER BY sg.name ASC';
 
   const result = await query(sql, params);
+  if (result.data) applyTeacherNameFormatting(result.data);
   return NextResponse.json(result);
 }
 

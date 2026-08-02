@@ -144,7 +144,7 @@ export default function ActivityLogPage({ role, currentUser, onNavigate }: Activ
       {/* Page Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-1">
-          <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center">
+          <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center">
             <Activity size={18} strokeWidth={2.2} />
           </div>
           <div>
@@ -166,7 +166,7 @@ export default function ActivityLogPage({ role, currentUser, onNavigate }: Activ
             placeholder="Cari nama santri, kelas, guru..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 placeholder:text-slate-400 transition"
+            className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 placeholder:text-slate-400 transition"
           />
         </div>
 
@@ -174,7 +174,7 @@ export default function ActivityLogPage({ role, currentUser, onNavigate }: Activ
         <div className="relative">
           <button
             onClick={() => setShowLimitMenu(!showLimitMenu)}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-white border border-slate-200 rounded-xl text-slate-700 hover:border-blue-300 transition"
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-white border border-slate-200 rounded-xl text-slate-700 hover:border-emerald-300 transition"
           >
             <Filter size={14} className="text-slate-400" />
             {limit} item
@@ -186,7 +186,7 @@ export default function ActivityLogPage({ role, currentUser, onNavigate }: Activ
                 <button
                   key={n}
                   onClick={() => { setLimit(n); setShowLimitMenu(false); }}
-                  className={`w-full text-left px-4 py-2 text-sm hover:bg-blue-50 transition ${limit === n ? 'text-blue-600 font-semibold bg-blue-50/50' : 'text-slate-700'}`}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-emerald-50 transition ${limit === n ? 'text-emerald-600 font-semibold bg-emerald-50/50' : 'text-slate-700'}`}
                 >
                   {n} item
                 </button>
@@ -199,7 +199,7 @@ export default function ActivityLogPage({ role, currentUser, onNavigate }: Activ
         <button
           onClick={fetchActivities}
           disabled={loading}
-          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-white border border-slate-200 rounded-xl text-slate-700 hover:border-blue-300 disabled:opacity-50 transition"
+          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-white border border-slate-200 rounded-xl text-slate-700 hover:border-emerald-300 disabled:opacity-50 transition"
         >
           <RefreshCw size={14} className={`text-slate-400 ${loading ? 'animate-spin' : ''}`} />
           Muat ulang
@@ -214,8 +214,8 @@ export default function ActivityLogPage({ role, currentUser, onNavigate }: Activ
             onClick={() => setSelectedType(key)}
             className={`px-3.5 py-1.5 rounded-full text-[12px] font-semibold transition-all border ${
               selectedType === key
-                ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-200'
-                : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600'
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-200'
+                : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300 hover:text-emerald-600'
             }`}
           >
             {label}

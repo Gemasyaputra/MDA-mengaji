@@ -51,24 +51,41 @@ const WEEKDAY_ID: Record<string, string> = {
   Sunday: 'Minggu',
 };
 
+// Lokasi default: Masjid Nurul Huda (dipakai sebelum lokasi GPS pengguna didapat)
+const MDA_LAT = -0.9379844;
+const MDA_LNG = 100.4335174;
+const MDA_LABEL = 'Masjid Nurul Huda (Default)';
+
 export default function DashboardPage({ role, onNavigate, currentUser }: DashboardPageProps) {
   const [prayerTimes, setPrayerTimes] = useState<PrayerTime[]>([]);
   const [currentTime, setCurrentTime] = useState<string>('');
   const [hijriDate, setHijriDate] = useState<string>('Memuat...');
   const [gregDate, setGregDate] = useState<string>('Memuat...');
-  const [locationLabel, setLocationLabel] = useState<string>('Mencari Lokasi...');
+  const [locationLabel, setLocationLabel] = useState<string>(MDA_LABEL);
   const [nextPrayerName, setNextPrayerName] = useState<string>('...');
   const [nextPrayerTime, setNextPrayerTime] = useState<Date | null>(null);
   const [countdown, setCountdown] = useState<string>('--:--:--');
-  const [stats, setStats] = useState({ total_santri: 0, present_today: 0, attendance_percent_today: 0, total_teachers: 0, total_groups: 0, students_behind: 0 });
+  const [stats, setStats] = useState({
+    total_santri: 0,
+    present_today: 0,
+    present_pagi: 0,
+    present_siang: 0,
+    present_sore: 0,
+    attendance_percent_today: 0,
+    total_teachers: 0,
+    total_groups: 0,
+    students_behind: 0,
+  });
 
   // Fetch Dashboard Stats
   useEffect(() => {
       const fetchStats = async () => {
           try {
-              let url = `/api/dashboard/stats`;
+              const now = new Date();
+              const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+              let url = `/api/dashboard/stats?date=${localDate}`;
               if (currentUser?.role === 'teacher' && currentUser?.id) {
-                  url += `?teacher_id=${currentUser.id}`;
+                  url += `&teacher_id=${currentUser.id}`;
               }
               const res = await fetch(url);
               const json = await res.json();
@@ -106,11 +123,6 @@ export default function DashboardPage({ role, onNavigate, currentUser }: Dashboa
         const g = date.gregorian;
         const hariId = WEEKDAY_ID[g.weekday.en] ?? g.weekday.en;
         setGregDate(`${hariId}, ${g.date}`);
-
-        // Lokasi label
-        setLocationLabel((prev) =>
-          prev === 'Mencari Lokasi...' ? 'Lokasi Terkini' : prev,
-        );
 
         // Grid jadwal shalat + hitung shalat berikutnya
         const now = new Date();
@@ -156,20 +168,20 @@ export default function DashboardPage({ role, onNavigate, currentUser }: Dashboa
       }
     };
 
+    // Tampilkan dulu jadwal shalat untuk lokasi default (Masjid Nurul Huda)
+    // agar tidak kosong sebelum browser memberi izin/hasil lokasi GPS.
+    fetchPrayerTimes(MDA_LAT, MDA_LNG);
+
     if (navigator.geolocation) {
-      setLocationLabel('Mencari Lokasi...');
       navigator.geolocation.getCurrentPosition(
         (pos) => {
+          setLocationLabel('Lokasi Terkini');
           fetchPrayerTimes(pos.coords.latitude, pos.coords.longitude);
         },
         () => {
-          setLocationLabel('Jakarta (Default)');
-          fetchPrayerTimes(-6.2088, 106.8456);
+          setLocationLabel(MDA_LABEL);
         },
       );
-    } else {
-      setLocationLabel('Jakarta (Default)');
-      fetchPrayerTimes(-6.2088, 106.8456);
     }
   }, []);
 
@@ -355,11 +367,26 @@ export default function DashboardPage({ role, onNavigate, currentUser }: Dashboa
         <div className="bg-white p-5 rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-slate-100/60 relative overflow-hidden group hover:border-blue-200 transition-colors">
           <Activity size={64} className="absolute -right-4 -bottom-4 text-blue-50 opacity-40 group-hover:scale-110 transition-transform" />
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Hadir Hari Ini</p>
-          <div className="flex items-baseline gap-2">
-            <h3 className="text-3xl font-black text-blue-600">{stats.present_today}</h3>
+          <div className="flex items-baseline gap-2 relative z-10">
+            <h3 className="text-3xl font-black text-blue-600">{stats.present_today}<span className="text-base font-bold text-slate-400">/{stats.total_santri}</span></h3>
             <span className="text-xs font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md">
               {stats.attendance_percent_today}%
             </span>
+          </div>
+          <p className="text-[10px] text-slate-400 mt-0.5 relative z-10">santri hadir di min. 1 sesi</p>
+          <div className="grid grid-cols-3 gap-1.5 mt-2 relative z-10">
+            <div className="bg-blue-50 rounded-lg py-1 text-center">
+              <p className="text-xs font-black text-blue-600">{stats.present_pagi}</p>
+              <p className="text-[9px] font-bold text-blue-500 uppercase">Pagi</p>
+            </div>
+            <div className="bg-amber-50 rounded-lg py-1 text-center">
+              <p className="text-xs font-black text-amber-600">{stats.present_siang}</p>
+              <p className="text-[9px] font-bold text-amber-500 uppercase">Siang</p>
+            </div>
+            <div className="bg-purple-50 rounded-lg py-1 text-center">
+              <p className="text-xs font-black text-purple-600">{stats.present_sore}</p>
+              <p className="text-[9px] font-bold text-purple-500 uppercase">Sore</p>
+            </div>
           </div>
         </div>
         <div className="bg-white p-5 rounded-2xl shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] border border-slate-100/60 relative overflow-hidden group hover:border-amber-200 transition-colors">

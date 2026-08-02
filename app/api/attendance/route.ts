@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, execute } from '@/lib/api-helpers';
 import { createNotification } from '@/app/api/notifications/route';
+import { applyTeacherNameFormatting, formatTeacherName } from '@/lib/teacherName';
 
 
 export async function GET(req: NextRequest) {
@@ -46,6 +47,7 @@ export async function GET(req: NextRequest) {
                 SUM(CASE WHEN a.status = 'HADIR' THEN 1 ELSE 0 END) as total_hadir,
                 MAX(g.name) as group_name,
                 MAX(u.name) as teacher_name,
+                MAX(u.jenis_kelamin) as teacher_jenis_kelamin,
                 s.group_id
             FROM attendance a
             JOIN students s ON a.student_id = s.id
@@ -64,9 +66,9 @@ export async function GET(req: NextRequest) {
         }
 
         sql += ` GROUP BY a.date, a.session, s.group_id, a.teacher_id ORDER BY a.date DESC, a.session ASC LIMIT 30`;
-        
+
         const result = await query(sql, params);
-        return NextResponse.json({ success: result.success, data: result.data ?? [] });
+        return NextResponse.json({ success: result.success, data: applyTeacherNameFormatting(result.data ?? []) });
     }
     
     // 2. Get Detail for specific date and group (or just date)
@@ -171,7 +173,7 @@ export async function POST(req: NextRequest) {
       let successCount = 0;
       
       for (const r of records) {
-        const session = r.session === 'SIANG' ? 'SIANG' : 'PAGI';
+        const session = r.session === 'SIANG' ? 'SIANG' : r.session === 'SORE' ? 'SORE' : 'PAGI';
         await execute('DELETE FROM attendance WHERE student_id = $1 AND date::date = $2::date AND session = $3', [r.student_id, r.date, session]);
         await execute(
             `INSERT INTO attendance (student_id, teacher_id, date, status, session, time, notes)
@@ -188,7 +190,7 @@ export async function POST(req: NextRequest) {
 
         // Fetch teacher name, group name via first student
         const infoResult = await query(`
-          SELECT u.name as teacher_name, g.name as group_name
+          SELECT u.name as teacher_name, u.jenis_kelamin as teacher_jenis_kelamin, g.name as group_name
           FROM users u
           JOIN students s ON s.id = $2
           LEFT JOIN study_groups g ON g.id = s.group_id
@@ -197,13 +199,13 @@ export async function POST(req: NextRequest) {
         `, [teacherId, records[0].student_id]);
 
         if (infoResult.data && infoResult.data.length > 0) {
-          const { teacher_name, group_name } = infoResult.data[0];
+          const { teacher_name, teacher_jenis_kelamin, group_name } = infoResult.data[0];
           const hadirCount = records.filter((r: any) => r.status === 'HADIR').length;
           const formattedDate = new Date(dateStr + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
 
           await createNotification({
             type: 'attendance',
-            message: `Presensi ${group_name || 'kelompok'} tgl ${formattedDate} tersimpan — ${hadirCount}/${records.length} hadir (oleh ${teacher_name || 'Guru'})`
+            message: `Presensi ${group_name || 'kelompok'} tgl ${formattedDate} tersimpan — ${hadirCount}/${records.length} hadir (oleh ${formatTeacherName(teacher_name, teacher_jenis_kelamin) || 'Guru'})`
           });
         }
       } catch (notifErr) {

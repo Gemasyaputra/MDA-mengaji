@@ -5,6 +5,10 @@ import { ArrowLeft, Plus, Edit2, Trash2, Search, Book, Sparkles, ChevronDown, Ch
 import DeleteModal from '@/components/DeleteModal';
 import { toast } from 'sonner';
 
+// Data lama sebelum lampiran diganti ke gambar mungkin masih menyimpan URL PDF asli —
+// deteksi lewat ekstensi supaya tetap dibuka sebagai link, bukan dipaksa <img> yang gagal render.
+const isPdfUrl = (url: string) => /\.pdf($|\?)/i.test(url);
+
 interface MasterHafalanPageProps {
   onNavigate: (page: string) => void;
   currentUser?: any;
@@ -280,26 +284,29 @@ export default function MasterHafalanPage({ onNavigate, currentUser }: MasterHaf
                                       </button>
                                   </div>
                               </div>
-                              
+
                               {/* Preview Text */}
                               {(item.arabic_text || item.translation || item.pdf_url || item.external_link) && (
                                   <div className="mt-3 pt-3 border-t border-slate-50 text-xs space-y-2">
                                       {item.arabic_text && <p className="font-arabic text-right text-lg leading-loose text-slate-700">{item.arabic_text}</p>}
                                       {item.latin_text && <p className="text-emerald-600 italic">{item.latin_text}</p>}
                                       {item.translation && <p className="text-slate-500">"{item.translation}"</p>}
-                                      {(item.pdf_url || item.external_link) && (
-                                          <div className="flex gap-3">
-                                              {item.pdf_url && (
-                                                  <a href={item.pdf_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-emerald-600 font-semibold hover:underline">
-                                                      <FileText size={12} /> PDF Materi
-                                                  </a>
-                                              )}
-                                              {item.external_link && (
-                                                  <a href={item.external_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 font-semibold hover:underline">
-                                                      <LinkIcon size={12} /> Link Materi
-                                                  </a>
-                                              )}
-                                          </div>
+                                      {item.pdf_url && isPdfUrl(item.pdf_url) && (
+                                          <a href={item.pdf_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-emerald-600 font-semibold hover:underline">
+                                              <FileText size={12} /> Lihat PDF
+                                          </a>
+                                      )}
+                                      {item.pdf_url && !isPdfUrl(item.pdf_url) && (
+                                          <img
+                                            src={item.pdf_url}
+                                            alt={`Materi - ${item.title}`}
+                                            className="max-h-64 w-auto rounded-lg border border-slate-200 object-contain"
+                                          />
+                                      )}
+                                      {item.external_link && (
+                                          <a href={item.external_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 font-semibold hover:underline">
+                                              <LinkIcon size={12} /> Link Materi
+                                          </a>
                                       )}
                                   </div>
                               )}
@@ -344,8 +351,8 @@ export default function MasterHafalanPage({ onNavigate, currentUser }: MasterHaf
                         {activeTab === 'prayer-readings' && (
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 mb-1">URUTAN</label>
-                                <input 
-                                    type="number" 
+                                <input
+                                    type="number"
                                     value={formData.step_order}
                                     onChange={(e) => setFormData(prev => ({ ...prev, step_order: e.target.value }))}
                                     className="w-full p-2 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500"
@@ -355,18 +362,92 @@ export default function MasterHafalanPage({ onNavigate, currentUser }: MasterHaf
                         )}
                       </div>
 
+                      {!editingItem && data.length > 0 && (
+                          <div>
+                              <label className="block text-xs font-bold text-slate-500 mb-1">MULAI DARI MATERI YANG SUDAH ADA (opsional)</label>
+                              <select
+                                onChange={(e) => {
+                                    const source = data.find(d => String(d.id) === e.target.value);
+                                    if (!source) return;
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        arabic_text: source.arabic_text || '',
+                                        latin_text: source.latin_text || '',
+                                        translation: source.translation || '',
+                                        pdf_url: source.pdf_url || '',
+                                        external_link: source.external_link || '',
+                                    }));
+                                    e.target.value = '';
+                                }}
+                                defaultValue=""
+                                className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 bg-white"
+                              >
+                                  <option value="" disabled>Pilih materi untuk disalin isinya, lalu sesuaikan...</option>
+                                  {data.map(d => (
+                                      <option key={d.id} value={d.id}>{d.title}</option>
+                                  ))}
+                              </select>
+                          </div>
+                      )}
+
+                      <div className="space-y-3">
+                          <p className="text-xs font-bold text-slate-500">KONTEN MATERI (tampil untuk orang tua &amp; santri)</p>
+
+                          <div>
+                              {formData.arabic_text && (
+                                  <p dir="rtl" className="font-arabic text-2xl leading-loose text-slate-800 p-2 mb-1 bg-emerald-50 rounded-lg border border-emerald-100">
+                                      {formData.arabic_text}
+                                  </p>
+                              )}
+                              <label className="block text-xs font-bold text-slate-500 mb-1">ARAB</label>
+                              <textarea
+                                dir="rtl"
+                                value={formData.arabic_text}
+                                onChange={(e) => setFormData(prev => ({ ...prev, arabic_text: e.target.value }))}
+                                className="w-full p-2 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500 h-32 resize-none font-arabic text-xl"
+                                placeholder="Teks Arab... (bisa juga tempel dari sumber lain)"
+                              />
+                          </div>
+
+                          {activeTab === 'daily-prayers' && (
+                               <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">LATIN</label>
+                                <textarea
+                                    value={formData.latin_text}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, latin_text: e.target.value }))}
+                                    className="w-full p-2 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500 h-16 resize-none"
+                                    placeholder="Teks Latin..."
+                                />
+                            </div>
+                          )}
+
+                          <div>
+                              <label className="block text-xs font-bold text-slate-500 mb-1">TERJEMAHAN</label>
+                              <textarea
+                                value={formData.translation}
+                                onChange={(e) => setFormData(prev => ({ ...prev, translation: e.target.value }))}
+                                className="w-full p-2 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500 h-20 resize-none"
+                                placeholder="Terjemahan..."
+                              />
+                          </div>
+                      </div>
+
                       <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
-                          <p className="text-xs font-bold text-slate-500">MATERI (PDF / LINK) — lebih disarankan daripada mengetik manual</p>
-                          <div className="flex items-center gap-2">
+                          <p className="text-xs font-bold text-slate-500">LAMPIRAN OPSIONAL (Gambar / Link)</p>
+                          <p className="text-xs text-slate-400 -mt-2">Pelengkap, bukan pengganti — konten di atas yang akan tampil ke orang tua.</p>
+                          <div className="flex items-center gap-2 flex-wrap">
                               <label className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg text-xs font-semibold text-slate-600 cursor-pointer transition-colors">
                                   <Upload size={14} />
-                                  {isUploadingPdf ? 'Mengunggah...' : 'Unggah PDF'}
-                                  <input type="file" accept="application/pdf" className="hidden" onChange={handlePdfUpload} disabled={isUploadingPdf} />
+                                  {isUploadingPdf ? 'Mengunggah...' : 'Unggah Gambar Materi'}
+                                  <input type="file" accept="image/*" className="hidden" onChange={handlePdfUpload} disabled={isUploadingPdf} />
                               </label>
-                              {formData.pdf_url && (
+                              {formData.pdf_url && isPdfUrl(formData.pdf_url) && (
                                   <a href={formData.pdf_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-emerald-600 font-semibold hover:underline">
                                       <FileText size={14} /> Lihat PDF
                                   </a>
+                              )}
+                              {formData.pdf_url && !isPdfUrl(formData.pdf_url) && (
+                                  <img src={formData.pdf_url} alt="Preview lampiran" className="h-20 w-auto rounded border border-slate-200 object-contain" />
                               )}
                           </div>
                           <div className="relative">
@@ -379,39 +460,6 @@ export default function MasterHafalanPage({ onNavigate, currentUser }: MasterHaf
                                 placeholder="https://... (link materi, opsional)"
                               />
                           </div>
-                      </div>
-
-                      <div>
-                          <label className="block text-xs font-bold text-slate-500 mb-1">ARAB (opsional, isi jika tidak pakai PDF/Link)</label>
-                          <textarea
-                            dir="rtl"
-                            value={formData.arabic_text}
-                            onChange={(e) => setFormData(prev => ({ ...prev, arabic_text: e.target.value }))}
-                            className="w-full p-2 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500 h-24 resize-none font-arabic text-xl"
-                            placeholder="Teks Arab (opsional)..."
-                          />
-                      </div>
-
-                      {activeTab === 'daily-prayers' && (
-                           <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1">LATIN</label>
-                            <textarea 
-                                value={formData.latin_text}
-                                onChange={(e) => setFormData(prev => ({ ...prev, latin_text: e.target.value }))}
-                                className="w-full p-2 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500 h-16 resize-none"
-                                placeholder="Teks Latin..."
-                            />
-                        </div>
-                      )}
-
-                      <div>
-                          <label className="block text-xs font-bold text-slate-500 mb-1">TERJEMAHAN</label>
-                          <textarea 
-                            value={formData.translation}
-                            onChange={(e) => setFormData(prev => ({ ...prev, translation: e.target.value }))}
-                            className="w-full p-2 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500 h-20 resize-none"
-                            placeholder="Terjemahan..."
-                          />
                       </div>
 
                       <div className="flex gap-2 pt-2">

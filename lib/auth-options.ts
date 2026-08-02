@@ -3,6 +3,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { db } from "@/lib/db";
 import { users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
+import { formatTeacherName } from "@/lib/teacherName";
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -63,7 +64,8 @@ export const authOptions: AuthOptions = {
               .select({
                 id: users.id,
                 name: users.name, // Fetch name from our DB
-                role: users.role
+                role: users.role,
+                jenisKelamin: users.jenisKelamin,
               })
               .from(users)
               .where(eq(users.email, user.email))
@@ -71,7 +73,9 @@ export const authOptions: AuthOptions = {
 
             if (dbUser.length > 0) {
                token.id = dbUser[0].id.toString();
-               token.name = dbUser[0].name; // Override Google name with DB name
+               token.name = dbUser[0].role === 'teacher'
+                 ? formatTeacherName(dbUser[0].name, dbUser[0].jenisKelamin)
+                 : dbUser[0].name; // Override Google name with DB name
                token.role = dbUser[0].role;
             }
          } catch (e) {

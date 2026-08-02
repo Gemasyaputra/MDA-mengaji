@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { verifyTeacherToken } from "@/lib/mobile-auth";
+import { formatTeacherName } from "@/lib/teacherName";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
 
   try {
     const result = await db
-      .select({ id: users.id, name: users.name, email: users.email, phone: users.phone, photoUrl: users.photoUrl })
+      .select({ id: users.id, name: users.name, email: users.email, phone: users.phone, photoUrl: users.photoUrl, jenisKelamin: users.jenisKelamin })
       .from(users)
       .where(eq(users.id, teacherId))
       .limit(1);
@@ -30,7 +31,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, message: "Teacher not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, data: result[0] });
+    const teacher = { ...result[0], name: formatTeacherName(result[0].name, result[0].jenisKelamin) };
+    return NextResponse.json({ success: true, data: teacher });
   } catch (error: any) {
     console.error("API Teacher Me Error:", error);
     return NextResponse.json({ success: false, message: "Terjadi kesalahan server" }, { status: 500 });

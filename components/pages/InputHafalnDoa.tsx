@@ -40,7 +40,7 @@ interface TodayRecord {
   daily_prayer_title?: string;
   prayer_reading_title?: string;
   prayer_name?: string;
-  quality: string;
+  quality: number | null;
   is_completed: boolean;
 }
 
@@ -51,7 +51,7 @@ interface RecentRecord {
   daily_prayer_title?: string;
   prayer_reading_title?: string;
   prayer_name?: string;
-  quality: string;
+  quality: number | null;
   is_completed: boolean;
 }
 
@@ -85,7 +85,7 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
     prayer_reading_id: '',
     prayer_name: '',
     is_completed: false,
-    quality: 'A',
+    quality: 8,
     notes: ''
   });
 
@@ -193,7 +193,7 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
       prayer_name: '',
       notes: '',
       is_completed: false,
-      quality: 'A'
+      quality: 8
     }));
     fetchRecentRecords(student.id);
     setStep(3);
@@ -253,10 +253,10 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
 
   const doneCount = students.filter(s => getStudentTodayRecords(s.id).length > 0).length;
 
-  const qualityColor = (q: string) => {
-    if (q === 'A') return 'bg-emerald-100 text-emerald-700';
-    if (q === 'B') return 'bg-blue-100 text-blue-700';
-    if (q === 'C') return 'bg-yellow-100 text-yellow-700';
+  const qualityColor = (q: number) => {
+    if (q >= 9) return 'bg-emerald-100 text-emerald-700';
+    if (q >= 7) return 'bg-blue-100 text-blue-700';
+    if (q >= 5) return 'bg-yellow-100 text-yellow-700';
     return 'bg-red-100 text-red-700';
   };
 
@@ -534,13 +534,13 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
             {/* Quality */}
             {!isSalatType && (
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-2">KUALITAS</label>
-                <div className="flex gap-2">
-                  {['A', 'B', 'C'].map(q => (
+                <label className="block text-xs font-bold text-slate-500 mb-2">NILAI (1-10)</label>
+                <div className="flex gap-2 flex-wrap">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(q => (
                     <button
                       key={q}
                       onClick={() => setFormData(prev => ({ ...prev, quality: q }))}
-                      className={`flex-1 py-3 rounded-lg font-bold border transition ${
+                      className={`w-10 h-10 rounded-lg font-bold border transition ${
                         formData.quality === q
                           ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
                           : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
