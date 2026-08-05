@@ -9,6 +9,7 @@ interface SantriHistoryPageProps {
   santriId?: string | null;
   mode?: string | null;
   returnPath?: string | null;
+  readOnly?: boolean;
 }
 
 interface SantriData {
@@ -43,7 +44,7 @@ interface SurahMaster {
   total_verses: number;
 }
 
-export default function SantriHistoryPage({ onNavigate, santriId, mode = 'learning', returnPath }: SantriHistoryPageProps) {
+export default function SantriHistoryPage({ onNavigate, santriId, mode = 'learning', returnPath, readOnly = false }: SantriHistoryPageProps) {
   const [santri, setSantri] = useState<SantriData | null>(null);
   const [history, setHistory] = useState<LearningRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -248,7 +249,7 @@ export default function SantriHistoryPage({ onNavigate, santriId, mode = 'learni
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => returnPath ? onNavigate(returnPath) : onNavigate(isWorship ? 'input-hafalan-doa' : 'input-iqro')}
-          className="p-2 bg-white rounded-full shadow-sm text-slate-600 hover:text-emerald-600 border border-slate-100"
+          className="print:hidden p-2 bg-white rounded-full shadow-sm text-slate-600 hover:text-emerald-600 border border-slate-100"
         >
           <ArrowLeft size={20} />
         </button>
@@ -258,7 +259,7 @@ export default function SantriHistoryPage({ onNavigate, santriId, mode = 'learni
         </div>
         <button
           onClick={() => setShowFilter(p => !p)}
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border transition-colors ${
+          className={`print:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border transition-colors ${
             hasFilter ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-600 border-slate-200 hover:border-violet-400'
           }`}
         >
@@ -268,7 +269,7 @@ export default function SantriHistoryPage({ onNavigate, santriId, mode = 'learni
 
       {/* Date Filter Panel */}
       {showFilter && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-5 space-y-3">
+        <div className="print:hidden bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-5 space-y-3">
           <div className="flex justify-between items-center mb-1">
             <p className="text-xs font-bold text-slate-600 uppercase tracking-wide flex items-center gap-1.5"><Calendar size={13} /> Filter Tanggal</p>
             {hasFilter && <button onClick={() => { setFilterFrom(''); setFilterTo(''); }} className="text-[11px] text-red-500 hover:text-red-700 font-medium flex items-center gap-1"><X size={11} /> Reset</button>}
@@ -322,7 +323,7 @@ export default function SantriHistoryPage({ onNavigate, santriId, mode = 'learni
         ) : (
           <div className="space-y-3">
             {filteredHistory.map((record) => (
-              <div key={record.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+              <div key={record.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm print:shadow-none print:break-inside-avoid">
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
                     <Calendar size={14} />
@@ -332,22 +333,24 @@ export default function SantriHistoryPage({ onNavigate, santriId, mode = 'learni
                     <span className={`px-2 py-0.5 rounded text-xs font-bold ${qualityColor(record.quality)}`}>
                       {record.quality}
                     </span>
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => isWorship ? openEditWorship(record) : openEdit(record)}
-                        className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"
-                        title="Edit"
-                      >
-                        <Edit2 size={13} />
-                      </button>
-                      <button
-                        onClick={() => setDeleteId(record.id)}
-                        className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
-                        title="Hapus"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
+                    {!readOnly && (
+                      <div className="flex gap-1 print:hidden">
+                        <button
+                          onClick={() => isWorship ? openEditWorship(record) : openEdit(record)}
+                          className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"
+                          title="Edit"
+                        >
+                          <Edit2 size={13} />
+                        </button>
+                        <button
+                          onClick={() => setDeleteId(record.id)}
+                          className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
+                          title="Hapus"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 

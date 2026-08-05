@@ -121,7 +121,7 @@ Basis data dirancang dalam tiga kelompok logis: **Master Data** (referensi stati
 | `student_id` | BIGINT | NOT NULL, FK → students(id) ON DELETE CASCADE | |
 | `teacher_id` | BIGINT | NOT NULL, FK → users(id) | Pencatat presensi |
 | `date` | DATE | DEFAULT CURRENT_DATE | Tanggal presensi |
-| `status` | VARCHAR(10) | NOT NULL, CHECK ∈ {HADIR, SAKIT, IZIN, ALPA} | |
+| `status` | VARCHAR(10) | NOT NULL, CHECK ∈ {HADIR, SAKIT, IZIN, ALFA} | |
 | `notes` | TEXT | NULL | Catatan |
 | `created_at` | TIMESTAMP | DEFAULT NOW() | |
 
@@ -295,7 +295,7 @@ erDiagram
         bigint student_id FK
         bigint teacher_id FK
         date date
-        varchar status "HADIR|SAKIT|IZIN|ALPA"
+        varchar status "HADIR|SAKIT|IZIN|ALFA"
     }
     learning_records {
         bigint id PK
@@ -525,7 +525,7 @@ sequenceDiagram
     P->>API: GET /api/students?teacher_id={id}
     API->>DB: SELECT students JOIN study_groups
     DB-->>P: List santri dalam kelompok
-    G->>P: Tandai status (HADIR/SAKIT/IZIN/ALPA)
+    G->>P: Tandai status (HADIR/SAKIT/IZIN/ALFA)
     G->>P: Klik "Simpan"
     P->>API: POST /api/attendance [array records]
     loop Setiap record

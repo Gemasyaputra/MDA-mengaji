@@ -364,7 +364,7 @@ export default function SantriDetailPage({ onNavigate, santriId }: SantriDetailP
                                 att.status?.toUpperCase().trim() === 'IZIN' ? 'bg-blue-100 text-blue-700' :
                                 'bg-red-100 text-red-700'
                             }`}>
-                                {att.status?.toUpperCase() === 'ALFA' ? 'ALPA' : att.status} 
+                                {att.status?.toUpperCase()}
                           </span>
                       </div>
                   ))

@@ -17,7 +17,7 @@ interface RekapRow {
   hadir: number | string;
   sakit: number | string;
   izin: number | string;
-  alpa: number | string;
+  alfa: number | string;
   total_pertemuan: number | string;
   persentase_hadir: number | string;
   jumlah_tilawah: number | string;
@@ -119,7 +119,7 @@ export default function RekapLaporanPage() {
       autoTable(doc, {
         startY: 34,
         head: [[
-          'Nama Santri', 'Kelompok', 'Hadir', 'Sakit', 'Izin', 'Alpa', 'Persentase',
+          'Nama Santri', 'Kelompok', 'Hadir', 'Sakit', 'Izin', 'Alfa', 'Persentase',
           'Tilawah', 'Hafalan', 'Doa', 'Bacaan Sholat',
         ]],
         body: rows.map((r) => [
@@ -128,7 +128,7 @@ export default function RekapLaporanPage() {
           r.hadir,
           r.sakit,
           r.izin,
-          r.alpa,
+          r.alfa,
           `${r.persentase_hadir}%`,
           r.jumlah_tilawah,
           r.jumlah_hafalan,
@@ -211,7 +211,7 @@ export default function RekapLaporanPage() {
               <th className="text-center font-bold px-3 py-3">Hadir</th>
               <th className="text-center font-bold px-3 py-3">Sakit</th>
               <th className="text-center font-bold px-3 py-3">Izin</th>
-              <th className="text-center font-bold px-3 py-3">Alpa</th>
+              <th className="text-center font-bold px-3 py-3">Alfa</th>
               <th className="text-center font-bold px-3 py-3">%</th>
               <th className="text-center font-bold px-3 py-3">Tilawah</th>
               <th className="text-center font-bold px-3 py-3">Hafalan</th>
@@ -241,7 +241,7 @@ export default function RekapLaporanPage() {
                   <td className="px-3 py-3 text-center text-emerald-600 font-bold">{r.hadir}</td>
                   <td className="px-3 py-3 text-center text-amber-600">{r.sakit}</td>
                   <td className="px-3 py-3 text-center text-blue-600">{r.izin}</td>
-                  <td className="px-3 py-3 text-center text-red-600">{r.alpa}</td>
+                  <td className="px-3 py-3 text-center text-red-600">{r.alfa}</td>
                   <td className="px-3 py-3 text-center font-bold">{r.persentase_hadir}%</td>
                   <td className="px-3 py-3 text-center">{r.jumlah_tilawah}</td>
                   <td className="px-3 py-3 text-center">{r.jumlah_hafalan}</td>

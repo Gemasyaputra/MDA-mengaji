@@ -72,13 +72,13 @@ export default function PresensiDetailPage({ onNavigate, date, groupId, session 
     }
   };
 
-  const counts = { HADIR: 0, SAKIT: 0, IZIN: 0, ALPA: 0 };
+  const counts = { HADIR: 0, SAKIT: 0, IZIN: 0, ALFA: 0 };
   details.forEach((h) => {
     const s = h.status?.toUpperCase().trim();
     if (s === 'HADIR') counts.HADIR++;
     else if (s === 'SAKIT') counts.SAKIT++;
     else if (s === 'IZIN') counts.IZIN++;
-    else counts.ALPA++;
+    else counts.ALFA++;
   });
 
   if (loading) {
@@ -123,8 +123,8 @@ export default function PresensiDetailPage({ onNavigate, date, groupId, session 
             <p className="text-[10px] font-bold text-blue-500 uppercase">Izin</p>
         </div>
         <div className="bg-red-50 border border-red-100 p-3 rounded-xl text-center">
-            <p className="text-xl font-bold text-red-500">{counts.ALPA}</p>
-            <p className="text-[10px] font-bold text-red-500 uppercase">Alpa</p>
+            <p className="text-xl font-bold text-red-500">{counts.ALFA}</p>
+            <p className="text-[10px] font-bold text-red-500 uppercase">Alfa</p>
         </div>
       </div>
 
@@ -166,7 +166,7 @@ export default function PresensiDetailPage({ onNavigate, date, groupId, session 
                             h.status?.toUpperCase().trim() === 'IZIN' ? 'bg-blue-100 text-blue-700' :
                             'bg-red-100 text-red-700'
                         }`}>
-                            {h.status?.toUpperCase().trim() === 'ALFA' ? 'ALPA' : h.status?.toUpperCase().trim()}
+                            {h.status?.toUpperCase().trim()}
                         </span>
                     </div>
                 ))}

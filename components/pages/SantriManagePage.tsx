@@ -752,26 +752,50 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
         {printList.map(santri => (
           <div
             key={santri.id}
-            className="w-[85.6mm] h-[54mm] flex border border-emerald-600 rounded-md overflow-hidden break-inside-avoid"
+            className="w-[85.6mm] h-[54mm] flex flex-col border border-emerald-600 rounded-md overflow-hidden break-inside-avoid"
           >
-            <div className="w-[30mm] shrink-0 flex items-center justify-center p-[3mm] border-r border-emerald-100">
-              {santri.slug ? (
-                <QRCode value={santri.slug} size={256} style={{ width: '100%', height: '100%' }} />
-              ) : (
-                <div className="w-full h-full bg-slate-100 flex items-center justify-center text-[2mm] text-slate-400 text-center">QR Kosong</div>
-              )}
-            </div>
-            <div className="flex-1 min-w-0 flex flex-col justify-center px-[3mm]">
-              <p className="text-[2.2mm] font-bold uppercase tracking-wide text-emerald-700 truncate">
+            <div className="shrink-0 h-[7mm] bg-emerald-600 flex items-center justify-center px-[2mm]">
+              <p className="text-[2.2mm] font-bold uppercase tracking-wide text-white truncate">
                 MDA Masjid Nurul Huda
               </p>
-              <div className="h-px bg-emerald-100 my-[1mm]" />
-              <p className="text-[3.2mm] font-bold text-slate-800 leading-tight truncate">{santri.name}</p>
-              <p className="text-[2.4mm] text-slate-500 truncate">{santri.group_name || 'Tanpa Kelas'}</p>
-              <span className="text-[2mm] font-semibold text-emerald-600 mt-[1mm]">
-                {santri.current_level}
-              </span>
             </div>
+
+            <div className="flex-1 flex items-center px-[3mm] gap-[3mm]">
+              {santri.photo_url ? (
+                <img
+                  src={santri.photo_url}
+                  alt={santri.name}
+                  className="w-[15mm] h-[15mm] rounded-md object-cover border border-emerald-200 shrink-0"
+                />
+              ) : (
+                <div
+                  className={`w-[15mm] h-[15mm] rounded-md flex items-center justify-center text-[4mm] font-bold shrink-0 ${
+                    santri.gender === 'P' ? 'bg-pink-100 text-pink-600' : 'bg-blue-100 text-blue-600'
+                  }`}
+                >
+                  {santri.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+
+              <div className="flex-1 min-w-0 flex flex-col">
+                <p className="text-[3mm] font-bold text-slate-800 leading-tight truncate">{santri.name}</p>
+                <p className="text-[2.2mm] text-slate-500 truncate">{santri.group_name || 'Tanpa Kelas'}</p>
+                <span className="inline-block self-start mt-[1mm] px-[1.5mm] py-[0.3mm] rounded-full bg-emerald-50 text-[1.9mm] font-semibold text-emerald-700">
+                  {santri.current_level}
+                </span>
+              </div>
+
+              <div className="shrink-0 flex flex-col items-center gap-[0.5mm]">
+                {santri.slug ? (
+                  <QRCode value={santri.slug} size={256} style={{ width: '16mm', height: '16mm' }} />
+                ) : (
+                  <div className="w-[16mm] h-[16mm] bg-slate-100 flex items-center justify-center text-[1.8mm] text-slate-400 text-center">QR Kosong</div>
+                )}
+                <span className="text-[1.6mm] text-slate-400">Scan untuk Login</span>
+              </div>
+            </div>
+
+            <div className="shrink-0 h-[1.5mm] bg-emerald-500" />
           </div>
         ))}
       </div>

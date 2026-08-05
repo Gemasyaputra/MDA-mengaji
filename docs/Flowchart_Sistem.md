@@ -202,7 +202,7 @@ flowchart LR
 
 **Deskripsi.** Guru membuka halaman presensi, mengambil daftar santri pada
 kelompok yang diampunya, lalu menandai status kehadiran setiap santri
-(`HADIR / SAKIT / IZIN / ALPA`). Saat disimpan, sistem memakai strategi
+(`HADIR / SAKIT / IZIN / ALFA`). Saat disimpan, sistem memakai strategi
 **replace** (hapus dulu data tanggal yang sama, lalu insert ulang) untuk
 mencegah duplikasi.
 
@@ -264,7 +264,7 @@ flowchart LR
 **Penjelasan langkah utama:**
 
 1. `GET /api/students?teacher_id=...` mengambil santri sesuai kelompok guru.
-2. Guru menandai status setiap santri (HADIR/SAKIT/IZIN/ALPA) dan, opsional, menulis catatan.
+2. Guru menandai status setiap santri (HADIR/SAKIT/IZIN/ALFA) dan, opsional, menulis catatan.
 3. `POST /api/attendance` mengirim seluruh *record* sekaligus (bulk).
 4. Untuk setiap record sistem menjalankan `DELETE` lalu `INSERT` agar idempoten.
 5. Notifikasi broadcast dipicu untuk dilihat oleh admin/guru lain.

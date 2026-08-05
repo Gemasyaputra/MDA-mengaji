@@ -322,7 +322,7 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
         {session?.user && (
           <button
             onClick={onBack}
-            className="absolute top-4 left-4 z-50 flex items-center gap-1.5 bg-white/20 hover:bg-white/30 active:bg-white/40 backdrop-blur-sm text-white text-xs font-semibold px-3 py-2 rounded-full transition-colors cursor-pointer"
+            className="print:hidden absolute top-4 left-4 z-50 flex items-center gap-1.5 bg-white/20 hover:bg-white/30 active:bg-white/40 backdrop-blur-sm text-white text-xs font-semibold px-3 py-2 rounded-full transition-colors cursor-pointer"
           >
             <ArrowLeft size={14} />
             Kembali
@@ -354,9 +354,9 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
             <p className="text-sm text-amber-800 whitespace-pre-wrap">{selectedStudent.teacher_note}</p>
           </div>
         )}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 print:grid-cols-12 gap-6">
           {/* ====== KOLOM KIRI ====== */}
-          <div className="lg:col-span-4 space-y-6">
+          <div className="lg:col-span-4 print:col-span-4 space-y-6">
         {/* Stats Card */}
         <div className="bg-white p-6 rounded-2xl shadow-md border border-slate-100 -mt-10 relative z-10">
           <div className="text-center">
@@ -536,7 +536,7 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
 
         </div>
         {/* ====== KOLOM KANAN ====== */}
-        <div className="lg:col-span-8 space-y-6">
+        <div className="lg:col-span-8 print:col-span-8 space-y-6">
 
         {/* Recent Activities */}
         <div>
@@ -584,7 +584,7 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
         </div>
         
         {recentActivities.length > 0 && (
-            <div className="mt-6 flex flex-col sm:flex-row gap-3">
+            <div className="print:hidden mt-6 flex flex-col sm:flex-row gap-3">
                 <button 
                     onClick={() => onNavigate && onNavigate(`santri-history?id=${studentId}&mode=learning&returnPath=${encodeURIComponent(`parent-view?student_id=${studentId}`)}`)}
                     className="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 py-3 rounded-xl font-bold text-sm transition-colors border border-emerald-100 flex items-center justify-center gap-2"
@@ -602,7 +602,7 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
         </div>
         
         {/* Kabar Masjid Section */}
-        <div className="mt-8">
+        <div className="print:hidden mt-8">
             <h3 className="font-bold text-slate-700 text-sm mb-4 flex items-center gap-2">
                 <MessageCircle size={16} className="text-emerald-500"/> Kabar Masjid
             </h3>

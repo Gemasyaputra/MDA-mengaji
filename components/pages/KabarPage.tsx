@@ -38,7 +38,6 @@ export default function KabarPage({ onNavigate, currentUser }: KabarPageProps) {
                   timestamp: new Date(p.created_at).toLocaleDateString(),
                   avatar: (p.author_name || 'A').charAt(0).toUpperCase(),
                   activity_date: p.activity_date,
-                  comment_count: Number(p.comment_count) || 0,
                   images: Array.isArray(p.images) ? p.images : []
               }));
 

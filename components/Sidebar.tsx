@@ -16,8 +16,6 @@ export default function Sidebar({ role, currentPage, onNavigate, onLogout }: Sid
         return [
           { id: 'dashboard', label: 'Dashboard', icon: Home },
           { id: 'santri-list', label: 'Data Santri', icon: Users },
-          { id: 'presensi', label: 'Presensi', icon: Activity },
-          { id: 'input-hafalan-doa', label: 'Setoran Doa', icon: BookOpen },
           { id: 'study-groups', label: 'Kelas', icon: Users },
           { id: 'manage-teachers', label: 'Data Guru', icon: Users },
           { id: 'master-hafalan', label: 'Bank Materi', icon: BookOpen },

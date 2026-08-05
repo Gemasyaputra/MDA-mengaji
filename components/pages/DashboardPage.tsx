@@ -225,18 +225,6 @@ export default function DashboardPage({ role, onNavigate, currentUser }: Dashboa
       color: 'bg-emerald-50 text-emerald-600 border-emerald-100',
     },
     {
-      icon: Activity,
-      label: 'Presensi',
-      page: 'presensi',
-      color: 'bg-blue-50 text-blue-600 border-blue-100',
-    },
-    {
-      icon: BookOpen,
-      label: 'Setoran Doa',
-      page: 'input-hafalan-doa',
-      color: 'bg-amber-50 text-amber-600 border-amber-100',
-    },
-    {
       icon: Users,
       label: 'Kelas',
       page: 'study-groups',
@@ -261,10 +249,22 @@ export default function DashboardPage({ role, onNavigate, currentUser }: Dashboa
 
   if (role === 'teacher') {
       dashboardMenu.push({
+          icon: Activity,
+          label: 'Presensi',
+          page: 'presensi',
+          color: 'bg-blue-50 text-blue-600 border-blue-100',
+      });
+      dashboardMenu.push({
           icon: BookOpen,
           label: 'Setoran Tilawah',
           page: 'input-iqro',
           color: 'bg-purple-50 text-purple-600 border-purple-100',
+      });
+      dashboardMenu.push({
+          icon: BookOpen,
+          label: 'Setoran Doa',
+          page: 'input-hafalan-doa',
+          color: 'bg-amber-50 text-amber-600 border-amber-100',
       });
   }
 

@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
         COALESCE(att.hadir, 0) AS hadir,
         COALESCE(att.sakit, 0) AS sakit,
         COALESCE(att.izin, 0) AS izin,
-        COALESCE(att.alpa, 0) AS alpa,
+        COALESCE(att.alfa, 0) AS alfa,
         COALESCE(att.total_pertemuan, 0) AS total_pertemuan,
         CASE
           WHEN COALESCE(att.total_pertemuan, 0) = 0 THEN 0
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
           COUNT(*) FILTER (WHERE status = 'HADIR') AS hadir,
           COUNT(*) FILTER (WHERE status = 'SAKIT') AS sakit,
           COUNT(*) FILTER (WHERE status = 'IZIN') AS izin,
-          COUNT(*) FILTER (WHERE status = 'ALPA') AS alpa,
+          COUNT(*) FILTER (WHERE status = 'ALFA') AS alfa,
           COUNT(*) AS total_pertemuan
         FROM attendance
         WHERE date::date BETWEEN $1::date AND $2::date

@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS attendance (
     student_id BIGINT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
     teacher_id BIGINT NOT NULL REFERENCES users(id),
     date DATE NOT NULL DEFAULT CURRENT_DATE,
-    status VARCHAR(10) NOT NULL CHECK (status IN ('HADIR', 'SAKIT', 'IZIN', 'ALPA')),
+    status VARCHAR(10) NOT NULL CHECK (status IN ('HADIR', 'SAKIT', 'IZIN', 'ALFA')),
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -158,15 +158,6 @@ CREATE TABLE IF NOT EXISTS activity_images (
     post_id BIGINT NOT NULL REFERENCES activity_posts(id) ON DELETE CASCADE,
     image_url TEXT NOT NULL,
     caption VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS activity_comments (
-    id BIGSERIAL PRIMARY KEY,
-    post_id BIGINT NOT NULL REFERENCES activity_posts(id) ON DELETE CASCADE,
-    user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
-    parent_name VARCHAR(100),
-    content TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -275,3 +266,13 @@ WHERE role = 'teacher' AND jenis_kelamin IS NULL AND name ~* '^Ustadz\s' AND nam
 -- (Reverted) is_verified column on Bank Materi was added then removed per user request.
 ALTER TABLE master_daily_prayers DROP COLUMN IF EXISTS is_verified;
 ALTER TABLE master_prayer_readings DROP COLUMN IF EXISTS is_verified;
+
+-- Komentar pada Kabar/Aktivitas tidak pernah dipakai (tidak ada API/UI) — fitur dihapus.
+DROP TABLE IF EXISTS activity_comments;
+
+-- STANDARISASI KODE STATUS ALFA (bukan ALPA) — mobile selalu kirim 'ALFA', DB & sebagian web
+-- masih pakai 'ALPA', migrasi data lama + perbarui constraint supaya konsisten.
+UPDATE attendance SET status = 'ALFA' WHERE status = 'ALPA';
+ALTER TABLE attendance DROP CONSTRAINT IF EXISTS attendance_status_check;
+ALTER TABLE attendance ADD CONSTRAINT attendance_status_check
+  CHECK (status IN ('HADIR', 'SAKIT', 'IZIN', 'ALFA'));
