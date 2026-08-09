@@ -258,7 +258,7 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
               onClick={() => onNavigate && onNavigate('login')}
               className="text-emerald-700 hover:text-emerald-800 px-3 py-1.5 rounded-lg font-semibold text-xs sm:text-sm border border-emerald-200 hover:bg-emerald-50 transition-all"
             >
-              Login Pengajar
+              Login Admin
             </button>
           </div>
         </div>
@@ -356,11 +356,12 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
             <div className="w-16 h-1 bg-emerald-400 mx-auto rounded-full mt-6" />
           </AnimateOnScroll>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6">
             {[
-              { value: '120+', label: 'Santri Aktif', icon: <Users size={22} /> },
+              { value: '256', label: 'Santri Aktif', icon: <Users size={22} /> },
               { value: '8', label: 'Pengajar', icon: <GraduationCap size={22} /> },
-              { value: '5', label: 'Kelas', icon: <BookOpen size={22} /> },
+              { value: '6', label: 'Kelas', icon: <BookOpen size={22} /> },
+              { value: '3', label: 'Sesi per Hari', icon: <Clock size={22} /> },
               { value: '15+', label: 'Tahun Berdiri', icon: <Heart size={22} /> },
             ].map((stat, idx) => (
               <AnimateOnScroll key={idx} animation="fade-up" delay={150 + idx * 80}>
@@ -607,11 +608,12 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
                 </div>
                 <div className="space-y-2.5">
                   {[
-                    { name: 'Iqro Jilid 1 – 2', age: 'Pemula' },
-                    { name: 'Iqro Jilid 3 – 4', age: 'Lanjutan Awal' },
-                    { name: 'Iqro Jilid 5 – 6', age: 'Lanjutan' },
-                    { name: 'Al-Qur\'an Pemula', age: 'Tahsin Dasar' },
-                    { name: 'Al-Qur\'an Lanjutan', age: 'Tahfidz Juz 30' },
+                    { name: 'Pra A', age: 'Persiapan' },
+                    { name: 'Pra B', age: 'Persiapan' },
+                    { name: 'Kelas 1', age: 'Jenjang 1' },
+                    { name: 'Kelas 2', age: 'Jenjang 2' },
+                    { name: 'Kelas 3', age: 'Jenjang 3' },
+                    { name: 'Kelas 4', age: 'Jenjang 4' },
                   ].map((g, i) => (
                     <div key={i} className="flex items-center gap-3 py-1.5">
                       <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />

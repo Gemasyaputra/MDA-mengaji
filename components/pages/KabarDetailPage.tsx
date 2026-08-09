@@ -28,6 +28,10 @@ export default function KabarDetailPage({ onNavigate, postId, currentUser, fromP
         }
     };
 
+    const handleOpenInApp = () => {
+        window.location.href = `mdamengaji://kabar/${postId}`;
+    };
+
     const handleShare = () => {
         try {
             const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/public/kabar/${postId}`;
@@ -86,6 +90,15 @@ export default function KabarDetailPage({ onNavigate, postId, currentUser, fromP
                         Masuk / Login
                     </button>
                 </div>
+            )}
+
+            {fromPublic && (
+                <button
+                    onClick={handleOpenInApp}
+                    className="w-full flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 py-2.5 px-4 text-xs font-bold border-b border-emerald-100 hover:bg-emerald-100 transition-colors"
+                >
+                    📱 Sudah punya Aplikasi MDA? Buka di Aplikasi
+                </button>
             )}
 
             {/* Header */}

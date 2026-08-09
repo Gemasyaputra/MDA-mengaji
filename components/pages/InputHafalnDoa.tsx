@@ -554,16 +554,18 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
             )}
 
             {/* Notes */}
-            <div>
-              <label className="block text-xs font-bold text-slate-500 mb-2">CATATAN</label>
-              <textarea
-                name="notes"
-                value={formData.notes}
-                onChange={handleChange}
-                placeholder="Catatan..."
-                className="w-full p-3 bg-slate-50 rounded-lg border border-slate-200 text-sm h-20 focus:outline-none focus:border-emerald-500 resize-none"
-              />
-            </div>
+            {!isSalatType && (
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-2">CATATAN</label>
+                <textarea
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleChange}
+                  placeholder="Catatan..."
+                  className="w-full p-3 bg-slate-50 rounded-lg border border-slate-200 text-sm h-20 focus:outline-none focus:border-emerald-500 resize-none"
+                />
+              </div>
+            )}
 
             <button
               onClick={handleSubmit}
