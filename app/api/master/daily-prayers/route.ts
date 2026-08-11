@@ -3,7 +3,7 @@ import { query, executeReturning, execute } from '@/lib/api-helpers';
 
 export async function GET(req: NextRequest) {
   try {
-    const result = await query('SELECT * FROM master_daily_prayers ORDER BY title ASC');
+    const result = await query('SELECT *, id_master_daily_prayers AS id FROM master_daily_prayers ORDER BY title ASC');
     return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await executeReturning(
-        `INSERT INTO master_daily_prayers (title, category, arabic_text, latin_text, translation, pdf_url, external_link) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        `INSERT INTO master_daily_prayers (title, category, arabic_text, latin_text, translation, pdf_url, external_link) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *, id_master_daily_prayers AS id`,
         [title, category || null, arabic_text || null, latin_text || null, translation || null, pdf_url || null, external_link || null]
     );
 
@@ -44,7 +44,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const result = await executeReturning(
-        `UPDATE master_daily_prayers SET title = $1, category = $2, arabic_text = $3, latin_text = $4, translation = $5, pdf_url = $6, external_link = $7 WHERE id = $8 RETURNING *`,
+        `UPDATE master_daily_prayers SET title = $1, category = $2, arabic_text = $3, latin_text = $4, translation = $5, pdf_url = $6, external_link = $7 WHERE id_master_daily_prayers = $8 RETURNING *, id_master_daily_prayers AS id`,
         [title, category || null, arabic_text || null, latin_text || null, translation || null, pdf_url || null, external_link || null, id]
     );
 
@@ -67,7 +67,7 @@ export async function DELETE(req: NextRequest) {
         return NextResponse.json({ success: false, error: "ID is required" }, { status: 400 });
     }
 
-    const result = await execute('DELETE FROM master_daily_prayers WHERE id = $1', [id]);
+    const result = await execute('DELETE FROM master_daily_prayers WHERE id_master_daily_prayers = $1', [id]);
 
     if (!result.success) {
         return NextResponse.json({ success: false, error: result.error }, { status: 400 });

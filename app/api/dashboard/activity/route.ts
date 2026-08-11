@@ -26,10 +26,10 @@ export async function GET(req: NextRequest) {
             NULL::text AS detail,
             a.date AS activity_date
           FROM attendance a
-          JOIN users u ON a.teacher_id = u.id
-          JOIN students s ON a.student_id = s.id
-          JOIN study_groups g ON s.group_id = g.id
-          GROUP BY a.date, a.created_at, u.name, u.jenis_kelamin, g.name, a.id
+          JOIN users u ON a.teacher_id = u.id_users
+          JOIN students s ON a.student_id = s.id_students
+          JOIN study_groups g ON s.group_id = g.id_study_groups
+          GROUP BY a.date, a.created_at, u.name, u.jenis_kelamin, g.name, a.id_attendance
 
           UNION ALL
 
@@ -44,9 +44,9 @@ export async function GET(req: NextRequest) {
             lr.level_or_surah AS detail,
             lr.date AS activity_date
           FROM learning_records lr
-          JOIN users u ON lr.teacher_id = u.id
-          JOIN students s ON lr.student_id = s.id
-          JOIN study_groups g ON s.group_id = g.id
+          JOIN users u ON lr.teacher_id = u.id_users
+          JOIN students s ON lr.student_id = s.id_students
+          JOIN study_groups g ON s.group_id = g.id_study_groups
 
           UNION ALL
 
@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
             NULL::text AS detail,
             s.created_at::date AS activity_date
           FROM students s
-          JOIN study_groups g ON s.group_id = g.id
+          JOIN study_groups g ON s.group_id = g.id_study_groups
 
           UNION ALL
 
@@ -76,8 +76,8 @@ export async function GET(req: NextRequest) {
             'Khatam Iqro ke Al-Quran' AS detail,
             s.iqro_graduated_at::date AS activity_date
           FROM students s
-          JOIN study_groups g ON s.group_id = g.id
-          LEFT JOIN users u ON g.teacher_id = u.id
+          JOIN study_groups g ON s.group_id = g.id_study_groups
+          LEFT JOIN users u ON g.teacher_id = u.id_users
           WHERE s.iqro_graduated_at IS NOT NULL
 
         ) combined
@@ -96,9 +96,9 @@ export async function GET(req: NextRequest) {
 
           -- [1] Presensi yang dilakukan oleh guru ini sendiri
           -- Dikelompokkan per tanggal & kelompok (bukan per santri)
-          SELECT DISTINCT ON (a.date, g.id)
+          SELECT DISTINCT ON (a.date, g.id_study_groups)
             'attendance' AS type,
-            MAX(a.created_at) OVER (PARTITION BY a.date, g.id) AS ts,
+            MAX(a.created_at) OVER (PARTITION BY a.date, g.id_study_groups) AS ts,
             u.name AS actor_name,
             u.jenis_kelamin AS actor_jenis_kelamin,
             g.name AS group_name,
@@ -106,9 +106,9 @@ export async function GET(req: NextRequest) {
             NULL::text AS detail,
             a.date AS activity_date
           FROM attendance a
-          JOIN users u ON a.teacher_id = u.id
-          JOIN students s ON a.student_id = s.id
-          JOIN study_groups g ON s.group_id = g.id
+          JOIN users u ON a.teacher_id = u.id_users
+          JOIN students s ON a.student_id = s.id_students
+          JOIN study_groups g ON s.group_id = g.id_study_groups
           WHERE a.teacher_id = $1
 
           UNION ALL
@@ -124,9 +124,9 @@ export async function GET(req: NextRequest) {
             lr.level_or_surah AS detail,
             lr.date AS activity_date
           FROM learning_records lr
-          JOIN users u ON lr.teacher_id = u.id
-          JOIN students s ON lr.student_id = s.id
-          JOIN study_groups g ON s.group_id = g.id
+          JOIN users u ON lr.teacher_id = u.id_users
+          JOIN students s ON lr.student_id = s.id_students
+          JOIN study_groups g ON s.group_id = g.id_study_groups
           WHERE lr.teacher_id = $1
 
           UNION ALL
@@ -142,7 +142,7 @@ export async function GET(req: NextRequest) {
             NULL::text AS detail,
             s.created_at::date AS activity_date
           FROM students s
-          JOIN study_groups g ON s.group_id = g.id
+          JOIN study_groups g ON s.group_id = g.id_study_groups
           WHERE g.teacher_id = $1
 
           UNION ALL
@@ -158,8 +158,8 @@ export async function GET(req: NextRequest) {
             'Khatam Iqro ke Al-Quran' AS detail,
             s.iqro_graduated_at::date AS activity_date
           FROM students s
-          JOIN study_groups g ON s.group_id = g.id
-          LEFT JOIN users u ON g.teacher_id = u.id
+          JOIN study_groups g ON s.group_id = g.id_study_groups
+          LEFT JOIN users u ON g.teacher_id = u.id_users
           WHERE g.teacher_id = $1
             AND s.iqro_graduated_at IS NOT NULL
 

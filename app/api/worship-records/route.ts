@@ -70,10 +70,10 @@ export async function POST(req: NextRequest) {
           SELECT st.name as student_name, u.name as teacher_name, u.jenis_kelamin as teacher_jenis_kelamin,
                  mdp.title as prayer_title, mpr.title as reading_title
           FROM students st
-          JOIN users u ON u.id = $2
-          LEFT JOIN master_daily_prayers mdp ON mdp.id = $3
-          LEFT JOIN master_prayer_readings mpr ON mpr.id = $4
-          WHERE st.id = $1 LIMIT 1
+          JOIN users u ON u.id_users = $2
+          LEFT JOIN master_daily_prayers mdp ON mdp.id_master_daily_prayers = $3
+          LEFT JOIN master_prayer_readings mpr ON mpr.id_master_prayer_readings = $4
+          WHERE st.id_students = $1 LIMIT 1
         `, [student_id, teacher_id, daily_prayer_id || null, prayer_reading_id || null]);
 
         if (infoResult.data && infoResult.data.length > 0) {
@@ -123,15 +123,15 @@ export async function GET(req: NextRequest) {
     }
 
     let sql = `
-      SELECT wr.*,
+      SELECT wr.*, wr.id_worship_records AS id,
              u.name as teacher_name,
              u.jenis_kelamin as teacher_jenis_kelamin,
              mdp.title as daily_prayer_title,
              mpr.title as prayer_reading_title
       FROM worship_records wr
-      LEFT JOIN users u ON wr.teacher_id = u.id
-      LEFT JOIN master_daily_prayers mdp ON wr.daily_prayer_id = mdp.id
-      LEFT JOIN master_prayer_readings mpr ON wr.prayer_reading_id = mpr.id
+      LEFT JOIN users u ON wr.teacher_id = u.id_users
+      LEFT JOIN master_daily_prayers mdp ON wr.daily_prayer_id = mdp.id_master_daily_prayers
+      LEFT JOIN master_prayer_readings mpr ON wr.prayer_reading_id = mpr.id_master_prayer_readings
       WHERE 1=1
     `;
     const params: (string | number)[] = [];
@@ -194,7 +194,7 @@ export async function PUT(req: NextRequest) {
            prayer_reading_id = $4,
            prayer_name = $5,
            notes = $6
-       WHERE id = $7`,
+       WHERE id_worship_records = $7`,
       [qualityNum, is_completed ?? false, daily_prayer_id ?? null, prayer_reading_id ?? null, prayer_name ?? null, notes ?? null, id]
     );
 
@@ -211,7 +211,7 @@ export async function DELETE(req: NextRequest) {
     if (!id) {
       return NextResponse.json({ success: false, error: 'Missing id' }, { status: 400 });
     }
-    const result = await execute('DELETE FROM worship_records WHERE id = $1', [id]);
+    const result = await execute('DELETE FROM worship_records WHERE id_worship_records = $1', [id]);
     return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

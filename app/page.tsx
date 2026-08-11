@@ -22,6 +22,8 @@ import SantriHistoryPage from '@/components/pages/SantriHistoryPage';
 import LandingPage from '@/components/pages/LandingPage';
 import ActivityLogPage from '@/components/pages/ActivityLogPage';
 import RekapLaporanPage from '@/components/pages/RekapLaporanPage';
+import PengumumanPage from '@/components/pages/PengumumanPage';
+
 /* import Toast from '@/components/Toast'; // REMOVED */
 import { toast } from 'sonner';
 import { User, UserRole } from '@/types';
@@ -174,6 +176,8 @@ export default function Home() {
         return <PresensiPage onSave={showToast} currentUser={currentUser} onNavigate={navigateTo} />;
       case 'kabar':
         return <KabarPage onNavigate={navigateTo} currentUser={currentUser} />;
+      case 'pengumuman':
+        return <PengumumanPage onNavigate={navigateTo} currentUser={currentUser} />;
       // case 'parent-view': REMOVED - handled in default for query params
 
 

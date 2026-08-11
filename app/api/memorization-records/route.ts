@@ -7,12 +7,12 @@ export async function GET(req: NextRequest) {
   const limit = searchParams.get('limit') || '20';
 
   let sql = `
-    SELECT mr.*,
+    SELECT mr.*, mr.id_memorization_records AS id,
            u.name as teacher_name,
            ms.name_latin as surah_name
     FROM memorization_records mr
-    LEFT JOIN users u ON mr.teacher_id = u.id
-    LEFT JOIN master_surahs ms ON mr.surah_id = ms.id
+    LEFT JOIN users u ON mr.teacher_id = u.id_users
+    LEFT JOIN master_surahs ms ON mr.surah_id = ms.id_master_surahs
     WHERE 1=1
   `;
   const params: (string | number)[] = [];
