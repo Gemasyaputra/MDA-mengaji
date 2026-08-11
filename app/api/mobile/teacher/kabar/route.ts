@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     const postResult = await executeReturning(
       `INSERT INTO activity_posts (author_id, title, content, activity_date, created_at)
-       VALUES ($1, $2, $3, $4, NOW()) RETURNING id`,
+       VALUES ($1, $2, $3, $4, NOW()) RETURNING id_activity_posts AS id`,
       [teacherId, title, content, new Date().toISOString().split("T")[0]]
     );
 
@@ -60,7 +60,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: false, error: "ID, judul, dan konten wajib diisi" }, { status: 400 });
     }
 
-    const existing = await queryOne(`SELECT author_id FROM activity_posts WHERE id = $1`, [id]);
+    const existing = await queryOne(`SELECT author_id FROM activity_posts WHERE id_activity_posts = $1`, [id]);
     if (!existing) {
       return NextResponse.json({ success: false, error: "Kabar tidak ditemukan" }, { status: 404 });
     }
@@ -69,7 +69,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const postResult = await executeReturning(
-      `UPDATE activity_posts SET title = $1, content = $2 WHERE id = $3 RETURNING *`,
+      `UPDATE activity_posts SET title = $1, content = $2 WHERE id_activity_posts = $3 RETURNING *, id_activity_posts AS id`,
       [title, content, id]
     );
 
@@ -107,7 +107,7 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
-    const existing = await queryOne(`SELECT author_id FROM activity_posts WHERE id = $1`, [id]);
+    const existing = await queryOne(`SELECT author_id FROM activity_posts WHERE id_activity_posts = $1`, [id]);
     if (!existing) {
       return NextResponse.json({ success: false, error: "Kabar tidak ditemukan" }, { status: 404 });
     }
@@ -115,7 +115,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Anda tidak berhak menghapus kabar ini" }, { status: 403 });
     }
 
-    const result = await execute("DELETE FROM activity_posts WHERE id = $1", [id]);
+    const result = await execute("DELETE FROM activity_posts WHERE id_activity_posts = $1", [id]);
     return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

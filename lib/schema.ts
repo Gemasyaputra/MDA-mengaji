@@ -1,5 +1,5 @@
 import {
-  bigserial,
+  serial,
   varchar,
   text,
   integer,
@@ -7,15 +7,20 @@ import {
   timestamp,
   boolean,
   pgTable,
-  bigint,
   check,
   time,
 } from "drizzle-orm/pg-core";
 
+// Catatan standarisasi PK: nama kolom DB memakai pola `id_<tabel>` (permintaan
+// dosen pembimbing), tapi nama properti JS di semua tabel di bawah tetap `id`
+// (lewat argumen string Drizzle, contoh `serial("id_students")`). Ini sengaja
+// dipertahankan supaya seluruh pemakaian `.id` / `.references(() => x.id)` di
+// codebase tidak perlu diubah — jangan "dirapikan" jadi `idStudents` dkk.
+
 // ==================== MASTER DATA ====================
 
 export const masterSurahs = pgTable("master_surahs", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
+  id: serial("id_master_surahs").primaryKey(),
   nameLatin: varchar("name_latin", { length: 100 }).notNull(),
   nameArabic: varchar("name_arabic", { length: 100 }),
   totalVerses: integer("total_verses").notNull(),
@@ -24,7 +29,7 @@ export const masterSurahs = pgTable("master_surahs", {
 });
 
 export const masterDailyPrayers = pgTable("master_daily_prayers", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
+  id: serial("id_master_daily_prayers").primaryKey(),
   title: varchar("title", { length: 150 }).notNull(),
   category: varchar("category", { length: 50 }),
   arabicText: text("arabic_text"),
@@ -35,7 +40,7 @@ export const masterDailyPrayers = pgTable("master_daily_prayers", {
 });
 
 export const masterPrayerReadings = pgTable("master_prayer_readings", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
+  id: serial("id_master_prayer_readings").primaryKey(),
   stepOrder: integer("step_order").notNull(),
   title: varchar("title", { length: 150 }).notNull(),
   category: varchar("category", { length: 50 }),
@@ -49,7 +54,7 @@ export const masterPrayerReadings = pgTable("master_prayer_readings", {
 
 
 export const users = pgTable("users", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
+  id: serial("id_users").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
   email: varchar("email", { length: 100 }).notNull(),
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
@@ -63,8 +68,8 @@ export const users = pgTable("users", {
 });
 
 export const studyGroups = pgTable("study_groups", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  teacherId: bigint("teacher_id", { mode: "number" }).references(
+  id: serial("id_study_groups").primaryKey(),
+  teacherId: integer("teacher_id").references(
     () => users.id,
     {
       onDelete: "set null",
@@ -75,8 +80,8 @@ export const studyGroups = pgTable("study_groups", {
 });
 
 export const students = pgTable("students", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  groupId: bigint("group_id", { mode: "number" }).references(
+  id: serial("id_students").primaryKey(),
+  groupId: integer("group_id").references(
     () => studyGroups.id,
   ),
   name: varchar("name", { length: 100 }).notNull(),
@@ -95,11 +100,11 @@ export const students = pgTable("students", {
 });
 
 export const attendance = pgTable("attendance", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  studentId: bigint("student_id", { mode: "number" })
+  id: serial("id_attendance").primaryKey(),
+  studentId: integer("student_id")
     .notNull()
     .references(() => students.id),
-  teacherId: bigint("teacher_id", { mode: "number" })
+  teacherId: integer("teacher_id")
     .notNull()
     .references(() => users.id),
   date: date("date").defaultNow(),
@@ -113,11 +118,11 @@ export const attendance = pgTable("attendance", {
 // ==================== TRANSACTION TABLES ====================
 
 export const learningRecords = pgTable("learning_records", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  studentId: bigint("student_id", { mode: "number" })
+  id: serial("id_learning_records").primaryKey(),
+  studentId: integer("student_id")
     .notNull()
     .references(() => students.id, { onDelete: "cascade" }),
-  teacherId: bigint("teacher_id", { mode: "number" })
+  teacherId: integer("teacher_id")
     .notNull()
     .references(() => users.id),
   date: date("date").defaultNow(),
@@ -132,15 +137,15 @@ export const learningRecords = pgTable("learning_records", {
 });
 
 export const memorizationRecords = pgTable("memorization_records", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  studentId: bigint("student_id", { mode: "number" })
+  id: serial("id_memorization_records").primaryKey(),
+  studentId: integer("student_id")
     .notNull()
     .references(() => students.id),
-  teacherId: bigint("teacher_id", { mode: "number" })
+  teacherId: integer("teacher_id")
     .notNull()
     .references(() => users.id),
   date: date("date").defaultNow(),
-  surahId: bigint("surah_id", { mode: "number" })
+  surahId: integer("surah_id")
     .notNull()
     .references(() => masterSurahs.id),
   verseStart: integer("verse_start").notNull(),
@@ -152,19 +157,19 @@ export const memorizationRecords = pgTable("memorization_records", {
 });
 
 export const worshipRecords = pgTable("worship_records", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  studentId: bigint("student_id", { mode: "number" })
+  id: serial("id_worship_records").primaryKey(),
+  studentId: integer("student_id")
     .notNull()
     .references(() => students.id),
-  teacherId: bigint("teacher_id", { mode: "number" }).references(
+  teacherId: integer("teacher_id").references(
     () => users.id,
   ), // null jika recordedBy = PARENT
   date: date("date").defaultNow(),
   type: varchar("type", { length: 20 }).notNull(),
-  dailyPrayerId: bigint("daily_prayer_id", { mode: "number" }).references(
+  dailyPrayerId: integer("daily_prayer_id").references(
     () => masterDailyPrayers.id,
   ),
-  prayerReadingId: bigint("prayer_reading_id", { mode: "number" }).references(
+  prayerReadingId: integer("prayer_reading_id").references(
     () => masterPrayerReadings.id,
   ),
   isCompleted: boolean("is_completed").default(false),
@@ -176,8 +181,8 @@ export const worshipRecords = pgTable("worship_records", {
 });
 
 export const activityPosts = pgTable("activity_posts", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  authorId: bigint("author_id", { mode: "number" })
+  id: serial("id_activity_posts").primaryKey(),
+  authorId: integer("author_id")
     .notNull()
     .references(() => users.id),
   title: varchar("title", { length: 200 }).notNull(),
@@ -187,8 +192,8 @@ export const activityPosts = pgTable("activity_posts", {
 });
 
 export const activityImages = pgTable("activity_images", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  postId: bigint("post_id", { mode: "number" })
+  id: serial("id_activity_images").primaryKey(),
+  postId: integer("post_id")
     .notNull()
     .references(() => activityPosts.id),
   imageUrl: text("image_url").notNull(),

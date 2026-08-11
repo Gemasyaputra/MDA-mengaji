@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 
     const sql = `
       SELECT
-        s.id AS student_id,
+        s.id_students AS student_id,
         s.name AS student_name,
         g.name AS group_name,
         COALESCE(att.hadir, 0) AS hadir,
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
         COALESCE(wr.jumlah_doa, 0) AS jumlah_doa,
         COALESCE(wr.jumlah_sholat, 0) AS jumlah_sholat
       FROM students s
-      LEFT JOIN study_groups g ON s.group_id = g.id
+      LEFT JOIN study_groups g ON s.group_id = g.id_study_groups
       LEFT JOIN (
         SELECT
           student_id,
@@ -62,19 +62,19 @@ export async function GET(req: NextRequest) {
         FROM attendance
         WHERE date::date BETWEEN $1::date AND $2::date
         GROUP BY student_id
-      ) att ON att.student_id = s.id
+      ) att ON att.student_id = s.id_students
       LEFT JOIN (
         SELECT student_id, COUNT(*) AS jumlah_tilawah
         FROM learning_records
         WHERE date::date BETWEEN $1::date AND $2::date
         GROUP BY student_id
-      ) lr ON lr.student_id = s.id
+      ) lr ON lr.student_id = s.id_students
       LEFT JOIN (
         SELECT student_id, COUNT(*) AS jumlah_hafalan
         FROM memorization_records
         WHERE date::date BETWEEN $1::date AND $2::date
         GROUP BY student_id
-      ) mr ON mr.student_id = s.id
+      ) mr ON mr.student_id = s.id_students
       LEFT JOIN (
         SELECT
           student_id,
@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
         FROM worship_records
         WHERE date::date BETWEEN $1::date AND $2::date
         GROUP BY student_id
-      ) wr ON wr.student_id = s.id
+      ) wr ON wr.student_id = s.id_students
       WHERE 1=1${groupFilter}
       ORDER BY g.name ASC NULLS LAST, s.name ASC
     `;
