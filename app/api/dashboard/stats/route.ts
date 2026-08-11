@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     let presentQuery = `
          SELECT COUNT(DISTINCT a.student_id) as count
          FROM attendance a
-         JOIN students s ON a.student_id = s.id
+         JOIN students s ON a.student_id = s.id_students
          WHERE ${dateCondition.replace('$DATE_PARAM', '$1')}
            AND a.status = 'HADIR'
     `;
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     let presentBySessionQuery = `
          SELECT a.session, COUNT(*) as count
          FROM attendance a
-         JOIN students s ON a.student_id = s.id
+         JOIN students s ON a.student_id = s.id_students
          WHERE ${dateCondition.replace('$DATE_PARAM', '$1')}
            AND a.status = 'HADIR'
          GROUP BY a.session
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
       santriQuery = `
         SELECT COUNT(s.*) as count
         FROM students s
-        JOIN study_groups g ON s.group_id = g.id
+        JOIN study_groups g ON s.group_id = g.id_study_groups
         WHERE g.teacher_id = $1
       `;
       santriParams.push(teacherId);
@@ -50,8 +50,8 @@ export async function GET(req: NextRequest) {
       presentQuery = `
          SELECT COUNT(DISTINCT a.student_id) as count
          FROM attendance a
-         JOIN students s ON a.student_id = s.id
-         JOIN study_groups g ON s.group_id = g.id
+         JOIN students s ON a.student_id = s.id_students
+         JOIN study_groups g ON s.group_id = g.id_study_groups
          WHERE g.teacher_id = $1
            AND ${teacherDateCondition}
            AND a.status = 'HADIR'
@@ -61,8 +61,8 @@ export async function GET(req: NextRequest) {
       presentBySessionQuery = `
          SELECT a.session, COUNT(*) as count
          FROM attendance a
-         JOIN students s ON a.student_id = s.id
-         JOIN study_groups g ON s.group_id = g.id
+         JOIN students s ON a.student_id = s.id_students
+         JOIN study_groups g ON s.group_id = g.id_study_groups
          WHERE g.teacher_id = $1
            AND ${teacherDateCondition}
            AND a.status = 'HADIR'
@@ -86,8 +86,8 @@ export async function GET(req: NextRequest) {
       SELECT COUNT(*) as count FROM students s
       LEFT JOIN LATERAL (
         SELECT GREATEST(
-          COALESCE((SELECT MAX(date) FROM learning_records WHERE student_id = s.id), '1900-01-01'),
-          COALESCE((SELECT MAX(date) FROM memorization_records WHERE student_id = s.id), '1900-01-01')
+          COALESCE((SELECT MAX(date) FROM learning_records WHERE student_id = s.id_students), '1900-01-01'),
+          COALESCE((SELECT MAX(date) FROM memorization_records WHERE student_id = s.id_students), '1900-01-01')
         ) as last_activity_date
       ) la ON true
       WHERE la.last_activity_date < CURRENT_DATE - INTERVAL '14 days'
@@ -96,11 +96,11 @@ export async function GET(req: NextRequest) {
     if (teacherId) {
       behindQuery = `
         SELECT COUNT(*) as count FROM students s
-        JOIN study_groups g ON s.group_id = g.id
+        JOIN study_groups g ON s.group_id = g.id_study_groups
         LEFT JOIN LATERAL (
           SELECT GREATEST(
-            COALESCE((SELECT MAX(date) FROM learning_records WHERE student_id = s.id), '1900-01-01'),
-            COALESCE((SELECT MAX(date) FROM memorization_records WHERE student_id = s.id), '1900-01-01')
+            COALESCE((SELECT MAX(date) FROM learning_records WHERE student_id = s.id_students), '1900-01-01'),
+            COALESCE((SELECT MAX(date) FROM memorization_records WHERE student_id = s.id_students), '1900-01-01')
           ) as last_activity_date
         ) la ON true
         WHERE g.teacher_id = $1 AND la.last_activity_date < CURRENT_DATE - INTERVAL '14 days'

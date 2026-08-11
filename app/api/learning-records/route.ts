@@ -14,9 +14,9 @@ export async function GET(req: NextRequest) {
   const beforeDate = searchParams.get('before_date'); // YYYY-MM-DD — fetch latest record before this date
 
   let sql = `
-    SELECT lr.*, u.name as teacher_name, u.jenis_kelamin as teacher_jenis_kelamin
+    SELECT lr.*, lr.id_learning_records AS id, u.name as teacher_name, u.jenis_kelamin as teacher_jenis_kelamin
     FROM learning_records lr
-    LEFT JOIN users u ON lr.teacher_id = u.id
+    LEFT JOIN users u ON lr.teacher_id = u.id_users
     WHERE 1=1
   `;
   const params: (string | number)[] = [];
@@ -120,8 +120,8 @@ export async function POST(req: NextRequest) {
         const infoResult = await query(`
           SELECT st.name as student_name, u.name as teacher_name, u.jenis_kelamin as teacher_jenis_kelamin
           FROM students st
-          JOIN users u ON u.id = $2
-          WHERE st.id = $1 LIMIT 1
+          JOIN users u ON u.id_users = $2
+          WHERE st.id_students = $1 LIMIT 1
         `, [student_id, teacher_id]);
 
         if (infoResult.data && infoResult.data.length > 0) {
@@ -161,7 +161,7 @@ export async function PUT(req: NextRequest) {
                 quality = COALESCE($4, quality),
                 reading_status = COALESCE($5, reading_status),
                 notes = COALESCE($6, notes)
-             WHERE id = $7`,
+             WHERE id_learning_records = $7`,
             [level_or_surah, start_point, end_point, qualityNum, reading_status || null, notes, id]
         );
         
@@ -178,7 +178,7 @@ export async function DELETE(req: NextRequest) {
     if (!id) return NextResponse.json({ success: false, error: "ID required" }, { status: 400 });
 
     try {
-        const result = await execute('DELETE FROM learning_records WHERE id = $1', [id]);
+        const result = await execute('DELETE FROM learning_records WHERE id_learning_records = $1', [id]);
         return NextResponse.json(result);
     } catch (error: any) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });

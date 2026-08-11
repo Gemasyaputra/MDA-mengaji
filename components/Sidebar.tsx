@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Users, MessageSquare, Settings, BarChart3, LogOut, BookOpen, Activity } from 'lucide-react';
+import { Home, Users, MessageSquare, Settings, BarChart3, LogOut, BookOpen, Activity,Megaphone } from 'lucide-react';
 
 interface SidebarProps {
   role: string;
@@ -21,6 +21,7 @@ export default function Sidebar({ role, currentPage, onNavigate, onLogout }: Sid
           { id: 'master-hafalan', label: 'Bank Materi', icon: BookOpen },
           { id: 'rekap-laporan', label: 'Laporan', icon: BarChart3 },
           { id: 'kabar', label: 'Kabar & Info', icon: MessageSquare },
+          // { id: 'pengumuman', label: 'Pengumuman', icon: Megaphone },
         ];
       case 'teacher':
         return [

@@ -23,7 +23,7 @@ export async function GET(request: Request) {
         SELECT
             TO_CHAR(a.date, 'YYYY-MM-DD') as date,
             a.session,
-            COUNT(a.id) as total_attendance,
+            COUNT(a.id_attendance) as total_attendance,
             SUM(CASE WHEN a.status = 'HADIR' THEN 1 ELSE 0 END) as total_hadir,
             SUM(CASE WHEN a.status = 'ALFA' THEN 1 ELSE 0 END) as total_alfa,
             SUM(CASE WHEN a.status = 'SAKIT' THEN 1 ELSE 0 END) as total_sakit,
@@ -34,9 +34,9 @@ export async function GET(request: Request) {
             s.group_id,
             (SELECT COUNT(*) FROM students WHERE group_id = s.group_id) as total_students
         FROM attendance a
-        JOIN students s ON a.student_id = s.id
-        LEFT JOIN study_groups g ON s.group_id = g.id
-        LEFT JOIN users u ON a.teacher_id = u.id
+        JOIN students s ON a.student_id = s.id_students
+        LEFT JOIN study_groups g ON s.group_id = g.id_study_groups
+        LEFT JOIN users u ON a.teacher_id = u.id_users
         WHERE a.teacher_id = ${teacherId}
     `;
 

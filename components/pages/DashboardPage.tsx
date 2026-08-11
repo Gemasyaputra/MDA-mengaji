@@ -344,7 +344,7 @@ export default function DashboardPage({ role, onNavigate, currentUser }: Dashboa
         </div>
       </div>
 
-      {/* Peringatan santri tertinggal */}
+      {/* Peringatan santri tertinggal
       {stats.students_behind > 0 && (
         <button
           onClick={() => onNavigate('santri-list')}
@@ -355,7 +355,7 @@ export default function DashboardPage({ role, onNavigate, currentUser }: Dashboa
             <span className="font-bold">{stats.students_behind} santri</span> tertinggal dari target hafalan/ngaji (belum ada setoran 14 hari terakhir).
           </p>
         </button>
-      )}
+      )} */}
 
       {/* Statistik ringkas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 mb-8">

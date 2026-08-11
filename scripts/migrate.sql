@@ -276,3 +276,152 @@ UPDATE attendance SET status = 'ALFA' WHERE status = 'ALPA';
 ALTER TABLE attendance DROP CONSTRAINT IF EXISTS attendance_status_check;
 ALTER TABLE attendance ADD CONSTRAINT attendance_status_check
   CHECK (status IN ('HADIR', 'SAKIT', 'IZIN', 'ALFA'));
+
+-- ==========================================================================
+-- STANDARISASI PRIMARY KEY (permintaan dosen pembimbing)
+--   1. Setiap primary key diganti nama dari `id` menjadi `id_<nama_tabel>`.
+--   2. Setiap primary key dan foreign key diubah tipenya dari BIGINT/BIGSERIAL
+--      ke INTEGER biasa.
+-- Catatan: blok CREATE TABLE di BAGIAN 1-3 di atas masih menuliskan
+-- `id BIGSERIAL PRIMARY KEY` — itu bentuk historis untuk instalasi baru;
+-- begitu tabel dibuat, blok di bawah ini langsung menstandarisasi ulang nama
+-- dan tipe kolomnya pada run yang sama, jadi hasil akhirnya tetap konsisten
+-- baik untuk instalasi baru maupun database yang sudah berjalan.
+-- Data saat ini masih dummy sehingga migrasi ini tidak butuh logic
+-- preservasi data khusus. Seluruh blok idempotent (aman dijalankan berkali-kali
+-- lewat `npm run migrate`).
+-- ==========================================================================
+
+-- Langkah 1: lepas SEMUA foreign key pada 12 tabel target. Nama constraint
+-- tidak di-hardcode (baik yang dibuat inline oleh file ini maupun oleh
+-- drizzle-kit) supaya DROP-nya selalu tepat sasaran.
+DO $$
+DECLARE r RECORD;
+BEGIN
+  FOR r IN
+    SELECT c.conrelid::regclass AS tbl, c.conname
+    FROM pg_constraint c
+    WHERE c.contype = 'f'
+      AND c.conrelid::regclass::text IN (
+        'users','master_surahs','master_daily_prayers','master_prayer_readings',
+        'study_groups','students','attendance','learning_records',
+        'memorization_records','worship_records','activity_posts','activity_images'
+      )
+  LOOP
+    EXECUTE format('ALTER TABLE %s DROP CONSTRAINT %I', r.tbl, r.conname);
+  END LOOP;
+END $$;
+
+-- Langkah 2: rename kolom PK `id` -> `id_<tabel>` (hanya jika masih bernama `id`).
+-- RENAME COLUMN otomatis membawa serta constraint PK, index, dan default
+-- nextval, jadi tidak perlu menyentuh <tabel>_pkey secara manual.
+DO $$
+DECLARE t TEXT;
+BEGIN
+  FOREACH t IN ARRAY ARRAY[
+    'users','master_surahs','master_daily_prayers','master_prayer_readings',
+    'study_groups','students','attendance','learning_records',
+    'memorization_records','worship_records','activity_posts','activity_images'
+  ] LOOP
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = t AND column_name = 'id'
+    ) THEN
+      EXECUTE format('ALTER TABLE %I RENAME COLUMN id TO %I', t, 'id_' || t);
+    END IF;
+  END LOOP;
+END $$;
+
+-- Langkah 3: ubah tipe kolom PK dan FK dari BIGINT ke INTEGER pada 12 tabel target.
+DO $$
+DECLARE r RECORD;
+BEGIN
+  FOR r IN
+    SELECT table_name, column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND data_type = 'bigint'
+      AND table_name IN (
+        'users','master_surahs','master_daily_prayers','master_prayer_readings',
+        'study_groups','students','attendance','learning_records',
+        'memorization_records','worship_records','activity_posts','activity_images'
+      )
+      AND (column_name LIKE 'id\_%' OR column_name LIKE '%\_id')
+  LOOP
+    EXECUTE format('ALTER TABLE %I ALTER COLUMN %I TYPE INTEGER', r.table_name, r.column_name);
+  END LOOP;
+END $$;
+
+-- Langkah 4: sequence bekas BIGSERIAL juga diturunkan ke INTEGER supaya benar-benar
+-- setara SERIAL. Nama sequence tetap <tabel>_id_seq (RENAME COLUMN tidak merename
+-- sequence) — default nextval() menunjuk lewat OID sehingga tetap valid.
+DO $$
+DECLARE seqname TEXT;
+BEGIN
+  FOREACH seqname IN ARRAY ARRAY[
+    'users_id_seq','master_surahs_id_seq','master_daily_prayers_id_seq',
+    'master_prayer_readings_id_seq','study_groups_id_seq','students_id_seq',
+    'attendance_id_seq','learning_records_id_seq','memorization_records_id_seq',
+    'worship_records_id_seq','activity_posts_id_seq','activity_images_id_seq'
+  ] LOOP
+    IF EXISTS (SELECT 1 FROM pg_class WHERE relkind = 'S' AND relname = seqname) THEN
+      EXECUTE format('ALTER SEQUENCE %I AS INTEGER MAXVALUE 2147483647', seqname);
+    END IF;
+  END LOOP;
+END $$;
+
+-- Langkah 5: pasang kembali seluruh foreign key, sekarang menunjuk ke nama PK
+-- yang baru. Nama FK dieksplisitkan supaya stabil dan DROP CONSTRAINT IF EXISTS
+-- di run berikutnya selalu cocok. Urutan parent -> child.
+ALTER TABLE study_groups DROP CONSTRAINT IF EXISTS study_groups_teacher_id_fkey;
+ALTER TABLE study_groups ADD CONSTRAINT study_groups_teacher_id_fkey
+  FOREIGN KEY (teacher_id) REFERENCES users(id_users) ON DELETE SET NULL;
+
+ALTER TABLE students DROP CONSTRAINT IF EXISTS students_group_id_fkey;
+ALTER TABLE students ADD CONSTRAINT students_group_id_fkey
+  FOREIGN KEY (group_id) REFERENCES study_groups(id_study_groups) ON DELETE SET NULL;
+
+ALTER TABLE attendance DROP CONSTRAINT IF EXISTS attendance_student_id_fkey;
+ALTER TABLE attendance ADD CONSTRAINT attendance_student_id_fkey
+  FOREIGN KEY (student_id) REFERENCES students(id_students) ON DELETE CASCADE;
+ALTER TABLE attendance DROP CONSTRAINT IF EXISTS attendance_teacher_id_fkey;
+ALTER TABLE attendance ADD CONSTRAINT attendance_teacher_id_fkey
+  FOREIGN KEY (teacher_id) REFERENCES users(id_users);
+
+ALTER TABLE learning_records DROP CONSTRAINT IF EXISTS learning_records_student_id_fkey;
+ALTER TABLE learning_records ADD CONSTRAINT learning_records_student_id_fkey
+  FOREIGN KEY (student_id) REFERENCES students(id_students) ON DELETE CASCADE;
+ALTER TABLE learning_records DROP CONSTRAINT IF EXISTS learning_records_teacher_id_fkey;
+ALTER TABLE learning_records ADD CONSTRAINT learning_records_teacher_id_fkey
+  FOREIGN KEY (teacher_id) REFERENCES users(id_users);
+
+ALTER TABLE memorization_records DROP CONSTRAINT IF EXISTS memorization_records_student_id_fkey;
+ALTER TABLE memorization_records ADD CONSTRAINT memorization_records_student_id_fkey
+  FOREIGN KEY (student_id) REFERENCES students(id_students) ON DELETE CASCADE;
+ALTER TABLE memorization_records DROP CONSTRAINT IF EXISTS memorization_records_teacher_id_fkey;
+ALTER TABLE memorization_records ADD CONSTRAINT memorization_records_teacher_id_fkey
+  FOREIGN KEY (teacher_id) REFERENCES users(id_users);
+ALTER TABLE memorization_records DROP CONSTRAINT IF EXISTS memorization_records_surah_id_fkey;
+ALTER TABLE memorization_records ADD CONSTRAINT memorization_records_surah_id_fkey
+  FOREIGN KEY (surah_id) REFERENCES master_surahs(id_master_surahs);
+
+ALTER TABLE worship_records DROP CONSTRAINT IF EXISTS worship_records_student_id_fkey;
+ALTER TABLE worship_records ADD CONSTRAINT worship_records_student_id_fkey
+  FOREIGN KEY (student_id) REFERENCES students(id_students) ON DELETE CASCADE;
+ALTER TABLE worship_records DROP CONSTRAINT IF EXISTS worship_records_teacher_id_fkey;
+ALTER TABLE worship_records ADD CONSTRAINT worship_records_teacher_id_fkey
+  FOREIGN KEY (teacher_id) REFERENCES users(id_users);
+ALTER TABLE worship_records DROP CONSTRAINT IF EXISTS worship_records_daily_prayer_id_fkey;
+ALTER TABLE worship_records ADD CONSTRAINT worship_records_daily_prayer_id_fkey
+  FOREIGN KEY (daily_prayer_id) REFERENCES master_daily_prayers(id_master_daily_prayers);
+ALTER TABLE worship_records DROP CONSTRAINT IF EXISTS worship_records_prayer_reading_id_fkey;
+ALTER TABLE worship_records ADD CONSTRAINT worship_records_prayer_reading_id_fkey
+  FOREIGN KEY (prayer_reading_id) REFERENCES master_prayer_readings(id_master_prayer_readings);
+
+ALTER TABLE activity_posts DROP CONSTRAINT IF EXISTS activity_posts_author_id_fkey;
+ALTER TABLE activity_posts ADD CONSTRAINT activity_posts_author_id_fkey
+  FOREIGN KEY (author_id) REFERENCES users(id_users);
+
+ALTER TABLE activity_images DROP CONSTRAINT IF EXISTS activity_images_post_id_fkey;
+ALTER TABLE activity_images ADD CONSTRAINT activity_images_post_id_fkey
+  FOREIGN KEY (post_id) REFERENCES activity_posts(id_activity_posts) ON DELETE CASCADE;

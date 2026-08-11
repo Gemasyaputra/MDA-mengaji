@@ -43,16 +43,16 @@ export async function GET(req: NextRequest) {
             SELECT
                 TO_CHAR(a.date, 'YYYY-MM-DD') as date,
                 a.session,
-                COUNT(a.id) as total_attendance,
+                COUNT(a.id_attendance) as total_attendance,
                 SUM(CASE WHEN a.status = 'HADIR' THEN 1 ELSE 0 END) as total_hadir,
                 MAX(g.name) as group_name,
                 MAX(u.name) as teacher_name,
                 MAX(u.jenis_kelamin) as teacher_jenis_kelamin,
                 s.group_id
             FROM attendance a
-            JOIN students s ON a.student_id = s.id
-            LEFT JOIN study_groups g ON s.group_id = g.id
-            LEFT JOIN users u ON a.teacher_id = u.id
+            JOIN students s ON a.student_id = s.id_students
+            LEFT JOIN study_groups g ON s.group_id = g.id_study_groups
+            LEFT JOIN users u ON a.teacher_id = u.id_users
             WHERE 1=1
         `;
         const params: (string | number)[] = [];
@@ -75,15 +75,15 @@ export async function GET(req: NextRequest) {
     if (date) {
          let sql = `
             SELECT
-                a.id, a.student_id, a.teacher_id,
+                a.id_attendance AS id, a.student_id, a.teacher_id,
                 TO_CHAR(a.date, 'YYYY-MM-DD') as date,
                 a.status, a.session, TO_CHAR(a.time, 'HH24:MI') as time, a.notes, a.created_at,
                 s.name as student_name,
                 s.group_id,
                 g.name as group_name
             FROM attendance a
-            JOIN students s ON a.student_id = s.id
-            LEFT JOIN study_groups g ON s.group_id = g.id
+            JOIN students s ON a.student_id = s.id_students
+            LEFT JOIN study_groups g ON s.group_id = g.id_study_groups
             WHERE a.date::date = $1::date
         `;
         const params: (string | number)[] = [date];
@@ -109,14 +109,14 @@ export async function GET(req: NextRequest) {
     if (studentId) {
         let sql = `
             SELECT
-                a.id, a.student_id, a.teacher_id,
+                a.id_attendance AS id, a.student_id, a.teacher_id,
                 TO_CHAR(a.date, 'YYYY-MM-DD') as date,
                 a.status, a.session, TO_CHAR(a.time, 'HH24:MI') as time, a.notes, a.created_at,
                 s.name as student_name,
                 g.name as group_name
             FROM attendance a
-            JOIN students s ON a.student_id = s.id
-            LEFT JOIN study_groups g ON s.group_id = g.id
+            JOIN students s ON a.student_id = s.id_students
+            LEFT JOIN study_groups g ON s.group_id = g.id_study_groups
             WHERE a.student_id = $1
             ORDER BY a.date DESC LIMIT 50
         `;
@@ -125,7 +125,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Default: list all (maybe limit)
-    const result = await query('SELECT * FROM attendance ORDER BY date DESC LIMIT 100');
+    const result = await query('SELECT *, id_attendance AS id FROM attendance ORDER BY date DESC LIMIT 100');
     return NextResponse.json({ success: result.success, data: result.data ?? [] });
     
   } catch (error: any) {
@@ -192,9 +192,9 @@ export async function POST(req: NextRequest) {
         const infoResult = await query(`
           SELECT u.name as teacher_name, u.jenis_kelamin as teacher_jenis_kelamin, g.name as group_name
           FROM users u
-          JOIN students s ON s.id = $2
-          LEFT JOIN study_groups g ON g.id = s.group_id
-          WHERE u.id = $1
+          JOIN students s ON s.id_students = $2
+          LEFT JOIN study_groups g ON g.id_study_groups = s.group_id
+          WHERE u.id_users = $1
           LIMIT 1
         `, [teacherId, records[0].student_id]);
 

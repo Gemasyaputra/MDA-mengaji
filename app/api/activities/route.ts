@@ -13,25 +13,25 @@ export async function GET(req: NextRequest) {
 
   // Join with users to get author name and agg images
   let sql = `
-    SELECT ap.*, u.name as author_name, 
+    SELECT ap.*, ap.id_activity_posts AS id, u.name as author_name,
     (
-      SELECT COALESCE(json_agg(x.image_url), '[]'::json) 
+      SELECT COALESCE(json_agg(x.image_url), '[]'::json)
       FROM (
-        SELECT image_url 
-        FROM activity_images ai 
-        WHERE ai.post_id = ap.id
-        ORDER BY ai.id ASC
+        SELECT image_url
+        FROM activity_images ai
+        WHERE ai.post_id = ap.id_activity_posts
+        ORDER BY ai.id_activity_images ASC
         ${imageLimit}
       ) x
     ) as images
     FROM activity_posts ap
-    LEFT JOIN users u ON ap.author_id = u.id
+    LEFT JOIN users u ON ap.author_id = u.id_users
     WHERE 1=1
   `;
   const params: (string | number)[] = [];
 
   if (id) {
-      sql += ` AND ap.id = $${params.length + 1}`;
+      sql += ` AND ap.id_activity_posts = $${params.length + 1}`;
       params.push(id);
   }
 
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       // 1. Insert Post
       const postResult = await executeReturning(
         `INSERT INTO activity_posts (author_id, title, content, activity_date, created_at)
-         VALUES ($1, $2, $3, $4, NOW()) RETURNING id`,
+         VALUES ($1, $2, $3, $4, NOW()) RETURNING id_activity_posts AS id`,
         [
             author_id, 
             title, 
@@ -104,7 +104,7 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
-      const result = await execute('DELETE FROM activity_posts WHERE id = $1', [id]);
+      const result = await execute('DELETE FROM activity_posts WHERE id_activity_posts = $1', [id]);
       return NextResponse.json(result);
   } catch (error: any) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -122,9 +122,9 @@ export async function PUT(req: NextRequest) {
 
       // 1. Update Post
       const postResult = await executeReturning(
-        `UPDATE activity_posts 
+        `UPDATE activity_posts
          SET title = $1, content = $2
-         WHERE id = $3 RETURNING *`,
+         WHERE id_activity_posts = $3 RETURNING *, id_activity_posts AS id`,
         [title, content, id]
       );
 

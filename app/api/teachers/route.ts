@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   let sql = `
-    SELECT u.id, u.name, u.email, u.phone, u.role, u.photo_url, u.jenis_kelamin
+    SELECT u.id_users AS id, u.name, u.email, u.phone, u.role, u.photo_url, u.jenis_kelamin
     FROM users u
     WHERE u.role = 'teacher'
   `;
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if email already exists
-    const existing = await query('SELECT id FROM users WHERE email = $1', [email]);
+    const existing = await query('SELECT id_users AS id FROM users WHERE email = $1', [email]);
     if (existing.success && Array.isArray(existing.data) && existing.data.length > 0) {
         return NextResponse.json({ success: false, error: 'Email already registered' }, { status: 400 });
     }
@@ -103,7 +103,7 @@ export async function PUT(req: NextRequest) {
               nik = $5, tempat_lahir = $6, tanggal_lahir = $7, jenis_kelamin = $8, golongan_darah = $9,
               alamat = $10, rt_rw = $11, kel_desa = $12, kecamatan = $13, agama = $14, status_perkawinan = $15,
               pekerjaan = $16, kewarganegaraan = $17, photo_url = $18
-             WHERE id = $4 AND role = 'teacher'`,
+             WHERE id_users = $4 AND role = 'teacher'`,
             [
               name, email, phone, id,
               nik || null, tempat_lahir || null, tanggal_lahir || null, jenis_kelamin || null, golongan_darah || null,
@@ -133,7 +133,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     try {
-        const result = await execute("DELETE FROM users WHERE id = $1 AND role = 'teacher'", [id]);
+        const result = await execute("DELETE FROM users WHERE id_users = $1 AND role = 'teacher'", [id]);
         return NextResponse.json(result);
     } catch (error: any) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });

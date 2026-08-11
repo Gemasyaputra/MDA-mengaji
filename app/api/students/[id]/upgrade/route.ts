@@ -12,10 +12,10 @@ export async function PATCH(
 
   try {
     const result = await pool.query(
-      `UPDATE students 
-       SET reading_level = 'ALQURAN', iqro_graduated_at = CURRENT_TIMESTAMP 
-       WHERE id = $1 
-       RETURNING *`,
+      `UPDATE students
+       SET reading_level = 'ALQURAN', iqro_graduated_at = CURRENT_TIMESTAMP
+       WHERE id_students = $1
+       RETURNING *, id_students AS id`,
       [id]
     );
 

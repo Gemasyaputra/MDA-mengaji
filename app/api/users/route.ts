@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     let sql: string;
     const params: any[] = [];
 
-    sql = 'SELECT id, name, email, phone, role, created_at FROM users WHERE 1=1';
+    sql = 'SELECT id_users AS id, name, email, phone, role, created_at FROM users WHERE 1=1';
     if (role) {
       sql += ' AND role = $1';
       params.push(role);
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     const passwordHash = await bcrypt.hash(password, 10);
 
     const result = await executeReturning(
-      `INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role`,
+      `INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id_users AS id, name, email, role`,
       [name, email, passwordHash, role]
     );
 
@@ -107,7 +107,7 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ success: false, error: "No fields to update" }, { status: 400 });
     }
 
-    sql += updates.join(', ') + ` WHERE id = $${idx} RETURNING id, name, email`;
+    sql += updates.join(', ') + ` WHERE id_users = $${idx} RETURNING id_users AS id, name, email`;
     params.push(id);
 
     const result = await executeReturning(sql, params);
@@ -143,7 +143,7 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
-    const result = await execute('DELETE FROM users WHERE id = $1', [id]);
+    const result = await execute('DELETE FROM users WHERE id_users = $1', [id]);
     if (!result.success) {
         return NextResponse.json({ success: false, error: result.error }, { status: 400 });
     }

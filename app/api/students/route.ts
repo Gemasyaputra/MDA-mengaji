@@ -21,30 +21,30 @@ export async function GET(req: NextRequest) {
   const behindActivitySubquery = `
     LEFT JOIN LATERAL (
       SELECT GREATEST(
-        COALESCE((SELECT MAX(date) FROM learning_records WHERE student_id = s.id), '1900-01-01'),
-        COALESCE((SELECT MAX(date) FROM memorization_records WHERE student_id = s.id), '1900-01-01')
+        COALESCE((SELECT MAX(date) FROM learning_records WHERE student_id = s.id_students), '1900-01-01'),
+        COALESCE((SELECT MAX(date) FROM memorization_records WHERE student_id = s.id_students), '1900-01-01')
       ) as last_activity_date
     ) la ON true
   `;
 
   if (id) {
     const result = await queryOne(
-      `SELECT s.*, g.name as group_name, la.last_activity_date,
+      `SELECT s.*, s.id_students AS id, g.name as group_name, la.last_activity_date,
               (la.last_activity_date < CURRENT_DATE - INTERVAL '14 days') as is_behind
        FROM students s
-       LEFT JOIN study_groups g ON s.group_id = g.id
+       LEFT JOIN study_groups g ON s.group_id = g.id_study_groups
        ${behindActivitySubquery}
-       WHERE s.id = $1`,
+       WHERE s.id_students = $1`,
       [id]
     );
     return NextResponse.json({ success: !!result, data: result });
   }
 
   let sql = `
-    SELECT s.*, g.name as group_name, la.last_activity_date,
+    SELECT s.*, s.id_students AS id, g.name as group_name, la.last_activity_date,
            (la.last_activity_date < CURRENT_DATE - INTERVAL '14 days') as is_behind
     FROM students s
-    LEFT JOIN study_groups g ON s.group_id = g.id
+    LEFT JOIN study_groups g ON s.group_id = g.id_study_groups
     ${behindActivitySubquery}
     WHERE 1=1
   `;
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
   const result = await executeReturning(
     `INSERT INTO students (group_id, name, slug, parent_name, parent_phone, birth_date, gender, address, current_level, photo_url)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-     RETURNING *`,
+     RETURNING *, id_students AS id`,
     [
       group_id || null,
       name,
@@ -160,8 +160,8 @@ export async function PUT(req: NextRequest) {
       group_id = $1, name = $2, slug = COALESCE($3, slug),
       parent_name = $4, parent_phone = $5, birth_date = $6, gender = $7,
       address = $8, current_level = $9, photo_url = $10, teacher_note = $11
-     WHERE id = $12
-     RETURNING *`,
+     WHERE id_students = $12
+     RETURNING *, id_students AS id`,
     [
       group_id || null,
       name,
@@ -206,6 +206,6 @@ export async function DELETE(req: NextRequest) {
     );
   }
 
-  const result = await execute('DELETE FROM students WHERE id = $1', [id]);
+  const result = await execute('DELETE FROM students WHERE id_students = $1', [id]);
   return NextResponse.json(result);
 }
