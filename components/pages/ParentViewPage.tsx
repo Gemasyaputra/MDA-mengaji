@@ -349,7 +349,7 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
           </div>
         )}
         {selectedStudent.teacher_note && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 relative z-10">
+          <div className={`bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 relative z-10 ${selectedStudent.is_behind ? '' : '-mt-4'}`}>
             <p className="text-xs font-bold text-amber-700 mb-1">CATATAN GURU</p>
             <p className="text-sm text-amber-800 whitespace-pre-wrap">{selectedStudent.teacher_note}</p>
           </div>
@@ -358,10 +358,14 @@ export default function ParentViewPage({ onBack, onNavigate, studentId }: Parent
           {/* ====== KOLOM KIRI ====== */}
           <div className="lg:col-span-4 print:col-span-4 space-y-6">
         {/* Stats Card */}
-        <div className="bg-white p-6 rounded-2xl shadow-md border border-slate-100 -mt-10 relative z-10">
+        <div className={`bg-white p-6 rounded-2xl shadow-md border border-slate-100 relative z-10 ${selectedStudent.is_behind || selectedStudent.teacher_note ? '' : '-mt-10'}`}>
           <div className="text-center">
             <p className="text-sm text-slate-600 mb-2">Level Pembelajaran</p>
-            <p className="text-2xl font-bold text-emerald-600 mb-4">{selectedStudent.current_level || 'Belum ada data'}</p>
+            <p className="text-2xl font-bold text-emerald-600 mb-4">
+              {selectedStudent.reading_level === 'ALQURAN'
+                ? "Al-Qur'an"
+                : (selectedStudent.current_level || 'Belum ada data')}
+            </p>
             <p className="text-sm text-slate-600 mb-1">Kehadiran (Global)</p>
             <div className="flex items-center justify-center gap-2 mb-2">
               <div className="flex-1 bg-slate-200 rounded-full h-2">

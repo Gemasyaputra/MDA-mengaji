@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Users, MessageSquare, Settings, BarChart3, LogOut, BookOpen, Activity,Megaphone } from 'lucide-react';
+import { Home, Users, MessageSquare, Settings, BarChart3, LogOut, BookOpen, Activity } from 'lucide-react';
 
 interface SidebarProps {
   role: string;
@@ -21,7 +21,6 @@ export default function Sidebar({ role, currentPage, onNavigate, onLogout }: Sid
           { id: 'master-hafalan', label: 'Bank Materi', icon: BookOpen },
           { id: 'rekap-laporan', label: 'Laporan', icon: BarChart3 },
           { id: 'kabar', label: 'Kabar & Info', icon: MessageSquare },
-          // { id: 'pengumuman', label: 'Pengumuman', icon: Megaphone },
         ];
       case 'teacher':
         return [
@@ -77,9 +76,9 @@ export default function Sidebar({ role, currentPage, onNavigate, onLogout }: Sid
       <div className="px-4 pb-6 border-t border-emerald-700/50 pt-4">
         <button
           onClick={onLogout}
-          className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-red-300 hover:bg-red-500/20 hover:text-red-200 transition-all duration-200"
+          className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-white/90 hover:bg-white/10 hover:text-white transition-all duration-200"
         >
-          <LogOut size={20} className="text-red-400" />
+          <LogOut size={20} className="text-white/70" />
           Keluar
         </button>
       </div>

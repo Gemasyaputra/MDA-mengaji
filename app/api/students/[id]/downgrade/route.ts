@@ -19,7 +19,7 @@ export async function PATCH(
   try {
     const result = await pool.query(
       `UPDATE students
-       SET reading_level = 'ALQURAN', iqro_graduated_at = CURRENT_TIMESTAMP, current_level = NULL
+       SET reading_level = 'IQRO', iqro_graduated_at = NULL, current_level = NULL
        WHERE id_students = $1
        RETURNING *, id_students AS id`,
       [id]
@@ -31,7 +31,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, data: result.rows[0] });
   } catch (error: any) {
-    console.error('[UPGRADE SANTRI ERROR]', error.message);
+    console.error('[DOWNGRADE SANTRI ERROR]', error.message);
     return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }

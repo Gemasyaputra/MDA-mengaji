@@ -6,7 +6,8 @@ export async function GET(req: NextRequest) {
     const result = await query('SELECT *, id_master_prayer_readings AS id FROM master_prayer_readings ORDER BY step_order ASC, title ASC');
     return NextResponse.json(result);
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }
 
@@ -30,7 +31,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: result.data }, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }
 
@@ -54,7 +56,8 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: result.data });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }
 
@@ -75,6 +78,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }

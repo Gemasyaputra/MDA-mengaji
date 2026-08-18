@@ -41,7 +41,8 @@ export async function GET(req: NextRequest) {
     const result = await query(sql, params);
     return NextResponse.json({ success: true, data: result.data ?? [] });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }
 
@@ -64,7 +65,8 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }
 

@@ -26,6 +26,7 @@ interface StudyGroup {
 interface Student {
   id: number;
   name: string;
+  photo_url: string | null;
 }
 
 interface MasterData {
@@ -354,11 +355,19 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
                   }`}
                 >
                   {/* Avatar */}
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
-                    isDone ? 'bg-purple-500 text-white' : 'bg-slate-100 text-slate-600'
-                  }`}>
-                    {isDone ? <CheckCircle2 size={20} /> : student.name.charAt(0).toUpperCase()}
-                  </div>
+                  {student.photo_url ? (
+                    <img
+                      src={student.photo_url}
+                      alt={student.name}
+                      className="w-10 h-10 rounded-full object-cover shrink-0"
+                    />
+                  ) : (
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
+                      isDone ? 'bg-purple-500 text-white' : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {isDone ? <CheckCircle2 size={20} /> : student.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
@@ -420,9 +429,17 @@ export default function InputHafalnDoa({ onSave, currentUser, onNavigate }: Inpu
           {/* Student Info */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold shrink-0">
-                {selectedStudent.name.charAt(0)}
-              </div>
+              {selectedStudent.photo_url ? (
+                <img
+                  src={selectedStudent.photo_url}
+                  alt={selectedStudent.name}
+                  className="w-10 h-10 rounded-full object-cover shrink-0"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold shrink-0">
+                  {selectedStudent.name.charAt(0)}
+                </div>
+              )}
               <div className="flex-1">
                 <h3 className="font-bold text-slate-800">{selectedStudent.name}</h3>
                 <div className="flex items-center gap-2 mt-0.5">

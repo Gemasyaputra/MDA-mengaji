@@ -25,6 +25,7 @@ export interface Santri {
   gender: string | null;
   address: string | null;
   current_level: string | null;
+  reading_level?: string | null;
   group_name?: string | null;
   photo_url?: string | null;
   teacher_note?: string | null;

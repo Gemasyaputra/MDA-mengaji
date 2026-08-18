@@ -508,7 +508,7 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
                               </span>
                             )}
                           </div>
-                          {santri.current_level && (
+                          {santri.current_level && santri.reading_level !== 'ALQURAN' && (
                             <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
                               <BookOpen size={10} strokeWidth={2} />
                               {santri.current_level}
@@ -781,7 +781,7 @@ export default function SantriManagePage({ onNavigate, onSave, currentUser }: Sa
                 <p className="text-[3mm] font-bold text-slate-800 leading-tight truncate">{santri.name}</p>
                 <p className="text-[2.2mm] text-slate-500 truncate">{santri.group_name || 'Tanpa Kelas'}</p>
                 <span className="inline-block self-start mt-[1mm] px-[1.5mm] py-[0.3mm] rounded-full bg-emerald-50 text-[1.9mm] font-semibold text-emerald-700">
-                  {santri.current_level}
+                  {santri.reading_level === 'ALQURAN' ? "Al-Qur'an" : santri.current_level}
                 </span>
               </div>
 

@@ -177,6 +177,6 @@ export async function GET(req: NextRequest) {
 
   } catch (error: any) {
     console.error('Activity feed error:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }

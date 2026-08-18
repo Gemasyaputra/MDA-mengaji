@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query, execute } from '@/lib/api-helpers';
 import { createNotification } from '@/app/api/notifications/route';
 import { applyTeacherNameFormatting, formatTeacherName } from '@/lib/teacherName';
+import { requireTeacherOrAdmin } from '@/lib/require-teacher-or-admin';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -64,16 +65,22 @@ export async function GET(req: NextRequest) {
     })));
     return NextResponse.json({ success: result.success, data });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    const auth = await requireTeacherOrAdmin(req, body.token);
+    if (!auth.ok) {
+      return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+    }
+
     const {
         student_id,
-        teacher_id,
+        teacher_id: bodyTeacherId,
         date,
         type,
         level_or_surah,
@@ -83,6 +90,8 @@ export async function POST(req: NextRequest) {
         reading_status,
         notes
     } = body;
+
+    const teacher_id = auth.source === 'mobile' ? auth.userId : bodyTeacherId;
 
     if (!student_id || !teacher_id || !type || !level_or_surah || !quality) {
         return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
@@ -137,13 +146,19 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result, { status: result.success ? 201 : 400 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }
 
 export async function PUT(req: NextRequest) {
     try {
         const body = await req.json();
+        const auth = await requireTeacherOrAdmin(req, body.token);
+        if (!auth.ok) {
+          return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+        }
+
         const { id, level_or_surah, start_point, end_point, quality, reading_status, notes } = body;
 
         if (!id) return NextResponse.json({ success: false, error: "ID required" }, { status: 400 });
@@ -167,20 +182,27 @@ export async function PUT(req: NextRequest) {
         
         return NextResponse.json(result);
     } catch (error: any) {
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        console.error(error);
+        return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
     }
 }
 
 export async function DELETE(req: NextRequest) {
+    const auth = await requireTeacherOrAdmin(req);
+    if (!auth.ok) {
+      return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
-    
+
     if (!id) return NextResponse.json({ success: false, error: "ID required" }, { status: 400 });
 
     try {
         const result = await execute('DELETE FROM learning_records WHERE id_learning_records = $1', [id]);
         return NextResponse.json(result);
     } catch (error: any) {
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        console.error(error);
+        return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
     }
 }

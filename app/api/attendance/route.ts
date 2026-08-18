@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query, execute } from '@/lib/api-helpers';
 import { createNotification } from '@/app/api/notifications/route';
 import { applyTeacherNameFormatting, formatTeacherName } from '@/lib/teacherName';
+import { requireTeacherOrAdmin } from '@/lib/require-teacher-or-admin';
 
 
 export async function GET(req: NextRequest) {
@@ -129,19 +130,31 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: result.success, data: result.data ?? [] });
     
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
       const body = await req.json();
-      // Expecting array of attendance records or single object? 
+      // Expecting array of attendance records or single object?
       // Plan implies bulk save or single. Let's support bulk for efficiency.
       // But body structure from previous file was single. I will support array to save all students at once.
-      
+
       const records = Array.isArray(body) ? body : [body];
-      
+
+      const auth = await requireTeacherOrAdmin(req, records[0]?.token);
+      if (!auth.ok) {
+        return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+      }
+
+      // mobile callers must use the teacher id resolved from their verified
+      // token, not a client-supplied value, to prevent spoofing another teacher.
+      if (auth.source === 'mobile') {
+        for (const r of records) r.teacher_id = auth.userId;
+      }
+
       if (records.length === 0) {
           return NextResponse.json({ success: false, error: "No data" }, { status: 400 });
       }
@@ -216,6 +229,7 @@ export async function POST(req: NextRequest) {
 
       
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }

@@ -1,8 +1,14 @@
 import { put } from '@vercel/blob';
 import { NextRequest, NextResponse } from 'next/server';
+import { requireTeacherOrAdmin } from '@/lib/require-teacher-or-admin';
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = await requireTeacherOrAdmin(req);
+    if (!auth.ok) {
+      return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+    }
+
     const formData = await req.formData();
     const file = formData.get('file') as File;
 
@@ -26,7 +32,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('Upload error:', error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: 'Terjadi kesalahan pada server.' },
       { status: 500 }
     );
   }

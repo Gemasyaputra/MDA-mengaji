@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, queryOne, execute, executeReturning } from '@/lib/api-helpers';
+import { requireTeacherOrAdmin } from '@/lib/require-teacher-or-admin';
+import { requireAdmin } from '@/lib/require-admin';
 
 function slugify(name: string): string {
   const base = name
@@ -11,6 +13,11 @@ function slugify(name: string): string {
 }
 
 export async function GET(req: NextRequest) {
+  const auth = await requireTeacherOrAdmin(req);
+  if (!auth.ok) {
+    return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+  }
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
 
@@ -76,6 +83,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
+  const auth = await requireTeacherOrAdmin(req, body.token);
+  if (!auth.ok) {
+    return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+  }
+
   const {
 
     group_id,
@@ -130,6 +142,11 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   const body = await req.json();
+  const auth = await requireTeacherOrAdmin(req, body.token);
+  if (!auth.ok) {
+    return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+  }
+
   const {
     id,
 
@@ -196,6 +213,11 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const auth = await requireAdmin();
+  if (!auth.ok) {
+    return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+  }
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
 

@@ -3,6 +3,15 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const token = searchParams.get('token');
@@ -48,7 +57,7 @@ export async function GET(request: Request) {
         </head>
         <body style="font-family: sans-serif; text-align: center; padding: 50px;">
           <h2 style="color: #059669;">Verifikasi Email Berhasil!</h2>
-          <p>Email pengguna <strong>${user.name}</strong> telah berhasil diverifikasi.</p>
+          <p>Email pengguna <strong>${escapeHtml(user.name ?? '')}</strong> telah berhasil diverifikasi.</p>
           <p>Sekarang harap tunggu persetujuan dari Super Admin sebelum Anda bisa login.</p>
           <p style="font-size: 14px; color: #666; margin-top: 20px;">Anda akan dialihkan ke halaman utama dalam 5 detik...</p>
         </body>

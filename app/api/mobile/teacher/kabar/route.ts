@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: { ...postResult.data, images } }, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }
 
@@ -89,7 +90,8 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: { ...postResult.data, images } });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }
 
@@ -118,6 +120,7 @@ export async function DELETE(req: NextRequest) {
     const result = await execute("DELETE FROM activity_posts WHERE id_activity_posts = $1", [id]);
     return NextResponse.json(result);
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }

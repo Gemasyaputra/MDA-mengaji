@@ -6,7 +6,10 @@ const PREFIX_PATTERN = /^ustadz(ah)?\s+/i;
  */
 export function formatTeacherName(name: string | null | undefined, jenisKelamin: string | null | undefined): string {
   if (!name) return name ?? '';
-  const bare = name.replace(PREFIX_PATTERN, '').trim();
+  const stripped = name.replace(PREFIX_PATTERN, '').trim();
+  // Title-case the bare name so it always looks professional regardless of how
+  // it was typed in the admin form (e.g. "arna suliswati" -> "Arna Suliswati").
+  const bare = stripped.replace(/\S+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
   if (jenisKelamin === 'LAKI-LAKI') return `Ustadz ${bare}`;
   if (jenisKelamin === 'PEREMPUAN') return `Ustadzah ${bare}`;
   return bare;

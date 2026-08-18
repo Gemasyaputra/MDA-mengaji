@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query, execute, executeReturning } from '@/lib/api-helpers';
+import { query, queryOne, execute, executeReturning } from '@/lib/api-helpers';
+import { requireTeacherOrAdmin } from '@/lib/require-teacher-or-admin';
+import { formatTeacherName } from '@/lib/teacherName';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -14,6 +16,7 @@ export async function GET(req: NextRequest) {
   // Join with users to get author name and agg images
   let sql = `
     SELECT ap.*, ap.id_activity_posts AS id, u.name as author_name,
+    u.role as author_role, u.jenis_kelamin as author_jenis_kelamin,
     (
       SELECT COALESCE(json_agg(x.image_url), '[]'::json)
       FROM (
@@ -46,17 +49,34 @@ export async function GET(req: NextRequest) {
 
   try {
       const result = await query(sql, params);
+      if (result.success && Array.isArray(result.data)) {
+          result.data = result.data.map((row: any) => ({
+              ...row,
+              author_name: row.author_role === 'teacher'
+                  ? formatTeacherName(row.author_name, row.author_jenis_kelamin)
+                  : row.author_name,
+          }));
+      }
       return NextResponse.json(result);
   } catch (error: any) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+      console.error(error);
+      return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
       const body = await req.json();
-      const { author_id, title, content, activity_date, images } = body;
-    
+      const auth = await requireTeacherOrAdmin(req, body.token);
+      if (!auth.ok) {
+        return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+      }
+
+      const { title, content, activity_date, images } = body;
+      // author_id is always the authenticated caller, never trusted from the
+      // client — otherwise anyone could forge a post as another user.
+      const author_id = auth.userId;
+
       if (!title || !author_id) {
            return NextResponse.json({ success: false, error: 'Title and Author ID are required' }, { status: 400 });
       }
@@ -66,8 +86,8 @@ export async function POST(req: NextRequest) {
         `INSERT INTO activity_posts (author_id, title, content, activity_date, created_at)
          VALUES ($1, $2, $3, $4, NOW()) RETURNING id_activity_posts AS id`,
         [
-            author_id, 
-            title, 
+            author_id,
+            title,
             content, 
             activity_date ? new Date(activity_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
         ]
@@ -91,11 +111,17 @@ export async function POST(req: NextRequest) {
     
       return NextResponse.json({ success: true, data: { ...postResult.data, images } }, { status: 201 });
   } catch (error: any) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+      console.error(error);
+      return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }
 
 export async function DELETE(req: NextRequest) {
+  const auth = await requireTeacherOrAdmin(req);
+  if (!auth.ok) {
+    return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+  }
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
 
@@ -104,20 +130,42 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
+      const existing = await queryOne('SELECT author_id FROM activity_posts WHERE id_activity_posts = $1', [id]);
+      if (!existing) {
+        return NextResponse.json({ success: false, error: 'Kabar tidak ditemukan' }, { status: 404 });
+      }
+      if (auth.role !== 'admin' && Number(existing.author_id) !== auth.userId) {
+        return NextResponse.json({ success: false, error: 'Anda tidak berhak menghapus kabar ini' }, { status: 403 });
+      }
+
       const result = await execute('DELETE FROM activity_posts WHERE id_activity_posts = $1', [id]);
       return NextResponse.json(result);
   } catch (error: any) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+      console.error(error);
+      return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }
 
 export async function PUT(req: NextRequest) {
   try {
       const body = await req.json();
+      const auth = await requireTeacherOrAdmin(req, body.token);
+      if (!auth.ok) {
+        return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+      }
+
       const { id, title, content, images } = body;
-    
+
       if (!id || !title) {
            return NextResponse.json({ success: false, error: 'ID and Title are required' }, { status: 400 });
+      }
+
+      const existing = await queryOne('SELECT author_id FROM activity_posts WHERE id_activity_posts = $1', [id]);
+      if (!existing) {
+        return NextResponse.json({ success: false, error: 'Kabar tidak ditemukan' }, { status: 404 });
+      }
+      if (auth.role !== 'admin' && Number(existing.author_id) !== auth.userId) {
+        return NextResponse.json({ success: false, error: 'Anda tidak berhak mengubah kabar ini' }, { status: 403 });
       }
 
       // 1. Update Post
@@ -148,6 +196,7 @@ export async function PUT(req: NextRequest) {
     
       return NextResponse.json({ success: true, data: { ...postResult.data, images } });
   } catch (error: any) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+      console.error(error);
+      return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }

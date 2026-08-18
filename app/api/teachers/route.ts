@@ -23,7 +23,8 @@ export async function GET(req: NextRequest) {
     const result = await query(sql, params);
     return NextResponse.json(result);
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }
 
@@ -74,7 +75,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result, { status: result.success ? 201 : 400 });
 
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }
 
@@ -115,7 +117,8 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json(result);
 
     } catch (error: any) {
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        console.error(error);
+        return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
     }
 }
 
@@ -136,6 +139,7 @@ export async function DELETE(req: NextRequest) {
         const result = await execute("DELETE FROM users WHERE id_users = $1 AND role = 'teacher'", [id]);
         return NextResponse.json(result);
     } catch (error: any) {
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        console.error(error);
+        return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
     }
 }

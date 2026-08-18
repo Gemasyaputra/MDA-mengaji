@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Users, MessageSquare, Settings, BarChart3, BookOpen,Megaphone } from 'lucide-react';
+import { Home, Users, MessageSquare, Settings, BarChart3, BookOpen } from 'lucide-react';
 
 interface BottomNavProps {
   role: string;
@@ -18,7 +18,6 @@ export default function BottomNav({ role, currentPage, onNavigate }: BottomNavPr
           { id: 'rekap-laporan', label: 'Rekap', icon: BarChart3 },
           { id: 'kabar', label: 'Kabar', icon: MessageSquare },
           { id: 'logout', label: 'Keluar', icon: Settings },
-          // { id: 'pengumuman', label: 'Pengumuman', icon: Megaphone },
         ];
       case 'teacher':
         return [

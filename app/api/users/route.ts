@@ -30,7 +30,8 @@ export async function GET(req: NextRequest) {
     }
     return NextResponse.json({ success: true, data: result.data });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }
 
@@ -66,7 +67,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: result.data }, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }
 
@@ -118,7 +120,8 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: result.data });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }
 
@@ -149,6 +152,7 @@ export async function DELETE(req: NextRequest) {
     }
     return NextResponse.json({ success: true });
   } catch (error: any) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+      console.error(error);
+      return NextResponse.json({ success: false, error: 'Terjadi kesalahan pada server.' }, { status: 500 });
   }
 }

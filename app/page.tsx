@@ -22,7 +22,6 @@ import SantriHistoryPage from '@/components/pages/SantriHistoryPage';
 import LandingPage from '@/components/pages/LandingPage';
 import ActivityLogPage from '@/components/pages/ActivityLogPage';
 import RekapLaporanPage from '@/components/pages/RekapLaporanPage';
-import PengumumanPage from '@/components/pages/PengumumanPage';
 
 /* import Toast from '@/components/Toast'; // REMOVED */
 import { toast } from 'sonner';
@@ -176,8 +175,6 @@ export default function Home() {
         return <PresensiPage onSave={showToast} currentUser={currentUser} onNavigate={navigateTo} />;
       case 'kabar':
         return <KabarPage onNavigate={navigateTo} currentUser={currentUser} />;
-      case 'pengumuman':
-        return <PengumumanPage onNavigate={navigateTo} currentUser={currentUser} />;
       // case 'parent-view': REMOVED - handled in default for query params
 
 
@@ -266,7 +263,7 @@ export default function Home() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative print:h-auto">
-        {showChrome && (
+        {showChrome && !currentPage.startsWith('kabar-detail') && (
           <div className="print:hidden">
             <Header
               role={currentRole}

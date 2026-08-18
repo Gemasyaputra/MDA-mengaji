@@ -86,6 +86,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ success: true, data: mergedData });
   } catch (error: any) {
     console.error("API Attendance List Error:", error);
-    return NextResponse.json({ success: false, message: "Terjadi kesalahan server: " + error?.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: "Terjadi kesalahan pada server." }, { status: 500 });
   }
 }

@@ -213,7 +213,7 @@ export default function SantriDetailPage({ onNavigate, santriId }: SantriDetailP
           }`}>
             {santri.reading_level === 'ALQURAN' ? '📖 Al-Quran' : '📚 Iqro'}
           </div>
-          {santri.current_level && santri.current_level.toLowerCase() !== 'al-quran' && santri.current_level.toLowerCase() !== "al-qur'an" && (
+          {santri.current_level && santri.reading_level !== 'ALQURAN' && (
             <div className="inline-block bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-semibold">
               {santri.current_level}
             </div>
@@ -248,49 +248,60 @@ export default function SantriDetailPage({ onNavigate, santriId }: SantriDetailP
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 text-center">
             {/* Show total present count */}
-          <p className="text-2xl font-bold text-blue-600">
+          <p className="text-3xl font-extrabold text-blue-600">
             {attendanceHistory.filter(a => a.status?.toUpperCase().trim() === 'HADIR').length}
           </p>
           <p className="text-xs text-blue-600 font-semibold">Total Hadir</p>
         </div>
         <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 text-center">
-            <p className="text-2xl font-bold text-emerald-600">{history.length}</p>
+            <p className="text-3xl font-extrabold text-emerald-600">{history.length}</p>
             <p className="text-xs text-emerald-600 font-semibold">Total Mengaji</p>
         </div>
       </div>
 
-      {/* Contact Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 mb-6">
-        <h3 className="font-bold text-slate-800 mb-4">Data Orang Tua</h3>
-        <div className="space-y-3">
-          <div>
-            <p className="text-xs text-slate-500 font-semibold mb-1">NAMA</p>
-            <p className="text-sm text-slate-800">{santri.parent_name || '-'}</p>
+      {/* Biodata Santri & Data Orang Tua */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
+          <h3 className="font-bold text-slate-800 mb-4">Biodata Santri</h3>
+          <div className="space-y-3">
+            {santri.birth_date && (
+              <div>
+                <p className="text-xs text-slate-500 font-semibold mb-1">TANGGAL LAHIR</p>
+                <p className="text-sm text-slate-800">{formatDate(santri.birth_date)}</p>
+              </div>
+            )}
+            {santri.gender && (
+              <div>
+                <p className="text-xs text-slate-500 font-semibold mb-1">JENIS KELAMIN</p>
+                <p className="text-sm text-slate-800">
+                  {santri.gender === 'L' ? 'Laki-laki' : 'Perempuan'}
+                </p>
+              </div>
+            )}
+            {santri.address && (
+              <div>
+                <p className="text-xs text-slate-500 font-semibold mb-1">ALAMAT</p>
+                <p className="text-sm text-slate-800">{santri.address}</p>
+              </div>
+            )}
+            {!santri.birth_date && !santri.gender && !santri.address && (
+              <p className="text-sm text-slate-400 italic">Belum ada biodata.</p>
+            )}
           </div>
-          <div>
-            <p className="text-xs text-slate-500 font-semibold mb-1">NOMOR TELEPON</p>
-            <p className="text-sm text-slate-800">{santri.parent_phone || '-'}</p>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
+          <h3 className="font-bold text-slate-800 mb-4">Data Orang Tua</h3>
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs text-slate-500 font-semibold mb-1">NAMA</p>
+              <p className="text-sm text-slate-800">{santri.parent_name || '-'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 font-semibold mb-1">NOMOR TELEPON</p>
+              <p className="text-sm text-slate-800">{santri.parent_phone || '-'}</p>
+            </div>
           </div>
-          {santri.birth_date && (
-            <div>
-              <p className="text-xs text-slate-500 font-semibold mb-1">TANGGAL LAHIR</p>
-              <p className="text-sm text-slate-800">{formatDate(santri.birth_date)}</p>
-            </div>
-          )}
-          {santri.gender && (
-            <div>
-              <p className="text-xs text-slate-500 font-semibold mb-1">JENIS KELAMIN</p>
-              <p className="text-sm text-slate-800">
-                {santri.gender === 'L' ? 'Laki-laki' : 'Perempuan'}
-              </p>
-            </div>
-          )}
-          {santri.address && (
-            <div>
-              <p className="text-xs text-slate-500 font-semibold mb-1">ALAMAT</p>
-              <p className="text-sm text-slate-800">{santri.address}</p>
-            </div>
-          )}
         </div>
       </div>
 
@@ -308,11 +319,11 @@ export default function SantriDetailPage({ onNavigate, santriId }: SantriDetailP
               Lihat Semua
             </button>
           </div>
-          <div className="space-y-3 max-h-60 overflow-y-auto">
+          <div className="space-y-3">
               {history.length === 0 ? (
                   <p className="text-center text-slate-500 py-4 text-sm">Belum ada riwayat mengaji.</p>
               ) : (
-                  history.map((record: any) => (
+                  history.slice(0, 5).map((record: any) => (
                       <div key={record.id} className="border-b border-slate-50 pb-3 last:border-0 last:pb-0">
                           <div className="flex justify-between items-start mb-1">
                               <div>
@@ -347,15 +358,23 @@ export default function SantriDetailPage({ onNavigate, santriId }: SantriDetailP
       
       {/* Attendance History (NEW) */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 mb-6">
-          <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <span className="w-1 h-5 bg-blue-500 rounded-full"></span>
-              Riwayat Kehadiran (Terakhir)
-          </h3>
-          <div className="space-y-2 max-h-60 overflow-y-auto">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                <span className="w-1 h-5 bg-blue-500 rounded-full"></span>
+                Riwayat Kehadiran (Terakhir)
+            </h3>
+            <button
+              onClick={() => santri && onNavigate(`parent-view?student_id=${santri.id}`)}
+              className="text-xs font-bold text-blue-600 hover:text-blue-700"
+            >
+              Lihat Semua
+            </button>
+          </div>
+          <div className="space-y-2">
               {attendanceHistory.length === 0 ? (
                   <p className="text-center text-slate-500 py-4 text-sm">Belum ada data kehadiran.</p>
               ) : (
-                  attendanceHistory.map((att: any) => (
+                  attendanceHistory.slice(0, 5).map((att: any) => (
                       <div key={att.id} className="flex justify-between items-center p-2 border-b border-slate-50 last:border-0">
                           <span className="text-sm text-slate-700 font-medium">{formatDate(att.date)}</span>
                           <span className={`text-xs font-bold px-2 py-1 rounded ${
@@ -386,11 +405,11 @@ export default function SantriDetailPage({ onNavigate, santriId }: SantriDetailP
               Lihat Semua
             </button>
           </div>
-          <div className="space-y-3 max-h-60 overflow-y-auto">
+          <div className="space-y-3">
               {worshipHistory.length === 0 ? (
                   <p className="text-center text-slate-500 py-4 text-sm">Belum ada riwayat hafalan.</p>
               ) : (
-                  worshipHistory.map((record: any) => (
+                  worshipHistory.slice(0, 5).map((record: any) => (
                       <div key={record.id} className="border-b border-slate-50 pb-3 last:border-0 last:pb-0">
                           <div className="flex justify-between items-start mb-1">
                               <div>
@@ -437,25 +456,6 @@ export default function SantriDetailPage({ onNavigate, santriId }: SantriDetailP
           <BarChart3 className="w-4 h-4" />
          Laporan
         </button>
-        {waUrl ? (
-          <a
-            href={waUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-xl transition-colors"
-          >
-            <MessageCircle className="w-4 h-4" />
-            Lapor Ortu via WA
-          </a>
-        ) : (
-          <button
-            disabled
-            className="w-full flex items-center justify-center gap-2 bg-slate-200 text-slate-500 font-semibold py-3 rounded-xl cursor-not-allowed"
-          >
-            <MessageCircle className="w-4 h-4" />
-            No. HP orang tua belum diisi
-          </button>
-        )}
 
         {(!santri.reading_level || santri.reading_level === 'IQRO') && (
           <button
@@ -464,6 +464,29 @@ export default function SantriDetailPage({ onNavigate, santriId }: SantriDetailP
           >
             <BookOpen className="w-4 h-4" />
             Khatam Iqro & Lanjut Al-Quran
+          </button>
+        )}
+      </div>
+
+      {/* Sticky CTA — selalu terjangkau tanpa scroll penuh */}
+      <div className="sticky bottom-20 md:bottom-4 z-30 mt-4">
+        {waUrl ? (
+          <a
+            href={waUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-xl shadow-lg transition-colors"
+          >
+            <MessageCircle className="w-4 h-4" />
+            Lapor Ortu via WA
+          </a>
+        ) : (
+          <button
+            disabled
+            className="w-full flex items-center justify-center gap-2 bg-slate-200 text-slate-500 font-semibold py-3 rounded-xl shadow-lg cursor-not-allowed"
+          >
+            <MessageCircle className="w-4 h-4" />
+            No. HP orang tua belum diisi
           </button>
         )}
       </div>

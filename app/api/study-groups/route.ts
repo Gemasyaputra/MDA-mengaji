@@ -23,8 +23,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error: any) {
+    console.error(error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: 'Terjadi kesalahan pada server.' },
       { status: 500 },
     );
   }
@@ -94,8 +95,9 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error: any) {
+    console.error(error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: 'Terjadi kesalahan pada server.' },
       { status: 500 },
     );
   }

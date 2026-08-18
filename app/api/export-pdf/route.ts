@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('PDF export error:', error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: 'Terjadi kesalahan pada server.' },
       { status: 500 }
     );
   }
