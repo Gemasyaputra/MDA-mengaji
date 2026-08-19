@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { studyGroups, students } from "@/lib/schema";
-import { eq, inArray, asc, and, sql } from "drizzle-orm";
+import { eq, or, inArray, asc, and, sql } from "drizzle-orm";
 import { resolveTeacherId } from "@/lib/mobile-auth";
 
 export async function GET(request: Request) {
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     const classes = await db
       .select({ id: studyGroups.id, name: studyGroups.name })
       .from(studyGroups)
-      .where(eq(studyGroups.teacherId, teacherId));
+      .where(or(eq(studyGroups.teacherId, teacherId), eq(studyGroups.substituteTeacherId, teacherId)));
 
     if (classes.length === 0) {
       return NextResponse.json({ success: true, data: [] });

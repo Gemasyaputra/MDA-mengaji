@@ -414,3 +414,14 @@ ALTER TABLE activity_posts ADD CONSTRAINT activity_posts_author_id_fkey
 ALTER TABLE activity_images DROP CONSTRAINT IF EXISTS activity_images_post_id_fkey;
 ALTER TABLE activity_images ADD CONSTRAINT activity_images_post_id_fkey
   FOREIGN KEY (post_id) REFERENCES activity_posts(id_activity_posts) ON DELETE CASCADE;
+
+-- ==========================================
+-- BAGIAN X: GURU PENGGANTI (WALI KELAS SEMENTARA)
+-- ==========================================
+-- Kolom opsional di study_groups untuk menunjuk guru pengganti saat wali kelas
+-- tetap (teacher_id) berhalangan hadir. Tidak mengubah kepemilikan asli — hanya
+-- diberi akses baca/tulis yang sama ke data kelas itu di endpoint yang relevan.
+ALTER TABLE study_groups ADD COLUMN IF NOT EXISTS substitute_teacher_id BIGINT;
+ALTER TABLE study_groups DROP CONSTRAINT IF EXISTS study_groups_substitute_teacher_id_fkey;
+ALTER TABLE study_groups ADD CONSTRAINT study_groups_substitute_teacher_id_fkey
+  FOREIGN KEY (substitute_teacher_id) REFERENCES users(id_users) ON DELETE SET NULL;

@@ -75,6 +75,15 @@ export const studyGroups = pgTable("study_groups", {
       onDelete: "set null",
     },
   ),
+  // Wali kelas sementara (opsional) — dipakai saat wali kelas tetap berhalangan
+  // hadir. Diberi akses yang sama seperti teacherId ke data kelas ini di semua
+  // query "kelas milik saya", tanpa mengubah kepemilikan (teacherId) aslinya.
+  substituteTeacherId: integer("substitute_teacher_id").references(
+    () => users.id,
+    {
+      onDelete: "set null",
+    },
+  ),
   name: varchar("name", { length: 50 }).notNull(),
   description: text("description"),
 });

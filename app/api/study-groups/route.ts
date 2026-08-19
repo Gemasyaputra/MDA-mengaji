@@ -5,7 +5,7 @@ import { applyTeacherNameFormatting } from '@/lib/teacherName';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { teacher_id, name, description } = body;
+    const { teacher_id, substitute_teacher_id, name, description } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -15,10 +15,10 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await executeReturning(
-      `INSERT INTO study_groups (teacher_id, name, description)
-       VALUES ($1, $2, $3)
+      `INSERT INTO study_groups (teacher_id, substitute_teacher_id, name, description)
+       VALUES ($1, $2, $3, $4)
        RETURNING *, id_study_groups AS id`,
-      [teacher_id || null, name, description || null],
+      [teacher_id || null, substitute_teacher_id || null, name, description || null],
     );
 
     return NextResponse.json(result);
@@ -37,9 +37,12 @@ export async function GET(req: NextRequest) {
   const teacherId = searchParams.get('teacher_id');
 
   let sql = `
-    SELECT sg.id_study_groups AS id, sg.teacher_id, sg.name, sg.description, u.name as teacher_name, u.jenis_kelamin as teacher_jenis_kelamin
+    SELECT sg.id_study_groups AS id, sg.teacher_id, sg.substitute_teacher_id, sg.name, sg.description,
+           u.name as teacher_name, u.jenis_kelamin as teacher_jenis_kelamin,
+           su.name as substitute_teacher_name, su.jenis_kelamin as substitute_teacher_jenis_kelamin
     FROM study_groups sg
     LEFT JOIN users u ON sg.teacher_id = u.id_users
+    LEFT JOIN users su ON sg.substitute_teacher_id = su.id_users
     WHERE 1=1
   `;
   const params: (string | number)[] = [];
@@ -47,7 +50,9 @@ export async function GET(req: NextRequest) {
 
 
   if (teacherId) {
-    sql += ` AND sg.teacher_id = $${idx}`;
+    // Guru pengganti (substitute_teacher_id) diberi akses yang sama seperti
+    // wali kelas tetap ke kelas ini, jadi ikut dimasukkan di sini.
+    sql += ` AND (sg.teacher_id = $${idx} OR sg.substitute_teacher_id = $${idx})`;
     params.push(teacherId);
     idx++;
   }
@@ -55,14 +60,17 @@ export async function GET(req: NextRequest) {
   sql += ' ORDER BY sg.name ASC';
 
   const result = await query(sql, params);
-  if (result.data) applyTeacherNameFormatting(result.data);
+  if (result.data) {
+    applyTeacherNameFormatting(result.data);
+    applyTeacherNameFormatting(result.data, 'substitute_teacher_name', 'substitute_teacher_jenis_kelamin');
+  }
   return NextResponse.json(result);
 }
 
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, teacher_id, name, description } = body;
+    const { id, teacher_id, substitute_teacher_id, name, description } = body;
 
     if (!id || !name) {
       return NextResponse.json(
@@ -73,10 +81,10 @@ export async function PUT(req: NextRequest) {
 
     const result = await executeReturning(
       `UPDATE study_groups
-       SET teacher_id = $1, name = $2, description = $3
-       WHERE id_study_groups = $4
+       SET teacher_id = $1, substitute_teacher_id = $2, name = $3, description = $4
+       WHERE id_study_groups = $5
        RETURNING *, id_study_groups AS id`,
-      [teacher_id || null, name, description || null, id],
+      [teacher_id || null, substitute_teacher_id || null, name, description || null, id],
     );
 
     if (!result.success) {

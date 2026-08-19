@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { users, studyGroups, students, attendance } from "@/lib/schema";
-import { eq, count, countDistinct, inArray, and, sql } from "drizzle-orm";
+import { eq, or, count, countDistinct, inArray, and, sql } from "drizzle-orm";
 import { resolveTeacherId } from "@/lib/mobile-auth";
 import { formatTeacherName } from "@/lib/teacherName";
 
@@ -24,11 +24,11 @@ export async function GET(request: Request) {
 
     const teacherName = formatTeacherName(teacherResult[0].name, teacherResult[0].jenisKelamin);
 
-    // Get classes handled by this teacher
+    // Get classes handled by this teacher (termasuk kelas yang dia pegang sebagai guru pengganti)
     const classes = await db
       .select({ id: studyGroups.id, name: studyGroups.name })
       .from(studyGroups)
-      .where(eq(studyGroups.teacherId, teacherId));
+      .where(or(eq(studyGroups.teacherId, teacherId), eq(studyGroups.substituteTeacherId, teacherId)));
 
     const totalClasses = classes.length;
     

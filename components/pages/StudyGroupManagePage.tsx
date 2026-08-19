@@ -12,9 +12,11 @@ interface Teacher {
 interface StudyGroup {
   id: number;
   teacher_id: number | null;
+  substitute_teacher_id: number | null;
   name: string;
   description: string | null;
   teacher_name?: string;
+  substitute_teacher_name?: string;
 }
 
 interface User {
@@ -32,6 +34,7 @@ interface StudyGroupManagePageProps {
 const emptyForm = {
 
   teacher_id: '',
+  substitute_teacher_id: '',
   name: '',
   description: '',
 };
@@ -111,6 +114,7 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
   const openEditModal = (g: StudyGroup) => {
     setEditingId(g.id);
     setFormData({teacher_id: g.teacher_id ? String(g.teacher_id) : '',
+      substitute_teacher_id: g.substitute_teacher_id ? String(g.substitute_teacher_id) : '',
       name: g.name,
       description: g.description || '',
     });
@@ -130,10 +134,15 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
       onSave?.('Nama kelas wajib diisi');
       return;
     }
+    if (formData.substitute_teacher_id && formData.substitute_teacher_id === formData.teacher_id) {
+      onSave?.('Guru pengganti tidak boleh sama dengan Wali Kelas');
+      return;
+    }
 
 
     try {
       const payload = {teacher_id: formData.teacher_id ? parseInt(formData.teacher_id) : null,
+        substitute_teacher_id: formData.substitute_teacher_id ? parseInt(formData.substitute_teacher_id) : null,
         name: formData.name.trim(),
         description: formData.description.trim() || null,
       };
@@ -201,7 +210,8 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
   const filteredGroups = groups.filter(
     (g) =>
       g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (g.description && g.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      (g.teacher_name && g.teacher_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (g.substitute_teacher_name && g.substitute_teacher_name.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -241,13 +251,15 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <h4 className="font-bold text-slate-800 text-sm mb-1">{group.name}</h4>
-                  {group.description && (
-                    <p className="text-xs text-slate-500 mb-1">{group.description}</p>
-                  )}
                   <div className="flex gap-2 mt-1 flex-wrap">
                     <span className="inline-block px-2 py-1 bg-emerald-50 text-emerald-700 text-xs rounded font-semibold">
                       Wali Kelas: {group.teacher_name || '-'}
                     </span>
+                    {group.substitute_teacher_name && (
+                      <span className="inline-block px-2 py-1 bg-amber-50 text-amber-700 text-xs rounded font-semibold">
+                        Guru Pengganti: {group.substitute_teacher_name}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -315,14 +327,22 @@ export default function StudyGroupManagePage({ onNavigate, onSave, currentUser }
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Deskripsi</label>
-                <textarea
-                  rows={3}
-                  placeholder="Deskripsi kelas"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 resize-none"
-                />
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Guru Pengganti</label>
+                <select
+                  value={formData.substitute_teacher_id}
+                  onChange={(e) => setFormData({ ...formData, substitute_teacher_id: e.target.value })}
+                  className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
+                >
+                  <option value="">Tidak ada</option>
+                  {teachers.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Diisi kalau Wali Kelas berhalangan — guru pengganti bisa akses data kelas ini lewat aplikasi mobile-nya sendiri.
+                </p>
               </div>
               <div className="flex gap-2 pt-2">
                 <button
