@@ -9,6 +9,7 @@ import {
   masterPrayerReadings,
 } from "@/lib/schema";
 import { eq, desc, and, count, sql, inArray } from "drizzle-orm";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function GET(
   req: Request,
@@ -19,6 +20,18 @@ export async function GET(
 
     if (!slug) {
       return NextResponse.json({ success: false, message: "Kode santri (SLUG) tidak valid." }, { status: 400 });
+    }
+
+    // Mitigasi enumerasi/brute-force slug: endpoint ini tidak memakai token
+    // sesi, jadi batasi percobaan per IP per slug.
+    const ip = getClientIp(req);
+    const perSlug = rateLimit(`parent-student:${ip}:${slug}`, 10, 60_000);
+    const perIp = rateLimit(`parent-student-ip:${ip}`, 30, 60_000);
+    if (!perSlug.allowed || !perIp.allowed) {
+      return NextResponse.json(
+        { success: false, message: "Terlalu banyak percobaan. Coba lagi dalam beberapa saat." },
+        { status: 429 }
+      );
     }
 
     // 1. Ambil data santri

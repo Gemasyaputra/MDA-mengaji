@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { students, worshipRecords } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { createNotification } from "@/app/api/notifications/route";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 const ALLOWED_TYPES = ['SALAT_FARDU', 'SALAT_SUNAH'];
 
@@ -13,6 +14,18 @@ export async function POST(req: Request) {
 
     if (!slug) {
       return NextResponse.json({ success: false, message: "Kode santri (SLUG) tidak valid." }, { status: 400 });
+    }
+
+    // Endpoint ini tidak memakai token sesi, jadi batasi percobaan per IP per slug
+    // untuk mencegah enumerasi slug maupun spam pencatatan ibadah.
+    const ip = getClientIp(req);
+    const perSlug = rateLimit(`parent-worship:${ip}:${slug}`, 10, 60_000);
+    const perIp = rateLimit(`parent-worship-ip:${ip}`, 30, 60_000);
+    if (!perSlug.allowed || !perIp.allowed) {
+      return NextResponse.json(
+        { success: false, message: "Terlalu banyak percobaan. Coba lagi dalam beberapa saat." },
+        { status: 429 }
+      );
     }
     if (!ALLOWED_TYPES.includes(type)) {
       return NextResponse.json({ success: false, message: "Jenis ibadah tidak valid. Orang tua hanya dapat mencatat Sholat Fardu/Sunah." }, { status: 400 });

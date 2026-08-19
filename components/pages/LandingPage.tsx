@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import {
   BookOpen, Users, GraduationCap, Star, CheckCircle2, ChevronDown,
   MapPin, Phone, Mail, Clock, Calendar, ChevronRight,
@@ -249,7 +250,6 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
             <div className="hidden md:flex space-x-7 text-sm">
               <a href="#profil" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Profil</a>
               <a href="#program" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Program</a>
-              <a href="#pengajar" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Pengajar</a>
               <a href="#kabar" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Kabar</a>
               <a href="#pendaftaran" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Pendaftaran</a>
               <a href="#kontak" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Kontak</a>
@@ -384,18 +384,19 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
             {/* Foto Kepala MDA (placeholder) */}
             <AnimateOnScroll animation="fade-right" delay={100} className="md:col-span-2">
               <div className="relative">
-                <div className="aspect-[4/5] bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-3xl flex items-center justify-center overflow-hidden shadow-xl">
-                  {/* TODO: ganti dengan foto Kepala MDA */}
-                  <div className="text-center text-emerald-700 px-6">
-                    <div className="w-32 h-32 mx-auto bg-white rounded-full flex items-center justify-center mb-4 shadow-md">
-                      <GraduationCap size={56} className="text-emerald-600" />
-                    </div>
-                    <p className="text-xs font-bold uppercase tracking-widest text-emerald-600">Foto Kepala MDA</p>
-                  </div>
+                <div className="aspect-[4/5] bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-3xl overflow-hidden shadow-xl relative">
+                  <Image
+                    src="/kepala-mda.png"
+                    alt="Zulma Elfa, S.Pd."
+                    fill
+                    className="object-cover"
+                    sizes="(min-width: 768px) 40vw, 100vw"
+                    priority
+                  />
                 </div>
                 <div className="absolute -bottom-4 -right-4 bg-emerald-600 text-white px-5 py-3 rounded-2xl shadow-lg">
                   <p className="text-[10px] font-semibold uppercase tracking-wider opacity-80">Kepala MDA</p>
-                  <p className="font-bold text-sm">Ust. Ahmad Fauzi, S.Pd.I</p>
+                  <p className="font-bold text-sm">Zulma Elfa, S.Pd.</p>
                 </div>
               </div>
             </AnimateOnScroll>
@@ -423,7 +424,7 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
                 </p>
               </div>
               <div className="mt-6 pt-6 border-t border-slate-200">
-                <p className="font-bold text-slate-800">Ust. Ahmad Fauzi, S.Pd.I</p>
+                <p className="font-bold text-slate-800">Zulma Elfa, S.Pd.</p>
                 <p className="text-sm text-slate-500">Kepala MDA Masjid Nurul Huda</p>
               </div>
             </AnimateOnScroll>
@@ -630,48 +631,6 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
         </div>
       </section>
 
-      {/* ═══════════════ PENGAJAR ═══════════════ */}
-      <section id="pengajar" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <AnimateOnScroll delay={100}>
-              <span className="text-emerald-600 font-bold tracking-wider uppercase text-xs mb-2 block">Tim Pengajar</span>
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Ustadz & Ustadzah Kami</h2>
-              <p className="text-slate-600 leading-relaxed">
-                {/* TODO: ganti dengan deskripsi dari pengurus */}
-                Tim pengajar berlatar belakang pendidikan Islam dan berpengalaman membimbing santri dengan
-                metode yang ramah anak.
-              </p>
-              <div className="w-16 h-1 bg-emerald-400 mx-auto rounded-full mt-6" />
-            </AnimateOnScroll>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-            {[
-              { name: 'Ust. Ali Hidayat', role: 'Pengajar Senior — Iqro & Tahsin' },
-              { name: 'Ust. Hasan Mubarak', role: 'Pengajar — Tahfidz Juz 30' },
-              { name: 'Ustdz. Aisyah Rahmi', role: 'Pengajar — Doa Harian' },
-              { name: 'Ustdz. Khadijah Salwa', role: 'Pengajar — Akhlak & Adab' },
-            ].map((t, idx) => (
-              <AnimateOnScroll key={idx} animation="fade-up" delay={120 + idx * 80}>
-                <div className="bg-slate-50 rounded-2xl border border-slate-100 overflow-hidden hover:shadow-md transition-all group">
-                  {/* Foto placeholder */}
-                  <div className="aspect-square bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center relative overflow-hidden">
-                    {/* TODO: ganti dengan foto pengajar */}
-                    <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                      <GraduationCap size={32} className="text-emerald-600" />
-                    </div>
-                  </div>
-                  <div className="p-4 text-center">
-                    <p className="font-bold text-sm text-slate-800 mb-1">{t.name}</p>
-                    <p className="text-[11px] text-slate-500 leading-relaxed">{t.role}</p>
-                  </div>
-                </div>
-              </AnimateOnScroll>
-            ))}
-          </div>
-        </div>
-      </section>
       {/* ═══════════════ KABAR & KEGIATAN ═══════════════ */}
       <section id="kabar" className="py-20 bg-slate-50 border-y border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1035,7 +994,6 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
               <ul className="space-y-2 text-sm">
                 <li><a href="#profil" className="hover:text-white transition-colors">Profil Madrasah</a></li>
                 <li><a href="#program" className="hover:text-white transition-colors">Program Belajar</a></li>
-                <li><a href="#pengajar" className="hover:text-white transition-colors">Pengajar</a></li>
                 <li><a href="#kabar" className="hover:text-white transition-colors">Kabar & Kegiatan</a></li>
                 <li><a href="#pendaftaran" className="hover:text-white transition-colors">Pendaftaran</a></li>
               </ul>
