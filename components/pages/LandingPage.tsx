@@ -10,6 +10,35 @@ import {
 } from 'lucide-react';
 
 // ───────────────────────────────────────────────────────────
+// Ikon masjid — lucide-react tidak punya ikon masjid, jadi dibuat manual
+// (siluet kubah + menara + bulan sabit) supaya gaya garisnya tetap konsisten
+// dengan ikon lucide lain yang dipakai di halaman ini.
+// ───────────────────────────────────────────────────────────
+function MosqueIcon({ size = 18, className = '' }: { size?: number; className?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M12 3v2" />
+      <circle cx="12" cy="2.4" r="0.6" fill="currentColor" stroke="none" />
+      <path d="M8 9a4 4 0 0 1 8 0c0 1.8-1.2 2.6-2 3.5-.6.7-1 1.3-1 2.5H9c0-1.2-.4-1.8-1-2.5C7.2 11.6 8 10.8 8 9Z" />
+      <path d="M2 21v-6a2 2 0 0 1 2-2h1a2 2 0 0 1 2 2v6" />
+      <path d="M17 21v-6a2 2 0 0 1 2-2h1a2 2 0 0 1 2 2v6" />
+      <path d="M9 21v-4a3 3 0 0 1 6 0v4" />
+      <path d="M2 21h20" />
+    </svg>
+  );
+}
+
+// ───────────────────────────────────────────────────────────
 // Hook: animate when element scrolls into view
 // ───────────────────────────────────────────────────────────
 const useElementOnScreen = (options: IntersectionObserverInit) => {
@@ -237,7 +266,7 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
       {/* ═══════════════ NAVBAR ═══════════════ */}
       <nav className="fixed w-full bg-white/95 backdrop-blur-md z-50 border-b border-slate-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
+          <div className="flex h-16 items-center">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 bg-emerald-600 rounded-lg flex items-center justify-center shadow-sm">
                 <BookOpen className="text-white" size={18} />
@@ -247,12 +276,15 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
                 <p className="text-[10px] text-slate-500 hidden sm:block">Madrasah Diniyah Awaliyah</p>
               </div>
             </div>
-            <div className="hidden md:flex space-x-7 text-sm">
+            <div className="hidden md:flex flex-1 justify-center gap-7 text-sm">
               <a href="#profil" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Profil</a>
               <a href="#program" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Program</a>
               <a href="#kabar" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Kabar</a>
               <a href="#pendaftaran" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Pendaftaran</a>
               <a href="#kontak" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Kontak</a>
+            </div>
+            <div className="hidden md:flex w-9 h-9 bg-emerald-50 rounded-lg items-center justify-center shrink-0">
+              <MosqueIcon size={18} className="text-emerald-600" />
             </div>
           </div>
         </div>
@@ -571,20 +603,20 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
                 </div>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
-                    <span className="text-sm text-slate-600">Mulai Belajar</span>
-                    <span className="font-bold text-slate-800">14.30 WIB</span>
+                    <span className="text-sm text-slate-600">Sesi Pagi</span>
+                    <span className="font-bold text-slate-800">07.30 – 09.00 WIB</span>
                   </div>
                   <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
-                    <span className="text-sm text-slate-600">Istirahat / Sholat Ashar</span>
-                    <span className="font-bold text-slate-800">15.30 WIB</span>
+                    <span className="text-sm text-slate-600">Sesi Siang</span>
+                    <span className="font-bold text-slate-800">13.00 – 14.30 WIB</span>
                   </div>
                   <div className="flex justify-between items-center py-2.5">
-                    <span className="text-sm text-slate-600">Selesai</span>
-                    <span className="font-bold text-emerald-700">16.30 WIB</span>
+                    <span className="text-sm text-slate-600">Sesi Sore</span>
+                    <span className="font-bold text-emerald-700">14.30 – 16.30 WIB</span>
                   </div>
                 </div>
                 <p className="text-xs text-slate-400 italic mt-4">
-                  *Sabtu & Minggu libur. Hari libur nasional menyesuaikan kalender.
+                  Satu santri mengikuti salah satu sesi sesuai kelasnya masing-masing. Sabtu & Minggu libur, hari libur nasional menyesuaikan kalender.
                 </p>
               </div>
             </AnimateOnScroll>
@@ -870,7 +902,13 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
                 </div>
                 <h3 className="font-bold text-slate-900 mb-2">Jam Operasional</h3>
                 <p className="text-sm text-slate-600 mb-1">
-                  <span className="font-semibold">Senin – Jumat:</span> 14.30 – 16.30 WIB
+                  <span className="font-semibold">Sesi Pagi:</span> 07.30 – 09.00 WIB
+                </p>
+                <p className="text-sm text-slate-600 mb-1">
+                  <span className="font-semibold">Sesi Siang:</span> 13.00 – 14.30 WIB
+                </p>
+                <p className="text-sm text-slate-600 mb-1">
+                  <span className="font-semibold">Sesi Sore:</span> 14.30 – 16.30 WIB
                 </p>
                 <p className="text-sm text-slate-600">
                   <span className="font-semibold">Sabtu & Minggu:</span> Libur
