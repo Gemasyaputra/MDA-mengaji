@@ -254,12 +254,6 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
               <a href="#pendaftaran" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Pendaftaran</a>
               <a href="#kontak" className="text-slate-600 hover:text-emerald-600 font-medium transition-colors">Kontak</a>
             </div>
-            <button
-              onClick={() => onNavigate && onNavigate('login')}
-              className="text-emerald-700 hover:text-emerald-800 px-3 py-1.5 rounded-lg font-semibold text-xs sm:text-sm border border-emerald-200 hover:bg-emerald-50 transition-all"
-            >
-              Login Admin
-            </button>
           </div>
         </div>
       </nav>
@@ -683,12 +677,6 @@ export default function LandingPage({ onNavigate }: { onNavigate?: (page: string
                       <span>Cetak laporan PDF perkembangan santri</span>
                     </li>
                   </ul>
-                  <button
-                    onClick={() => onNavigate && onNavigate('login')}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 text-emerald-700 rounded-full font-semibold text-sm border border-emerald-200 transition-all"
-                  >
-                    Login Pengajar / Admin <ArrowRight size={14} />
-                  </button>
                 </div>
 
                 {/* Visual placeholder kecil */}

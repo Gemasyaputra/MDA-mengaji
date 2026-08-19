@@ -34,6 +34,9 @@ export default function Home() {
     if (typeof window !== 'undefined') {
       const searchParams = new URLSearchParams(window.location.search);
       if (searchParams.has('error')) return 'login';
+      // URL khusus /login (lihat app/login/page.tsx) — akses langsung ke halaman
+      // login tanpa perlu tombol di homepage, untuk admin/guru yang tahu link-nya.
+      if (window.location.pathname === '/login') return 'login';
       // Restore last page from sessionStorage (persists across F5 refresh)
       const saved = sessionStorage.getItem('mda_current_page');
       if (saved && !['landing', 'login'].includes(saved)) return saved;
